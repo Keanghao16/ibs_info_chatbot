@@ -1,0 +1,346 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard - {{ session.admin_info.full_name }}{% endblock %}
+
+{% block content %}
+<style>
+    .welcome-section {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 30px;
+        border-radius: 15px;
+        margin-bottom: 30px;
+        text-align: center;
+    }
+    .admin-avatar {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        margin: 0 auto 15px;
+        border: 3px solid white;
+        display: block;
+    }
+    .admin-info {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        margin-bottom: 20px;
+    }
+    .role-badge {
+        padding: 8px 16px;
+        border-radius: 25px;
+        font-size: 14px;
+        font-weight: 600;
+        text-transform: uppercase;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .role-super_admin {
+        background: rgba(255, 255, 255, 0.2);
+        color: white;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+    }
+    .role-admin {
+        background: rgba(255, 255, 255, 0.15);
+        color: white;
+        border: 2px solid rgba(255, 255, 255, 0.25);
+    }
+    .stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 20px;
+        margin: 30px 0;
+    }
+    .stat-card {
+        background: white;
+        padding: 25px;
+        border-radius: 12px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        text-align: center;
+        border-left: 5px solid #667eea;
+        transition: transform 0.2s ease;
+    }
+    .stat-card:hover {
+        transform: translateY(-5px);
+    }
+    .stat-number {
+        font-size: 2.5em;
+        font-weight: 700;
+        color: #667eea;
+        margin-bottom: 10px;
+    }
+    .stat-label {
+        color: #6c757d;
+        font-weight: 500;
+        text-transform: uppercase;
+        font-size: 14px;
+    }
+    .availability-section {
+        background: #f8f9fa;
+        padding: 20px;
+        border-radius: 10px;
+        margin: 20px 0;
+        text-align: center;
+    }
+    .availability-status {
+        font-size: 18px;
+        font-weight: 600;
+        margin: 15px 0;
+    }
+    .available {
+        color: #28a745;
+    }
+    .unavailable {
+        color: #dc3545;
+    }
+    .actions {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+        margin: 30px 0;
+    }
+    .action-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        padding: 15px 20px;
+        background: white;
+        border: 2px solid #e9ecef;
+        border-radius: 10px;
+        text-decoration: none;
+        color: #495057;
+        font-weight: 600;
+        transition: all 0.2s ease;
+    }
+    .action-btn:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        text-decoration: none;
+    }
+    .action-btn.primary {
+        background: #007bff;
+        color: white;
+        border-color: #007bff;
+    }
+    .action-btn.secondary {
+        background: #6c757d;
+        color: white;
+        border-color: #6c757d;
+    }
+    .action-btn.danger {
+        background: #dc3545;
+        color: white;
+        border-color: #dc3545;
+    }
+    .quick-info {
+        background: #e7f3ff;
+        border: 1px solid #b8daff;
+        border-radius: 8px;
+        padding: 15px;
+        margin: 20px 0;
+    }
+</style>
+
+<div class="container">
+    <!-- Welcome Section -->
+    <div class="welcome-section">
+        <!-- Admin Avatar -->
+        {% if session.admin_info.telegram_photo_url %}
+            <img src="{{ session.admin_info.telegram_photo_url }}" alt="Profile" class="admin-avatar">
+        {% else %}
+            <div class="admin-avatar" style="background: rgba(255, 255, 255, 0.2); display: flex; align-items: center; justify-content: center; color: white; font-size: 20px; font-weight: bold;">
+                {{ session.admin_info.telegram_first_name[0] if session.admin_info.telegram_first_name else session.admin_info.full_name[0] if session.admin_info.full_name else '?' }}
+            </div>
+        {% endif %}
+        
+        <div class="admin-info">
+            <div style="flex: 1;">
+                <h2 style="margin: 0 0 10px 0;">
+                    Welcome back, {{ session.admin_info.telegram_first_name or session.admin_info.full_name or 'Admin' }}! 👋
+                </h2>
+                <div class="role-badge role-{{ session.admin_info.role }}">
+                    {% if session.admin_info.role == 'super_admin' %}
+                        🔧 Super Administrator
+                    {% else %}
+                        👨‍💼 Administrator/Agent
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Quick Info -->
+        <div class="quick-info" style="background: rgba(255, 255, 255, 0.1); border-color: rgba(255, 255, 255, 0.2); color: white;">
+            <div style="display: flex; justify-content: space-around; flex-wrap: wrap; gap: 15px;">
+                <div>
+                    <strong>Telegram:</strong> 
+                    {% if session.admin_info.telegram_username %}
+                        @{{ session.admin_info.telegram_username }}
+                    {% else %}
+                        ID: {{ session.admin_info.telegram_id }}
+                    {% endif %}
+                </div>
+                {% if session.admin_info.division %}
+                    <div><strong>Division:</strong> {{ session.admin_info.division }}</div>
+                {% endif %}
+                <div><strong>Last Login:</strong> {{ session.admin_info.last_login[:16] if session.admin_info.last_login else 'First time' }}</div>
+            </div>
+        </div>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }}" style="padding: 15px; margin: 15px 0; border-radius: 8px;">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+    
+    <!-- Availability Section for Agents -->
+    {% if session.admin_info.role == 'admin' %}
+        <div class="availability-section">
+            <h3 style="margin-top: 0;">🎯 Agent Status</h3>
+            <div class="availability-status {{ 'available' if session.admin_info.is_available else 'unavailable' }}">
+                {% if session.admin_info.is_available %}
+                    🟢 Available for new chats
+                {% else %}
+                    🔴 Currently unavailable
+                {% endif %}
+            </div>
+            <button id="toggle-availability" class="btn {{ 'btn-warning' if session.admin_info.is_available else 'btn-success' }}" style="margin-top: 10px;">
+                {% if session.admin_info.is_available %}
+                    🔴 Set Unavailable
+                {% else %}
+                    🟢 Set Available
+                {% endif %}
+            </button>
+        </div>
+    {% endif %}
+
+    <!-- Statistics -->
+    <div class="stats">
+        <div class="stat-card">
+            <div class="stat-number">{{ users|length }}</div>
+            <div class="stat-label">👥 Total Users</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">{{ chats|length }}</div>
+            <div class="stat-label">💬 Total Chat Sessions</div>
+        </div>
+        {% if session.admin_info.role == 'admin' and admin_chats %}
+            <div class="stat-card">
+                <div class="stat-number">{{ admin_chats|length }}</div>
+                <div class="stat-label">📝 My Assigned Chats</div>
+            </div>
+        {% endif %}
+        {% if session.admin_info.role == 'super_admin' %}
+            <div class="stat-card">
+                <div class="stat-number">{{ admins|length if admins else '0' }}</div>
+                <div class="stat-label">👨‍💼 Total Administrators</div>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Actions based on role -->
+    <div class="actions">
+        <a href="/admin/users" class="action-btn primary">
+            👥 View Users
+        </a>
+        <a href="/admin/chat-management" class="action-btn secondary">
+            💬 Chat Management
+        </a>
+        
+        {% if session.admin_info.role == 'super_admin' %}
+            <a href="/admin/manage-admins" class="action-btn danger">
+                🔧 Manage Admins
+            </a>
+            <a href="/admin/system-settings" class="action-btn">
+                ⚙️ System Settings
+            </a>
+        {% endif %}
+        
+        <a href="{{ url_for('auth.profile') }}" class="action-btn">
+            👤 My Profile
+        </a>
+        
+        <a href="/admin/reports" class="action-btn">
+            📊 Reports & Analytics
+        </a>
+    </div>
+</div>
+
+<script>
+// Toggle availability functionality
+document.getElementById('toggle-availability')?.addEventListener('click', function() {
+    const button = this;
+    const originalText = button.textContent;
+    button.textContent = 'Updating...';
+    button.disabled = true;
+    
+    fetch('/admin/toggle-availability', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Update the button and status
+            const statusDiv = document.querySelector('.availability-status');
+            if (data.status === 'available') {
+                button.textContent = '🔴 Set Unavailable';
+                button.className = 'btn btn-warning';
+                statusDiv.textContent = '🟢 Available for new chats';
+                statusDiv.className = 'availability-status available';
+            } else {
+                button.textContent = '🟢 Set Available';
+                button.className = 'btn btn-success';
+                statusDiv.textContent = '🔴 Currently unavailable';
+                statusDiv.className = 'availability-status unavailable';
+            }
+            
+            // Show success message
+            const container = document.querySelector('.container');
+            const alert = document.createElement('div');
+            alert.className = 'alert alert-success';
+            alert.style.cssText = 'padding: 15px; margin: 15px 0; border-radius: 8px; background: #d4edda; color: #155724; border: 1px solid #c3e6cb;';
+            alert.textContent = `Status updated to ${data.status}!`;
+            container.insertBefore(alert, container.children[1]);
+            
+            // Remove alert after 3 seconds
+            setTimeout(() => {
+                alert.remove();
+            }, 3000);
+        } else {
+            alert('Failed to update status. Please try again.');
+            button.textContent = originalText;
+        }
+        button.disabled = false;
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred. Please try again.');
+        button.textContent = originalText;
+        button.disabled = false;
+    });
+});
+
+// Auto-refresh stats every 30 seconds
+setInterval(() => {
+    fetch('/admin/dashboard-stats')
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            document.querySelectorAll('.stat-number').forEach((el, index) => {
+                if (index === 0) el.textContent = data.users;
+                if (index === 1) el.textContent = data.chats;
+                if (index === 2) el.textContent = data.admin_chats || 0;
+            });
+        }
+    })
+    .catch(error => console.log('Stats refresh failed:', error));
+}, 30000);
+</script>
+{% endblock %}

@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Profile</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/auth.css') }}">
+    <style>
+        .profile-photo {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            margin: 0 auto 20px;
+            display: block;
+            border: 3px solid #667eea;
+        }
+        .profile-info {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #e9ecef;
+        }
+        .info-row:last-child {
+            border-bottom: none;
+        }
+        .info-label {
+            font-weight: 600;
+            color: #495057;
+            flex: 1;
+        }
+        .info-value {
+            flex: 2;
+            text-align: right;
+            color: #6c757d;
+        }
+        .telegram-badge {
+            background: linear-gradient(135deg, #37aee2 0%, #1e96c8 100%);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 15px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .role-badge {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        .role-super_admin {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+            color: white;
+        }
+        .role-admin {
+            background: linear-gradient(135deg, #4834d4 0%, #667eea 100%);
+            color: white;
+        }
+        .update-section {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            margin: 20px 0;
+            border: 1px solid #dee2e6;
+        }
+    </style>
+</head>
+<body>
+    <div class="auth-container">
+        <div class="auth-card" style="max-width: 600px;">
+            <h2>Admin Profile</h2>
+            
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+            
+            <!-- Profile Photo -->
+            {% if session.admin_info.telegram_photo_url %}
+                <img src="{{ session.admin_info.telegram_photo_url }}" alt="Profile Photo" class="profile-photo">
+            {% else %}
+                <div class="profile-photo" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; color: white; font-size: 24px; font-weight: bold;">
+                    {{ session.admin_info.telegram_first_name[0] if session.admin_info.telegram_first_name else session.admin_info.full_name[0] if session.admin_info.full_name else '?' }}
+                </div>
+            {% endif %}
+            
+            <!-- Profile Information -->
+            <div class="profile-info">
+                <h3 style="margin-top: 0; color: #333; text-align: center;">Account Information</h3>
+                
+                <div class="info-row">
+                    <span class="info-label">👤 Full Name:</span>
+                    <span class="info-value">{{ session.admin_info.full_name or 'Not set' }}</span>
+                </div>
+                
+                <div class="info-row">
+                    <span class="info-label">🏷️ Role:</span>
+                    <span class="info-value">
+                        <span class="role-badge role-{{ session.admin_info.role }}">
+                            {% if session.admin_info.role == 'super_admin' %}
+                                🔧 Super Administrator
+                            {% else %}
+                                👨‍💼 Administrator
+                            {% endif %}
+                        </span>
+                    </span>
+                </div>
+                
+                <div class="info-row">
+                    <span class="info-label">📱 Telegram ID:</span>
+                    <span class="info-value">
+                        <span class="telegram-badge">{{ session.admin_info.telegram_id }}</span>
+                    </span>
+                </div>
+                
+                <div class="info-row">
+                    <span class="info-label">👤 Telegram Name:</span>
+                    <span class="info-value">
+                        {{ session.admin_info.telegram_first_name or '' }} {{ session.admin_info.telegram_last_name or '' }}
+                    </span>
+                </div>
+                
+                <div class="info-row">
+                    <span class="info-label">@ Username:</span>
+                    <span class="info-value">
+                        {% if session.admin_info.telegram_username %}
+                            <a href="https://t.me/{{ session.admin_info.telegram_username }}" target="_blank" style="color: #37aee2; text-decoration: none;">
+                                @{{ session.admin_info.telegram_username }}
+                            </a>
+                        {% else %}
+                            Not set
+                        {% endif %}
+                    </span>
+                </div>
+                
+                {% if session.admin_info.role == 'admin' %}
+                    <div class="info-row">
+                        <span class="info-label">🏢 Division:</span>
+                        <span class="info-value">{{ session.admin_info.division or 'Not assigned' }}</span>
+                    </div>
+                    
+                    <div class="info-row">
+                        <span class="info-label">🟢 Available for Chats:</span>
+                        <span class="info-value">
+                            {% if session.admin_info.is_available %}
+                                <span style="color: #28a745; font-weight: 600;">✅ Available</span>
+                            {% else %}
+                                <span style="color: #dc3545; font-weight: 600;">❌ Unavailable</span>
+                            {% endif %}
+                        </span>
+                    </div>
+                {% endif %}
+                
+                <div class="info-row">
+                    <span class="info-label">🕐 Last Login:</span>
+                    <span class="info-value">{{ session.admin_info.last_login[:19] if session.admin_info.last_login else 'Never' }}</span>
+                </div>
+                
+                <div class="info-row">
+                    <span class="info-label">📅 Account Created:</span>
+                    <span class="info-value">{{ session.admin_info.created_at[:19] if session.admin_info.created_at else 'Unknown' }}</span>
+                </div>
+            </div>
+            
+            <!-- Update Profile Section -->
+            <div class="update-section">
+                <h3>Update Profile Information</h3>
+                <form method="POST" action="{{ url_for('auth.update_profile') }}">
+                    <div class="form-group">
+                        <label for="full_name">Full Name:</label>
+                        <input type="text" id="full_name" name="full_name" 
+                               value="{{ session.admin_info.full_name or '' }}" 
+                               placeholder="Enter your full name" required>
+                    </div>
+                    
+                    {% if session.admin_info.role == 'admin' %}
+                    <div class="form-group">
+                        <label for="division">Division/Department:</label>
+                        <input type="text" id="division" name="division" 
+                               value="{{ session.admin_info.division or '' }}" 
+                               placeholder="e.g., Customer Support, Sales">
+                    </div>
+                    {% endif %}
+                    
+                    <button type="submit" class="btn btn-primary">💾 Update Profile</button>
+                </form>
+            </div>
+            
+            <!-- Availability Toggle for Admins -->
+            {% if session.admin_info.role == 'admin' %}
+            <div class="update-section">
+                <h3>Availability Settings</h3>
+                <p style="color: #6c757d; margin-bottom: 15px;">
+                    Control whether you can receive new chat assignments from users.
+                </p>
+                <form method="POST" action="{{ url_for('auth.change_availability') }}">
+                    <button type="submit" class="btn {{ 'btn-warning' if session.admin_info.is_available else 'btn-success' }}" style="width: auto;">
+                        {% if session.admin_info.is_available %}
+                            🔴 Set Unavailable
+                        {% else %}
+                            🟢 Set Available
+                        {% endif %}
+                    </button>
+                </form>
+            </div>
+            {% endif %}
+            
+            <!-- Navigation -->
+            <div style="margin-top: 30px; display: flex; gap: 10px; flex-wrap: wrap;">
+                <a href="{{ url_for('admin.dashboard') }}" class="btn btn-secondary" style="flex: 1; min-width: 150px;">🏠 Back to Dashboard</a>
+                <a href="{{ url_for('auth.logout') }}" class="btn" style="background: #dc3545; flex: 1; min-width: 150px;">🚪 Logout</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

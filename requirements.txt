@@ -1,0 +1,11 @@
+Flask
+python-telegram-bot
+SQLAlchemy
+pymysql
+python-dotenv
+Jinja2
+requests
+gunicorn
+PyJWT==2.8.0
+Werkzeug==2.3.7
+cryptography>=3.4.8

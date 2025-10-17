@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Login - Telegram</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/auth.css') }}">
+</head>
+<body>
+    <div class="auth-container">
+        <div class="auth-card">
+            <div class="telegram-logo">
+                <svg width="60" height="60" viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <linearGradient id="b" x1=".667" y1=".167" x2=".417" y2=".75">
+                            <stop stop-color="#37aee2"/>
+                            <stop offset="1" stop-color="#1e96c8"/>
+                        </linearGradient>
+                    </defs>
+                    <circle cx="120" cy="120" r="120" fill="url(#b)"/>
+                    <path d="m98 175c-3.888 0-3.227-1.468-4.568-5.17L82 132.207 170 80" fill="#c8daea"/>
+                    <path d="m98 175c3 0 4.325-1.372 6-3l16-15.558-19.958-12.035" fill="#a9c6d8"/>
+                    <path d="m100.04 144.41 48.36 35.729c5.519 3.045 9.501 1.468 10.876-5.123l19.685-92.763c2.015-8.08-3.08-11.746-8.36-9.349l-115.59 44.571c-7.89 3.165-7.843 7.567-1.438 9.528l29.663 9.259 68.673-43.325c3.242-1.966 6.218-.91 3.776 1.258" fill="#fff"/>
+                </svg>
+            </div>
+            
+            <h2>Admin Login</h2>
+            <p class="login-description">
+                Please login with your Telegram account to access the admin panel.
+                Only authorized administrators can access this system.
+            </p>
+            
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+            
+            <!-- Telegram Login Widget Container -->
+            <div class="telegram-login-container">
+                <!-- <script async src="https://telegram.org/js/telegram-widget.js?22" 
+                        data-telegram-login="{{ bot_username }}" 
+                        data-size="large" 
+                        data-auth-url="{{ url_for('auth.telegram_auth', _external=True) }}" 
+                        data-request-access="write">
+                </script> -->
+                <script async src="https://telegram.org/js/telegram-widget.js?22"
+                    data-telegram-login="{{ bot_username }}"
+                    data-size="large"
+                    data-auth-url="{{ url_for('auth.telegram_auth', _external=True) }}"
+                    data-request-access="write">
+                </script>
+
+            </div>
+            
+            <div class="login-info">
+                <h4>⚠️ Administrator Access Only</h4>
+                <ul>
+                    <li>✅ Super Administrators have full system access</li>
+                    <li>✅ Administrators can manage chats and users</li>
+                    <li>❌ Regular users cannot access this panel</li>
+                </ul>
+                
+            </div>
+        </div>
+    </div>
+
+    <!-- Check widget loading -->
+    <script>
+        console.log('Bot username:', '{{ bot_username }}');
+        console.log('Auth URL:', '{{ url_for("auth.telegram_auth", _external=True) }}');
+        
+        // Wait for widget to load and check
+        setTimeout(function() {
+            const iframe = document.querySelector('iframe');
+            const script = document.querySelector('script[data-telegram-login]');
+            
+            console.log('Widget iframe found:', !!iframe);
+            console.log('Widget script found:', !!script);
+            
+            if (iframe) {
+                console.log('Telegram widget loaded successfully');
+                console.log('Widget src:', iframe.src);
+            } else {
+                console.error('Telegram widget failed to load');
+                console.log('Possible issues:');
+                console.log('1. Bot domain not set in BotFather');
+                console.log('2. Bot username incorrect');
+                console.log('3. Network connectivity issues');
+            }
+        }, 3000);
+    </script>
+</body>
+</html>

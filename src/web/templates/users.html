@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Management - Telegram Bot Admin</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .users-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .page-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            border-radius: 20px;
+            margin-bottom: 30px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+        }
+
+        .page-header h1 {
+            font-size: 2.5em;
+            margin: 0 0 10px 0;
+            font-weight: 700;
+        }
+
+        .page-header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+            margin: 0;
+        }
+
+        .stats-overview {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+            text-align: center;
+            transition: transform 0.3s ease;
+            border-left: 5px solid;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .stat-card.total {
+            border-color: #667eea;
+        }
+
+        .stat-card.active {
+            border-color: #28a745;
+        }
+
+        .stat-card.inactive {
+            border-color: #dc3545;
+        }
+
+        .stat-card.recent {
+            border-color: #ffc107;
+        }
+
+        .stat-number {
+            font-size: 2.5em;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .stat-number.total { color: #667eea; }
+        .stat-number.active { color: #28a745; }
+        .stat-number.inactive { color: #dc3545; }
+        .stat-number.recent { color: #ffc107; }
+
+        .stat-label {
+            color: #6c757d;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 14px;
+            letter-spacing: 0.5px;
+        }
+
+        .controls-section {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+        }
+
+        .search-filters {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .search-box {
+            flex: 1;
+            min-width: 300px;
+            position: relative;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 12px 45px 12px 15px;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .search-icon {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #6c757d;
+            font-size: 18px;
+        }
+
+        .filter-select {
+            padding: 12px 15px;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            font-size: 14px;
+            background: white;
+            min-width: 150px;
+        }
+
+        .export-btn {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .export-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(40, 167, 69, 0.3);
+        }
+
+        .users-table-container {
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+        }
+
+        .table-header {
+            background: linear-gradient(135deg, #495057 0%, #343a40 100%);
+            color: white;
+            padding: 20px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .table-title {
+            font-size: 1.4em;
+            font-weight: 700;
+            margin: 0;
+        }
+
+        .results-count {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .users-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .users-table th {
+            background: #f8f9fa;
+            padding: 15px 20px;
+            text-align: left;
+            font-weight: 600;
+            color: #495057;
+            border-bottom: 2px solid #dee2e6;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .users-table td {
+            padding: 20px;
+            border-bottom: 1px solid #f1f3f4;
+            vertical-align: middle;
+        }
+
+        .users-table tbody tr {
+            transition: all 0.2s ease;
+        }
+
+        .users-table tbody tr:hover {
+            background: #f8f9fa;
+            transform: translateX(5px);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .user-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: 3px solid #e9ecef;
+            object-fit: cover;
+        }
+
+        .user-avatar-placeholder {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 18px;
+        }
+
+        .user-details h4 {
+            margin: 0 0 5px 0;
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .user-meta {
+            font-size: 13px;
+            color: #6c757d;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .telegram-id {
+            background: linear-gradient(135deg, #37aee2 0%, #1e96c8 100%);
+            color: white;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            display: inline-block;
+        }
+
+        .status-badge {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .status-active {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status-inactive {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .status-banned {
+            background: #f5c6cb;
+            color: #721c24;
+            border: 1px solid #f1b0b7;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-action {
+            padding: 8px 12px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .btn-view {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+
+        .btn-view:hover {
+            background: #bbdefb;
+        }
+
+        .btn-ban {
+            background: #ffebee;
+            color: #d32f2f;
+        }
+
+        .btn-ban:hover {
+            background: #ffcdd2;
+        }
+
+        .btn-message {
+            background: #f3e5f5;
+            color: #7b1fa2;
+        }
+
+        .btn-message:hover {
+            background: #e1bee7;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 30px;
+            gap: 10px;
+        }
+
+        .pagination-btn {
+            padding: 10px 15px;
+            border: 2px solid #dee2e6;
+            background: white;
+            color: #6c757d;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+
+        .pagination-btn:hover {
+            border-color: #667eea;
+            color: #667eea;
+        }
+
+        .pagination-btn.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .no-users {
+            text-align: center;
+            padding: 60px 20px;
+            color: #6c757d;
+        }
+
+        .no-users i {
+            font-size: 4em;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+
+        .no-users h3 {
+            margin: 0 0 10px 0;
+            font-size: 1.5em;
+        }
+
+        /* Mobile Responsiveness */
+        @media (max-width: 768px) {
+            .search-filters {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .search-box {
+                min-width: auto;
+            }
+
+            .users-table {
+                font-size: 14px;
+            }
+
+            .users-table th,
+            .users-table td {
+                padding: 10px;
+            }
+
+            .user-info {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+
+            .action-buttons {
+                flex-direction: column;
+            }
+
+            .table-header {
+                padding: 15px 20px;
+                flex-direction: column;
+                gap: 10px;
+                text-align: center;
+            }
+        }
+
+        /* Loading Animation */
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 60px;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    {% extends "base.html" %}
+
+    {% block title %}User Management - Telegram Bot Admin{% endblock %}
+
+    {% block content %}
+    <div class="users-container">
+        <!-- Page Header -->
+        <div class="page-header">
+            <h1><i class="fas fa-users"></i> User Management</h1>
+            <p>Manage and monitor all bot users from this centralized dashboard</p>
+        </div>
+
+        <!-- Statistics Overview -->
+        <div class="stats-overview">
+            <div class="stat-card total">
+                <div class="stat-number total" id="totalUsers">{{ users|length if users else 0 }}</div>
+                <div class="stat-label">Total Users</div>
+            </div>
+            <div class="stat-card active">
+                <div class="stat-number active" id="activeUsers">
+                    {{ users|selectattr("is_active")|list|length if users else 0 }}
+                </div>
+                <div class="stat-label">Active Users</div>
+            </div>
+            <div class="stat-card inactive">
+                <div class="stat-number inactive" id="inactiveUsers">
+                    {{ users|rejectattr("is_active")|list|length if users else 0 }}
+                </div>
+                <div class="stat-label">Inactive Users</div>
+            </div>
+            <div class="stat-card recent">
+                <div class="stat-number recent" id="recentUsers">
+                    {{ users|selectattr("created_at")|list|length if users else 0 }}
+                </div>
+                <div class="stat-label">This Month</div>
+            </div>
+        </div>
+
+        <!-- Search and Filters -->
+        <div class="controls-section">
+            <div class="search-filters">
+                <div class="search-box">
+                    <input type="text" class="search-input" id="searchInput" 
+                           placeholder="Search by name, username, or Telegram ID...">
+                    <i class="fas fa-search search-icon"></i>
+                </div>
+                
+                <select class="filter-select" id="statusFilter">
+                    <option value="">All Status</option>
+                    <option value="active">Active Only</option>
+                    <option value="inactive">Inactive Only</option>
+                    <option value="banned">Banned Only</option>
+                </select>
+                
+                <select class="filter-select" id="sortFilter">
+                    <option value="newest">Newest First</option>
+                    <option value="oldest">Oldest First</option>
+                    <option value="name">By Name</option>
+                    <option value="activity">By Activity</option>
+                </select>
+                
+                <button class="export-btn" onclick="exportUsers()">
+                    <i class="fas fa-download"></i>
+                    Export CSV
+                </button>
+            </div>
+        </div>
+
+        <!-- Users Table -->
+        <div class="users-table-container">
+            <div class="table-header">
+                <h3 class="table-title">
+                    <i class="fas fa-list"></i> All Users
+                </h3>
+                <div class="results-count" id="resultsCount">
+                    Showing {{ users|length if users else 0 }} users
+                </div>
+            </div>
+
+            {% if users and users|length > 0 %}
+                <table class="users-table" id="usersTable">
+                    <thead>
+                        <tr>
+                            <th><i class="fas fa-user"></i> User</th>
+                            <th><i class="fas fa-id-badge"></i> Telegram ID</th>
+                            <th><i class="fas fa-calendar"></i> Joined</th>
+                            <th><i class="fas fa-clock"></i> Last Active</th>
+                            <th><i class="fas fa-toggle-on"></i> Status</th>
+                            <th><i class="fas fa-cog"></i> Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="usersTableBody">
+                        {% for user in users %}
+                        <tr data-user-id="{{ user.id }}" 
+                            data-status="{{ 'active' if user.is_active else 'inactive' }}"
+                            data-name="{{ (user.first_name ~ ' ' ~ user.last_name)|trim|lower }}"
+                            data-username="{{ user.telegram_username|lower if user.telegram_username else '' }}"
+                            data-telegram-id="{{ user.telegram_id }}">
+                            
+                            <td>
+                                <div class="user-info">
+                                    {% if user.profile_picture %}
+                                        <img src="{{ user.profile_picture }}" alt="Avatar" class="user-avatar">
+                                    {% else %}
+                                        <div class="user-avatar-placeholder">
+                                            {{ user.first_name[0] if user.first_name else 'U' }}
+                                        </div>
+                                    {% endif %}
+                                    
+                                    <div class="user-details">
+                                        <h4>{{ (user.first_name ~ ' ' ~ user.last_name)|trim or 'Unknown User' }}</h4>
+                                        <div class="user-meta">
+                                            {% if user.telegram_username %}
+                                                <span><i class="fas fa-at"></i> @{{ user.telegram_username }}</span>
+                                            {% endif %}
+                                            <span><i class="fas fa-envelope"></i> {{ user.email or 'No email' }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                            
+                            <td>
+                                <span class="telegram-id">{{ user.telegram_id }}</span>
+                            </td>
+                            
+                            <td>
+                                <div>
+                                    <i class="fas fa-calendar-plus"></i>
+                                    {{ user.created_at.strftime('%Y-%m-%d') if user.created_at else 'Unknown' }}
+                                </div>
+                                <small style="color: #6c757d;">
+                                    {{ user.created_at.strftime('%H:%M') if user.created_at else '' }}
+                                </small>
+                            </td>
+                            
+                            <td>
+                                <div>
+                                    <i class="fas fa-clock"></i>
+                                    {{ user.last_activity.strftime('%Y-%m-%d') if user.last_activity else 'Never' }}
+                                </div>
+                                <small style="color: #6c757d;">
+                                    {{ user.last_activity.strftime('%H:%M') if user.last_activity else '' }}
+                                </small>
+                            </td>
+                            
+                            <td>
+                                <span class="status-badge status-{{ 'active' if user.is_active else 'inactive' }}">
+                                    {% if user.is_active %}
+                                        <i class="fas fa-check-circle"></i> Active
+                                    {% else %}
+                                        <i class="fas fa-times-circle"></i> Inactive
+                                    {% endif %}
+                                </span>
+                            </td>
+                            
+                            <td>
+                                <div class="action-buttons">
+                                    <button class="btn-action btn-view" onclick="viewUser({{ user.id }})" title="View Details">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    <button class="btn-action btn-message" onclick="messageUser({{ user.telegram_id }})" title="Send Message">
+                                        <i class="fas fa-paper-plane"></i>
+                                    </button>
+                                    {% if session.admin_info.role == 'super_admin' %}
+                                        <button class="btn-action btn-ban" onclick="toggleUserStatus({{ user.id }}, {{ user.is_active|lower }})" 
+                                                title="{{ 'Deactivate' if user.is_active else 'Activate' }}">
+                                            <i class="fas fa-{{ 'user-slash' if user.is_active else 'user-check' }}"></i>
+                                        </button>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+
+                <!-- Pagination -->
+                <div class="pagination" id="pagination">
+                    <!-- Pagination will be generated by JavaScript -->
+                </div>
+            {% else %}
+                <div class="no-users">
+                    <i class="fas fa-users-slash"></i>
+                    <h3>No Users Found</h3>
+                    <p>No users have interacted with the bot yet.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- User Details Modal (will be added later) -->
+    <div id="userModal" class="modal" style="display: none;">
+        <!-- Modal content will be populated by JavaScript -->
+    </div>
+
+    <script>
+        // Search and Filter Functionality
+        const searchInput = document.getElementById('searchInput');
+        const statusFilter = document.getElementById('statusFilter');
+        const sortFilter = document.getElementById('sortFilter');
+        const usersTable = document.getElementById('usersTableBody');
+        const resultsCount = document.getElementById('resultsCount');
+
+        let allRows = Array.from(usersTable?.querySelectorAll('tr') || []);
+        let currentPage = 1;
+        const itemsPerPage = 10;
+
+        // Search functionality
+        searchInput?.addEventListener('input', function() {
+            filterAndSort();
+        });
+
+        statusFilter?.addEventListener('change', function() {
+            filterAndSort();
+        });
+
+        sortFilter?.addEventListener('change', function() {
+            filterAndSort();
+        });
+
+        function filterAndSort() {
+            if (!usersTable) return;
+
+            const searchTerm = searchInput.value.toLowerCase();
+            const statusFilterValue = statusFilter.value;
+            
+            let filteredRows = allRows.filter(row => {
+                const name = row.dataset.name || '';
+                const username = row.dataset.username || '';
+                const telegramId = row.dataset.telegramId || '';
+                const status = row.dataset.status;
+
+                const matchesSearch = !searchTerm || 
+                    name.includes(searchTerm) || 
+                    username.includes(searchTerm) || 
+                    telegramId.includes(searchTerm);
+
+                const matchesStatus = !statusFilterValue || status === statusFilterValue;
+
+                return matchesSearch && matchesStatus;
+            });
+
+            // Sort filtered rows
+            const sortBy = sortFilter.value;
+            filteredRows.sort((a, b) => {
+                switch(sortBy) {
+                    case 'name':
+                        return a.dataset.name.localeCompare(b.dataset.name);
+                    case 'oldest':
+                        return new Date(a.querySelector('td:nth-child(3)').textContent) - 
+                               new Date(b.querySelector('td:nth-child(3)').textContent);
+                    case 'activity':
+                        const aActivity = a.querySelector('td:nth-child(4)').textContent;
+                        const bActivity = b.querySelector('td:nth-child(4)').textContent;
+                        return new Date(bActivity) - new Date(aActivity);
+                    default: // newest
+                        return new Date(b.querySelector('td:nth-child(3)').textContent) - 
+                               new Date(a.querySelector('td:nth-child(3)').textContent);
+                }
+            });
+
+            // Clear table and add filtered rows
+            usersTable.innerHTML = '';
+            filteredRows.forEach(row => {
+                usersTable.appendChild(row);
+            });
+
+            // Update results count
+            resultsCount.textContent = `Showing ${filteredRows.length} users`;
+
+            // Update pagination
+            updatePagination(filteredRows.length);
+        }
+
+        function updatePagination(totalItems) {
+            const pagination = document.getElementById('pagination');
+            if (!pagination) return;
+
+            const totalPages = Math.ceil(totalItems / itemsPerPage);
+            pagination.innerHTML = '';
+
+            if (totalPages <= 1) return;
+
+            // Previous button
+            const prevBtn = document.createElement('button');
+            prevBtn.className = 'pagination-btn';
+            prevBtn.innerHTML = '<i class="fas fa-chevron-left"></i>';
+            prevBtn.disabled = currentPage === 1;
+            prevBtn.onclick = () => goToPage(currentPage - 1);
+            pagination.appendChild(prevBtn);
+
+            // Page numbers
+            for (let i = 1; i <= Math.min(totalPages, 5); i++) {
+                const pageBtn = document.createElement('button');
+                pageBtn.className = `pagination-btn ${i === currentPage ? 'active' : ''}`;
+                pageBtn.textContent = i;
+                pageBtn.onclick = () => goToPage(i);
+                pagination.appendChild(pageBtn);
+            }
+
+            // Next button
+            const nextBtn = document.createElement('button');
+            nextBtn.className = 'pagination-btn';
+            nextBtn.innerHTML = '<i class="fas fa-chevron-right"></i>';
+            nextBtn.disabled = currentPage === totalPages;
+            nextBtn.onclick = () => goToPage(currentPage + 1);
+            pagination.appendChild(nextBtn);
+        }
+
+        function goToPage(page) {
+            currentPage = page;
+            // Implement pagination logic here
+            updatePagination(allRows.length);
+        }
+
+        // Action Functions
+        function viewUser(userId) {
+            // Implement user details modal
+            console.log('View user:', userId);
+            // You can implement a modal or redirect to user details page
+        }
+
+        function messageUser(telegramId) {
+            // Implement messaging functionality
+            const message = prompt('Enter message to send to user:');
+            if (message) {
+                // Send API request to send message
+                console.log('Send message to:', telegramId, 'Message:', message);
+            }
+        }
+
+        function toggleUserStatus(userId, currentStatus) {
+            const action = currentStatus ? 'deactivate' : 'activate';
+            if (confirm(`Are you sure you want to ${action} this user?`)) {
+                // Send API request to toggle user status
+                console.log('Toggle status for user:', userId);
+            }
+        }
+
+        function exportUsers() {
+            // Implement CSV export
+            console.log('Exporting users to CSV...');
+            // You can implement CSV generation and download here
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            if (allRows.length > 0) {
+                updatePagination(allRows.length);
+            }
+        });
+    </script>
+    {% endblock %}
+</body>
+</html>
