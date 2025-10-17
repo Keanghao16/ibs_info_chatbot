@@ -16,10 +16,14 @@ class User(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     telegram_id = Column(String(50), unique=True, nullable=False)
-    full_name = Column(String(255))
-    username = Column(String(255))
+    username = Column(String(255), nullable=True)
+    first_name = Column(String(255), nullable=True)
+    last_name = Column(String(255), nullable=True)
+    photo_url = Column(String(500), nullable=True)
+    full_name = Column(String(255), nullable=True)
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+    last_activity = Column(DateTime(timezone=True), nullable=True)
 
     sessions = relationship("ChatSession", back_populates="user")
     messages = relationship("ChatMessage", back_populates="user")
@@ -28,7 +32,7 @@ class Admin(Base):
     __tablename__ = "admins"
 
     id = Column(Integer, primary_key=True, index=True)
-    telegram_id = Column(String(50), unique=True, nullable=False)  # Now required for Telegram login
+    telegram_id = Column(String(50), unique=True, nullable=False)
     telegram_username = Column(String(255), nullable=True)
     telegram_first_name = Column(String(255), nullable=True)
     telegram_last_name = Column(String(255), nullable=True)
@@ -71,3 +75,43 @@ class ChatMessage(Base):
 
     user = relationship("User", back_populates="messages")
     admin = relationship("Admin")
+
+class SystemSettings(Base):
+    __tablename__ = "system_settings"
+
+    id = Column(Integer, primary_key=True, index=True)
+    # General Settings
+    system_name = Column(String(255), default="IBS Info Chatbot")
+    welcome_message = Column(Text, nullable=True)
+    support_email = Column(String(255), nullable=True)
+    max_chat_duration = Column(Integer, default=60)  # minutes
+    auto_assign_chats = Column(Boolean, default=True)
+    maintenance_mode = Column(Boolean, default=False)
+    
+    # Bot Settings
+    bot_username = Column(String(255), nullable=True)
+    response_timeout = Column(Integer, default=30)  # seconds
+    offline_message = Column(Text, nullable=True)
+    enable_file_uploads = Column(Boolean, default=True)
+    enable_typing_indicator = Column(Boolean, default=True)
+    
+    # Notification Settings
+    email_notifications = Column(Boolean, default=False)
+    notify_new_user = Column(Boolean, default=True)
+    notify_new_chat = Column(Boolean, default=True)
+    notify_unassigned_chat = Column(Boolean, default=True)
+    notification_email = Column(String(255), nullable=True)
+    
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+class FAQ(Base):
+    __tablename__ = "faqs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    question = Column(Text, nullable=False)
+    answer = Column(Text, nullable=False)
+    category = Column(String(100), default="general")
+    is_active = Column(Boolean, default=True)
+    order_index = Column(Integer, default=0)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())

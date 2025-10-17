@@ -1,0 +1,930 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Settings - Telegram Bot Admin</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .settings-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* Enhanced Page Header */
+        .page-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: black;
+            padding: 40px;
+            border-radius: 20px;
+            margin-bottom: 30px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+        }
+
+        .page-header h1 {
+            font-size: 2.5em;
+            margin: 0 0 10px 0;
+            font-weight: 700;
+        }
+
+        .page-header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+            margin: 0;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(5deg); }
+        }
+
+        .page-header-content {
+            position: relative;
+            z-index: 1;
+            text-align: center;
+        }
+
+        .page-header-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 80px;
+            height: 80px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            margin-bottom: 20px;
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .page-header-icon i {
+            font-size: 2.5em;
+            color: white;
+        }
+
+        .page-header h1 {
+            font-size: 2.8em;
+            margin: 0 0 15px 0;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .page-header p {
+            font-size: 1.3em;
+            opacity: 0.95;
+            margin: 0;
+        }
+
+        /* Settings Navigation */
+        .settings-nav {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .settings-nav-btn {
+            padding: 12px 24px;
+            border: 2px solid #e9ecef;
+            background: white;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .settings-nav-btn:hover {
+            border-color: #667eea;
+            color: #667eea;
+            transform: translateY(-2px);
+        }
+
+        .settings-nav-btn.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-color: transparent;
+        }
+
+        /* Settings Sections */
+        .settings-section {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+            display: none;
+        }
+
+        .settings-section.active {
+            display: block;
+        }
+
+        .section-title {
+            font-size: 1.8em;
+            font-weight: 700;
+            margin-bottom: 20px;
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .section-description {
+            color: #6c757d;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+
+        /* Form Styles */
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 10px;
+            color: #333;
+            font-weight: 600;
+            font-size: 16px;
+        }
+
+        .form-group input[type="text"],
+        .form-group input[type="email"],
+        .form-group input[type="number"],
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            box-sizing: border-box;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .form-group textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+
+        .form-help {
+            font-size: 13px;
+            color: #6c757d;
+            margin-top: 5px;
+        }
+
+        /* FAQ Items */
+        .faq-items {
+            margin-top: 20px;
+        }
+
+        .faq-item {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            border-left: 4px solid #667eea;
+        }
+
+        .faq-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .faq-question {
+            font-weight: 600;
+            color: #333;
+            font-size: 16px;
+        }
+
+        .faq-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-icon {
+            padding: 8px 12px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 14px;
+        }
+
+        .btn-edit {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .btn-edit:hover {
+            background: #ffe69c;
+        }
+
+        .btn-delete {
+            background: #ffebee;
+            color: #d32f2f;
+        }
+
+        .btn-delete:hover {
+            background: #ffcdd2;
+        }
+
+        .faq-answer {
+            color: #6c757d;
+            line-height: 1.6;
+            white-space: pre-wrap;
+        }
+
+        .btn-add-faq {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        .btn-add-faq:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(40, 167, 69, 0.3);
+        }
+
+        /* Toggle Switch */
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 30px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 30px;
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 22px;
+            width: 22px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .toggle-slider {
+            background-color: #28a745;
+        }
+
+        input:checked + .toggle-slider:before {
+            transform: translateX(30px);
+        }
+
+        .toggle-label {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        /* Save Button */
+        .btn-save {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 16px;
+        }
+
+        .btn-save:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 2000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            animation: fadeIn 0.3s ease;
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 5% auto;
+            padding: 30px;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 600px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            animation: slideDown 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideDown {
+            from { transform: translateY(-50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #e9ecef;
+        }
+
+        .modal-header h3 {
+            margin: 0;
+            color: #333;
+        }
+
+        .close {
+            color: #aaa;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: color 0.2s ease;
+        }
+
+        .close:hover {
+            color: #000;
+        }
+
+        /* Mobile Responsiveness */
+        @media (max-width: 768px) {
+            .page-header {
+                padding: 40px 25px;
+            }
+
+            .page-header h1 {
+                font-size: 2.2em;
+            }
+
+            .settings-nav {
+                flex-direction: column;
+            }
+
+            .settings-nav-btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    {% extends "base.html" %}
+
+    {% block title %}System Settings - Telegram Bot Admin{% endblock %}
+
+    {% block content %}
+    <div class="settings-container">
+        <!-- Page Header -->
+        <div class="page-header">
+            <h1><i class="fas fa-cog"></i>System Settings</h1>
+            <p>Configure bot behavior, FAQ, and system preferences</p>
+        </div>
+
+        <!-- Settings Navigation -->
+        <div class="settings-nav">
+            <button class="settings-nav-btn active" onclick="showSection('general')">
+                <i class="fas fa-sliders-h"></i>
+                General Settings
+            </button>
+            <button class="settings-nav-btn" onclick="showSection('faq')">
+                <i class="fas fa-question-circle"></i>
+                FAQ Management
+            </button>
+            <button class="settings-nav-btn" onclick="showSection('bot')">
+                <i class="fab fa-telegram"></i>
+                Bot Configuration
+            </button>
+            <button class="settings-nav-btn" onclick="showSection('notifications')">
+                <i class="fas fa-bell"></i>
+                Notifications
+            </button>
+        </div>
+
+        <!-- General Settings Section -->
+        <div class="settings-section active" id="general-section">
+            <h2 class="section-title">
+                <i class="fas fa-sliders-h"></i>
+                General Settings
+            </h2>
+            <p class="section-description">Configure general system settings and preferences</p>
+
+            <form method="POST" action="{{ url_for('admin.save_general_settings') }}">
+                <div class="form-group">
+                    <label for="system_name">System Name</label>
+                    <input type="text" id="system_name" name="system_name" 
+                           value="{{ settings.system_name if settings else 'IBS Info Chatbot' }}" required>
+                    <small class="form-help">The name displayed across the system</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="welcome_message">Welcome Message</label>
+                    <textarea id="welcome_message" name="welcome_message" 
+                              placeholder="Enter welcome message for new users...">{{ settings.welcome_message if settings else 'Welcome to our support bot! How can we help you today?' }}</textarea>
+                    <small class="form-help">Message sent to users when they start the bot</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="support_email">Support Email</label>
+                    <input type="email" id="support_email" name="support_email" 
+                           value="{{ settings.support_email if settings else '' }}" 
+                           placeholder="support@example.com">
+                    <small class="form-help">Email for support inquiries</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="max_chat_duration">Maximum Chat Duration (minutes)</label>
+                    <input type="number" id="max_chat_duration" name="max_chat_duration" 
+                           value="{{ settings.max_chat_duration if settings else 60 }}" 
+                           min="5" max="480">
+                    <small class="form-help">Auto-close chats after this duration of inactivity</small>
+                </div>
+
+                <div class="toggle-label">
+                    <label class="toggle-switch">
+                        <input type="checkbox" name="auto_assign_chats" 
+                               {{ 'checked' if settings and settings.auto_assign_chats else '' }}>
+                        <span class="toggle-slider"></span>
+                    </label>
+                    <div>
+                        <strong>Auto-assign Chats</strong>
+                        <p style="margin: 0; color: #6c757d; font-size: 14px;">Automatically assign new chats to available agents</p>
+                    </div>
+                </div>
+
+                <div class="toggle-label">
+                    <label class="toggle-switch">
+                        <input type="checkbox" name="maintenance_mode" 
+                               {{ 'checked' if settings and settings.maintenance_mode else '' }}>
+                        <span class="toggle-slider"></span>
+                    </label>
+                    <div>
+                        <strong>Maintenance Mode</strong>
+                        <p style="margin: 0; color: #6c757d; font-size: 14px;">Disable bot for regular users during maintenance</p>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-save">
+                    <i class="fas fa-save"></i>
+                    Save General Settings
+                </button>
+            </form>
+        </div>
+
+        <!-- FAQ Management Section -->
+        <div class="settings-section" id="faq-section">
+            <h2 class="section-title">
+                <i class="fas fa-question-circle"></i>
+                FAQ Management
+            </h2>
+            <p class="section-description">Manage frequently asked questions for your users</p>
+
+            <button class="btn-add-faq" onclick="showAddFAQModal()">
+                <i class="fas fa-plus-circle"></i>
+                Add New FAQ
+            </button>
+
+            <!-- Category Filter -->
+            <div style="margin-bottom: 20px;">
+                <select class="filter-select" id="categoryFilter" onchange="filterFAQsByCategory()">
+                    <option value="">All Categories</option>
+                    {% for category in categories %}
+                        <option value="{{ category }}">{{ category.replace('_', ' ').title() }}</option>
+                    {% endfor %}
+                </select>
+                <span style="margin-left: 15px; color: #6c757d;">
+                    Total: <strong id="faqCount">{{ faqs|length }}</strong> FAQs
+                </span>
+            </div>
+
+            <div class="faq-items" id="faq-items">
+                {% if faqs and faqs|length > 0 %}
+                    {% for faq in faqs %}
+                    <div class="faq-item" data-id="{{ faq.id }}" data-category="{{ faq.category }}" 
+                         {% if not faq.is_active %}style="opacity: 0.6;"{% endif %}>
+                        <div class="faq-item-header">
+                            <div class="faq-question">
+                                {% if not faq.is_active %}
+                                    <span style="color: #dc3545; margin-right: 5px;">🔴</span>
+                                {% else %}
+                                    <span style="color: #28a745; margin-right: 5px;">🟢</span>
+                                {% endif %}
+                                {{ faq.question }}
+                                <span style="background: #e9ecef; padding: 2px 8px; border-radius: 10px; font-size: 11px; margin-left: 10px;">
+                                    {{ faq.category.replace('_', ' ').title() }}
+                                </span>
+                            </div>
+                            <div class="faq-actions">
+                                <button class="btn-icon btn-edit" onclick='editFAQ({{ faq.id }}, {{ faq|tojson }})' title="Edit">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn-icon btn-delete" onclick="deleteFAQ('{{ faq.id }}')" title="Delete">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="faq-answer">{{ faq.answer }}</div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div style="text-align: center; padding: 40px; color: #6c757d;">
+                        <i class="fas fa-question-circle" style="font-size: 3em; margin-bottom: 15px; opacity: 0.5;"></i>
+                        <h3>No FAQs Available</h3>
+                        <p>Click "Add New FAQ" to create your first FAQ entry.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Bot Configuration Section -->
+        <div class="settings-section" id="bot-section">
+            <h2 class="section-title">
+                <i class="fab fa-telegram"></i>
+                Bot Configuration
+            </h2>
+            <p class="section-description">Configure Telegram bot behavior and responses</p>
+
+            <form method="POST" action="{{ url_for('admin.save_bot_settings') }}">
+                <div class="form-group">
+                    <label for="bot_username">Bot Username</label>
+                    <input type="text" id="bot_username" name="bot_username" 
+                           value="{{ settings.bot_username if settings else '@YourBotUsername' }}" readonly>
+                    <small class="form-help">Your Telegram bot username (read-only)</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="response_timeout">Response Timeout (seconds)</label>
+                    <input type="number" id="response_timeout" name="response_timeout" 
+                           value="{{ settings.response_timeout if settings else 30 }}" 
+                           min="10" max="300">
+                    <small class="form-help">Time to wait for agent response before showing warning</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="offline_message">Offline Message</label>
+                    <textarea id="offline_message" name="offline_message" 
+                              placeholder="Message when no agents are available...">{{ settings.offline_message if settings else 'All our agents are currently busy. Please try again later or leave a message.' }}</textarea>
+                    <small class="form-help">Message shown when no agents are available</small>
+                </div>
+
+                <div class="toggle-label">
+                    <label class="toggle-switch">
+                        <input type="checkbox" name="enable_file_uploads" 
+                               {{ 'checked' if settings and settings.enable_file_uploads else 'checked' }}>
+                        <span class="toggle-slider"></span>
+                    </label>
+                    <div>
+                        <strong>Enable File Uploads</strong>
+                        <p style="margin: 0; color: #6c757d; font-size: 14px;">Allow users to send files and images</p>
+                    </div>
+                </div>
+
+                <div class="toggle-label">
+                    <label class="toggle-switch">
+                        <input type="checkbox" name="enable_typing_indicator" 
+                               {{ 'checked' if settings and settings.enable_typing_indicator else 'checked' }}>
+                        <span class="toggle-slider"></span>
+                    </label>
+                    <div>
+                        <strong>Typing Indicator</strong>
+                        <p style="margin: 0; color: #6c757d; font-size: 14px;">Show typing indicator when agent is responding</p>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-save">
+                    <i class="fas fa-save"></i>
+                    Save Bot Settings
+                </button>
+            </form>
+        </div>
+
+        <!-- Notifications Section -->
+        <div class="settings-section" id="notifications-section">
+            <h2 class="section-title">
+                <i class="fas fa-bell"></i>
+                Notification Settings
+            </h2>
+            <p class="section-description">Configure email and push notifications</p>
+
+            <form method="POST" action="{{ url_for('admin.save_notification_settings') }}">
+                <div class="toggle-label">
+                    <label class="toggle-switch">
+                        <input type="checkbox" name="email_notifications" 
+                               {{ 'checked' if settings and settings.email_notifications else '' }}>
+                        <span class="toggle-slider"></span>
+                    </label>
+                    <div>
+                        <strong>Email Notifications</strong>
+                        <p style="margin: 0; color: #6c757d; font-size: 14px;">Send email notifications for important events</p>
+                    </div>
+                </div>
+
+                <div class="toggle-label">
+                    <label class="toggle-switch">
+                        <input type="checkbox" name="notify_new_user" 
+                               {{ 'checked' if settings and settings.notify_new_user else 'checked' }}>
+                        <span class="toggle-slider"></span>
+                    </label>
+                    <div>
+                        <strong>New User Registration</strong>
+                        <p style="margin: 0; color: #6c757d; font-size: 14px;">Notify admins when new users register</p>
+                    </div>
+                </div>
+
+                <div class="toggle-label">
+                    <label class="toggle-switch">
+                        <input type="checkbox" name="notify_new_chat" 
+                               {{ 'checked' if settings and settings.notify_new_chat else 'checked' }}>
+                        <span class="toggle-slider"></span>
+                    </label>
+                    <div>
+                        <strong>New Chat Session</strong>
+                        <p style="margin: 0; color: #6c757d; font-size: 14px;">Notify agents when new chat sessions start</p>
+                    </div>
+                </div>
+
+                <div class="toggle-label">
+                    <label class="toggle-switch">
+                        <input type="checkbox" name="notify_unassigned_chat" 
+                               {{ 'checked' if settings and settings.notify_unassigned_chat else 'checked' }}>
+                        <span class="toggle-slider"></span>
+                    </label>
+                    <div>
+                        <strong>Unassigned Chats</strong>
+                        <p style="margin: 0; color: #6c757d; font-size: 14px;">Alert admins about unassigned chat sessions</p>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="notification_email">Notification Email Address</label>
+                    <input type="email" id="notification_email" name="notification_email" 
+                           value="{{ settings.notification_email if settings else '' }}" 
+                           placeholder="admin@example.com">
+                    <small class="form-help">Primary email for system notifications</small>
+                </div>
+
+                <button type="submit" class="btn-save">
+                    <i class="fas fa-save"></i>
+                    Save Notification Settings
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add/Edit FAQ Modal -->
+    <div id="faqModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalTitle">
+                    <i class="fas fa-plus-circle"></i> Add New FAQ
+                </h3>
+                <span class="close" onclick="closeFAQModal()">&times;</span>
+            </div>
+            <form id="faqForm" method="POST" action="{{ url_for('admin.save_faq') }}">
+                <input type="hidden" id="faq_id" name="faq_id">
+                
+                <div class="form-group">
+                    <label for="faq_question">Question *</label>
+                    <input type="text" id="faq_question" name="question" required 
+                           placeholder="Enter the FAQ question...">
+                </div>
+                
+                <div class="form-group">
+                    <label for="faq_answer">Answer *</label>
+                    <textarea id="faq_answer" name="answer" required 
+                              placeholder="Enter the detailed answer..."></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="faq_category">Category</label>
+                    <select id="faq_category" name="category">
+                        <option value="general">General</option>
+                        <option value="technical">Technical Support</option>
+                        <option value="billing">Billing</option>
+                        <option value="account">Account</option>
+                        <option value="getting_started">Getting Started</option>
+                        <option value="troubleshooting">Troubleshooting</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="order_index">Display Order</label>
+                    <input type="number" id="order_index" name="order_index" value="0" min="0">
+                    <small class="form-help">Lower numbers appear first (0 = highest priority)</small>
+                </div>
+
+                <div class="toggle-label">
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="faq_active" name="is_active" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                    <div>
+                        <strong>Active</strong>
+                        <p style="margin: 0; color: #6c757d; font-size: 14px;">Show this FAQ to users in the bot</p>
+                    </div>
+                </div>
+                
+                <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 25px;">
+                    <button type="button" class="btn-icon" onclick="closeFAQModal()" 
+                            style="padding: 12px 20px; background: #6c757d; color: white;">
+                        <i class="fas fa-times"></i> Cancel
+                    </button>
+                    <button type="submit" class="btn-save">
+                        <i class="fas fa-save"></i> Save FAQ
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Section Navigation
+        function showSection(sectionName) {
+            // Hide all sections
+            document.querySelectorAll('.settings-section').forEach(section => {
+                section.classList.remove('active');
+            });
+            
+            // Remove active class from all buttons
+            document.querySelectorAll('.settings-nav-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Show selected section
+            document.getElementById(sectionName + '-section').classList.add('active');
+            
+            // Add active class to clicked button
+            event.target.classList.add('active');
+        }
+
+        // FAQ Modal Functions
+        function showAddFAQModal() {
+            document.getElementById('modalTitle').innerHTML = '<i class="fas fa-plus-circle"></i> Add New FAQ';
+            document.getElementById('faq_id').value = '';
+            document.getElementById('faq_question').value = '';
+            document.getElementById('faq_answer').value = '';
+            document.getElementById('faq_category').value = 'general';
+            document.getElementById('order_index').value = 0;
+            document.getElementById('faq_active').checked = true;
+            document.getElementById('faqModal').style.display = 'block';
+        }
+
+        function editFAQ(faqId, faqData) {
+            document.getElementById('modalTitle').innerHTML = '<i class="fas fa-edit"></i> Edit FAQ';
+            document.getElementById('faq_id').value = faqId;
+            document.getElementById('faq_question').value = faqData.question;
+            document.getElementById('faq_answer').value = faqData.answer;
+            document.getElementById('faq_category').value = faqData.category;
+            document.getElementById('order_index').value = faqData.order_index || 0;
+            document.getElementById('faq_active').checked = faqData.is_active;
+            document.getElementById('faqModal').style.display = 'block';
+        }
+
+        function closeFAQModal() {
+            document.getElementById('faqModal').style.display = 'none';
+        }
+
+        function deleteFAQ(faqId) {
+            if (confirm('Are you sure you want to delete this FAQ?')) {
+                fetch(`/admin/delete-faq/${faqId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        document.querySelector(`.faq-item[data-id="${faqId}"]`).remove();
+                        alert('FAQ deleted successfully!');
+                    } else {
+                        alert('Failed to delete FAQ: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('An error occurred while deleting the FAQ.');
+                });
+            }
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('faqModal');
+            if (event.target == modal) {
+                modal.style.display = 'none';
+            }
+        }
+
+        // Form submission handling
+        document.getElementById('faqForm')?.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            
+            fetch(this.action, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('FAQ saved successfully!');
+                    closeFAQModal();
+                    location.reload();
+                } else {
+                    alert('Failed to save FAQ: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while saving the FAQ.');
+            });
+        });
+
+        // Filter FAQs by Category
+        function filterFAQsByCategory() {
+            const category = document.getElementById('categoryFilter').value;
+            const faqItems = document.querySelectorAll('.faq-item');
+            let visibleCount = 0;
+            
+            faqItems.forEach(item => {
+                if (!category || item.dataset.category === category) {
+                    item.style.display = 'block';
+                    visibleCount++;
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+            
+            document.getElementById('faqCount').textContent = visibleCount;
+        }
+    </script>
+    {% endblock %}
+</body>
+</html>
