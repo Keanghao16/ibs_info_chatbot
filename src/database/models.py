@@ -104,14 +104,33 @@ class SystemSettings(Base):
     
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
+class FAQCategory(Base):
+    __tablename__ = "faq_categories"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(100), nullable=False)  # Display name
+    slug = Column(String(100), unique=True, nullable=False)  # URL-friendly identifier
+    description = Column(Text, nullable=True)
+    icon = Column(String(50), nullable=True)  # Emoji or icon class
+    is_active = Column(Boolean, default=True)
+    order_index = Column(Integer, default=0)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    
+    # Relationship
+    faqs = relationship("FAQ", back_populates="faq_category", cascade="all, delete-orphan")
+
 class FAQ(Base):
     __tablename__ = "faqs"
 
     id = Column(Integer, primary_key=True, index=True)
     question = Column(Text, nullable=False)
     answer = Column(Text, nullable=False)
-    category = Column(String(100), default="general")
+    category_id = Column(Integer, ForeignKey('faq_categories.id'), nullable=False)  # Foreign key to FAQCategory
     is_active = Column(Boolean, default=True)
     order_index = Column(Integer, default=0)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    
+    # Relationship
+    faq_category = relationship("FAQCategory", back_populates="faqs")

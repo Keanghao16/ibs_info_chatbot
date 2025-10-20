@@ -3,6 +3,7 @@ from ...database.connection import SessionLocal
 from ...database.models import User, ChatSession, Admin, ChatMessage, AdminRole, SystemSettings, FAQ
 from ...services.auth_service import AuthService
 from ...services.faq_service import FAQService
+from sqlalchemy.orm import joinedload
 from .auth import login_required, super_admin_required, any_admin_required
 
 admin_bp = Blueprint('admin', __name__)
@@ -301,29 +302,177 @@ def system_settings():
             db.commit()
             db.refresh(settings)
         
-        # Get all FAQs (both active and inactive for admin view)
-        faqs = db.query(FAQ).order_by(FAQ.category, FAQ.order_index, FAQ.created_at).all()
+        # Get all FAQs with their categories
+        faqs = db.query(FAQ).options(joinedload(FAQ.faq_category)).order_by(
+            FAQ.order_index, 
+            FAQ.created_at
+        ).all()
         
-        # Get categories
+        # Get categories using the service
         faq_service = FAQService()
-        categories = faq_service.get_all_categories(db)
+        categories = faq_service.get_all_faq_categories(db)
         
-        # Convert FAQs to dictionaries for JSON serialization in template
+        # Convert FAQs to dictionaries
         faqs_dict = [{
             'id': faq.id,
             'question': faq.question,
             'answer': faq.answer,
-            'category': faq.category,
+            'category_id': faq.category_id,
+            'category_slug': faq.faq_category.slug if faq.faq_category else None,
+            'category_name': faq.faq_category.name if faq.faq_category else 'Unknown',
+            'category_icon': faq.faq_category.icon if faq.faq_category else '📁',
             'is_active': faq.is_active,
             'order_index': faq.order_index,
             'created_at': faq.created_at.isoformat() if faq.created_at else None,
             'updated_at': faq.updated_at.isoformat() if faq.updated_at else None
         } for faq in faqs]
         
+        # Convert categories to dictionaries
+        categories_dict = [{
+            'id': cat.id,
+            'name': cat.name,
+            'slug': cat.slug,
+            'description': cat.description,
+            'icon': cat.icon,
+            'is_active': cat.is_active,
+            'order_index': cat.order_index,
+            'faq_count': faq_service.get_category_faq_count(db, cat.id)
+        } for cat in categories]
+        
         return render_template('system_settings.html', 
                              settings=settings, 
                              faqs=faqs_dict,
-                             categories=categories)
+                             categories=categories_dict)
+    finally:
+        db.close()
+
+# Category CRUD Routes
+
+@admin_bp.route('/admin/save-category', methods=['POST'])
+@super_admin_required
+def save_category():
+    """Create or update FAQ category"""
+    db = SessionLocal()
+    try:
+        faq_service = FAQService()
+        category_id = request.form.get('category_id')
+        name = request.form.get('name')
+        slug = request.form.get('slug')
+        description = request.form.get('description')
+        icon = request.form.get('icon', '📁')
+        is_active = 'is_active' in request.form
+        order_index = int(request.form.get('order_index', 0))
+        
+        if category_id:
+            # Update existing category
+            try:
+                category = faq_service.update_category(
+                    db=db,
+                    category_id=int(category_id),
+                    name=name,
+                    slug=slug,
+                    description=description,
+                    icon=icon,
+                    is_active=is_active,
+                    order_index=order_index
+                )
+                if not category:
+                    return jsonify({'success': False, 'message': 'Category not found'})
+                    
+                return jsonify({
+                    'success': True,
+                    'message': 'Category updated successfully',
+                    'category': {
+                        'id': category.id,
+                        'name': category.name,
+                        'slug': category.slug,
+                        'description': category.description,
+                        'icon': category.icon,
+                        'is_active': category.is_active
+                    }
+                })
+            except ValueError as e:
+                return jsonify({'success': False, 'message': str(e)})
+        else:
+            # Create new category
+            try:
+                category = faq_service.create_category(
+                    db=db,
+                    name=name,
+                    slug=slug,
+                    description=description,
+                    icon=icon,
+                    is_active=is_active,
+                    order_index=order_index
+                )
+                
+                return jsonify({
+                    'success': True,
+                    'message': 'Category created successfully',
+                    'category': {
+                        'id': category.id,
+                        'name': category.name,
+                        'slug': category.slug,
+                        'description': category.description,
+                        'icon': category.icon,
+                        'is_active': category.is_active
+                    }
+                })
+            except ValueError as e:
+                return jsonify({'success': False, 'message': str(e)})
+        
+    except Exception as e:
+        print(f"Error saving category: {e}")
+        return jsonify({'success': False, 'message': 'Error saving category'})
+    finally:
+        db.close()
+
+@admin_bp.route('/admin/delete-category/<int:category_id>', methods=['DELETE'])
+@super_admin_required
+def delete_category(category_id):
+    """Delete FAQ category"""
+    db = SessionLocal()
+    try:
+        faq_service = FAQService()
+        
+        try:
+            success = faq_service.delete_category(db, category_id)
+            
+            if not success:
+                return jsonify({'success': False, 'message': 'Category not found'})
+            
+            return jsonify({'success': True, 'message': 'Category deleted successfully'})
+        except ValueError as e:
+            return jsonify({'success': False, 'message': str(e)})
+        
+    except Exception as e:
+        print(f"Error deleting category: {e}")
+        return jsonify({'success': False, 'message': 'Error deleting category'})
+    finally:
+        db.close()
+
+@admin_bp.route('/admin/api/categories')
+@super_admin_required
+def get_categories():
+    """API endpoint to get all categories"""
+    db = SessionLocal()
+    try:
+        faq_service = FAQService()
+        categories = faq_service.get_all_faq_categories(db)
+        
+        return jsonify({
+            'success': True,
+            'categories': [{
+                'id': cat.id,
+                'name': cat.name,
+                'slug': cat.slug,
+                'description': cat.description,
+                'icon': cat.icon,
+                'is_active': cat.is_active,
+                'order_index': cat.order_index,
+                'faq_count': faq_service.get_category_faq_count(db, cat.slug)
+            } for cat in categories]
+        })
     finally:
         db.close()
 
@@ -418,48 +567,53 @@ def save_faq():
         faq_id = request.form.get('faq_id')
         question = request.form.get('question')
         answer = request.form.get('answer')
-        category = request.form.get('category', 'general')
+        category_id = int(request.form.get('category_id'))  # Changed from category to category_id
         is_active = 'is_active' in request.form
         order_index = int(request.form.get('order_index', 0))
         
-        if faq_id:
-            # Update existing FAQ
-            faq = faq_service.update_faq(
-                db=db,
-                faq_id=int(faq_id),
-                question=question,
-                answer=answer,
-                category=category,
-                is_active=is_active,
-                order_index=order_index
-            )
-            if not faq:
-                return jsonify({'success': False, 'message': 'FAQ not found'})
-        else:
-            # Create new FAQ
-            faq = faq_service.create_faq(
-                db=db,
-                question=question,
-                answer=answer,
-                category=category,
-                is_active=is_active,
-                order_index=order_index
-            )
-        
-        return jsonify({
-            'success': True, 
-            'message': 'FAQ saved successfully',
-            'faq': {
-                'id': faq.id,
-                'question': faq.question,
-                'answer': faq.answer,
-                'category': faq.category,
-                'is_active': faq.is_active
-            }
-        })
+        try:
+            if faq_id:
+                # Update existing FAQ
+                faq = faq_service.update_faq(
+                    db=db,
+                    faq_id=int(faq_id),
+                    question=question,
+                    answer=answer,
+                    category_id=category_id,
+                    is_active=is_active,
+                    order_index=order_index
+                )
+                if not faq:
+                    return jsonify({'success': False, 'message': 'FAQ not found'})
+            else:
+                # Create new FAQ
+                faq = faq_service.create_faq(
+                    db=db,
+                    question=question,
+                    answer=answer,
+                    category_id=category_id,
+                    is_active=is_active,
+                    order_index=order_index
+                )
+            
+            return jsonify({
+                'success': True, 
+                'message': 'FAQ saved successfully',
+                'faq': {
+                    'id': faq.id,
+                    'question': faq.question,
+                    'answer': faq.answer,
+                    'category_id': faq.category_id,
+                    'is_active': faq.is_active
+                }
+            })
+        except ValueError as e:
+            return jsonify({'success': False, 'message': str(e)})
         
     except Exception as e:
         print(f"Error saving FAQ: {e}")
+        import traceback
+        traceback.print_exc()
         return jsonify({'success': False, 'message': 'Error saving FAQ'})
     finally:
         db.close()
@@ -485,14 +639,14 @@ def delete_faq(faq_id):
         db.close()
 
 # Add new route to get FAQs by category (API endpoint)
-@admin_bp.route('/admin/api/faqs/<category>')
+@admin_bp.route('/admin/api/faqs/<int:category_id>')
 @super_admin_required
-def get_faqs_by_category(category):
-    """API endpoint to get FAQs by category"""
+def get_faqs_by_category(category_id):
+    """API endpoint to get FAQs by category ID"""
     db = SessionLocal()
     try:
         faq_service = FAQService()
-        faqs = faq_service.get_faqs_by_category(db, category)
+        faqs = faq_service.get_faqs_by_category(db, category_id)
         
         return jsonify({
             'success': True,
@@ -500,7 +654,7 @@ def get_faqs_by_category(category):
                 'id': faq.id,
                 'question': faq.question,
                 'answer': faq.answer,
-                'category': faq.category,
+                'category_id': faq.category_id,
                 'is_active': faq.is_active,
                 'order_index': faq.order_index
             } for faq in faqs]

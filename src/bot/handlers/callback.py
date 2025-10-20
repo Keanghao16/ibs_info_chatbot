@@ -69,7 +69,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         elif query.data == "faq":
             # Get FAQ categories dynamically
             faq_service = FAQService()
-            categories = faq_service.get_all_categories(db)
+            categories = faq_service.get_active_faq_categories(db)
             
             if not categories:
                 await query.edit_message_text(
@@ -86,12 +86,11 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             keyboard = []
             for category in categories:
                 # Count FAQs in this category
-                faqs_count = len(faq_service.get_faqs_by_category(db, category))
-                category_label = category.replace('_', ' ').title()
+                faqs_count = faq_service.get_category_faq_count(db, category.id)
                 keyboard.append([
                     InlineKeyboardButton(
-                        f"📁 {category_label} ({faqs_count})",
-                        callback_data=f'faq_cat_{category}'
+                        f"{category.icon or '📁'} {category.name} ({faqs_count})",
+                        callback_data=f'faq_cat_{category.id}'
                     )
                 ])
             
@@ -110,13 +109,25 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         elif query.data.startswith("faq_cat_"):
             # Show FAQs for selected category
-            category = query.data.replace("faq_cat_", "")
+            category_id = int(query.data.replace("faq_cat_", ""))
             faq_service = FAQService()
-            faqs = faq_service.get_faqs_by_category(db, category)
+            
+            # Get category
+            category = faq_service.get_category_by_id(db, category_id)
+            if not category:
+                await query.edit_message_text(
+                    "❌ Category not found.",
+                    reply_markup=InlineKeyboardMarkup([
+                        [InlineKeyboardButton("🔙 Back to FAQ", callback_data='faq')]
+                    ])
+                )
+                return
+            
+            faqs = faq_service.get_faqs_by_category(db, category_id)
             
             if not faqs:
                 await query.edit_message_text(
-                    f"📚 **{category.replace('_', ' ').title()}**\n\n"
+                    f"📚 **{category.name}**\n\n"
                     "No FAQs found in this category.",
                     parse_mode='Markdown',
                     reply_markup=InlineKeyboardMarkup([
@@ -140,8 +151,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             keyboard.append([InlineKeyboardButton("🔙 Back to FAQ Categories", callback_data='faq')])
             keyboard.append([InlineKeyboardButton("🏠 Main Menu", callback_data='back_to_main')])
             
-            category_label = category.replace('_', ' ').title()
-            text = f"📚 **{category_label}**\n\n"
+            text = f"{category.icon or '📁'} **{category.name}**\n\n"
             text += f"Found {len(faqs)} FAQ(s) in this category. Select a question:"
             
             await query.edit_message_text(
@@ -153,9 +163,10 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         elif query.data.startswith("faq_view_"):
             # Show specific FAQ answer
             faq_id = int(query.data.replace("faq_view_", ""))
-            faq = db.query(FAQ).filter(FAQ.id == faq_id).first()
+            faq_service = FAQService()
+            faq = faq_service.get_faq_by_id(db, faq_id)
             
-            if not faq:
+            if not faq or not faq.faq_category:
                 await query.edit_message_text(
                     "❌ FAQ not found.",
                     reply_markup=InlineKeyboardMarkup([
@@ -169,11 +180,10 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             answer_text += faq.answer
             
             # Add category tag
-            category_label = faq.category.replace('_', ' ').title()
-            answer_text += f"\n\n📁 Category: {category_label}"
+            answer_text += f"\n\n{faq.faq_category.icon or '📁'} Category: {faq.faq_category.name}"
             
             keyboard = [
-                [InlineKeyboardButton("🔙 Back to Category", callback_data=f'faq_cat_{faq.category}')],
+                [InlineKeyboardButton("🔙 Back to Category", callback_data=f'faq_cat_{faq.category_id}')],
                 [InlineKeyboardButton("📚 All FAQs", callback_data='faq')],
                 [InlineKeyboardButton("🏠 Main Menu", callback_data='back_to_main')]
             ]
