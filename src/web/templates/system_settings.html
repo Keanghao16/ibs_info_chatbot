@@ -754,8 +754,8 @@
                     <div class="faq-item" 
                          data-id="{{ faq.id }}" 
                          data-category="{{ faq.category_id }}"
-                         data-question="{{ faq.question }}"
-                         data-answer="{{ faq.answer }}"
+                         data-question="{{ faq.question|replace('"', '&quot;') }}"
+                         data-answer="{{ faq.answer|replace('"', '&quot;')|replace('\n', '&#10;') }}"
                          data-order="{{ faq.order_index }}"
                          data-active="{{ 'true' if faq.is_active else 'false' }}"
                          {% if not faq.is_active %}style="opacity: 0.6;"{% endif %}>
@@ -1108,24 +1108,31 @@
             document.getElementById('order_index').value = 0;
             document.getElementById('faq_active').checked = true;
             document.getElementById('faqModal').style.display = 'block';
-            document.body.classList.add('modal-open'); // Prevent body scroll
+            document.body.classList.add('modal-open');
         }
 
-        function editFAQ(faqId, faqData) {
+        function editFAQById(faqId) {
+            const faqItem = document.querySelector(`.faq-item[data-id="${faqId}"]`);
+            
+            if (!faqItem) {
+                alert('FAQ not found');
+                return;
+            }
+            
             document.getElementById('modalTitle').innerHTML = '<i class="fas fa-edit"></i> Edit FAQ';
             document.getElementById('faq_id').value = faqId;
-            document.getElementById('faq_question').value = faqData.question;
-            document.getElementById('faq_answer').value = faqData.answer;
-            document.getElementById('faq_category').value = faqData.category;
-            document.getElementById('order_index').value = faqData.order_index || 0;
-            document.getElementById('faq_active').checked = faqData.is_active;
+            document.getElementById('faq_question').value = faqItem.dataset.question;
+            document.getElementById('faq_answer').value = faqItem.dataset.answer;
+            document.getElementById('faq_category').value = faqItem.dataset.category;
+            document.getElementById('order_index').value = faqItem.dataset.order || 0;
+            document.getElementById('faq_active').checked = faqItem.dataset.active === 'true';
             document.getElementById('faqModal').style.display = 'block';
-            document.body.classList.add('modal-open'); // Prevent body scroll
+            document.body.classList.add('modal-open');
         }
 
         function closeFAQModal() {
             document.getElementById('faqModal').style.display = 'none';
-            document.body.classList.remove('modal-open'); // Re-enable body scroll
+            document.body.classList.remove('modal-open');
         }
 
         function deleteFAQ(faqId) {
@@ -1137,9 +1144,12 @@
                     }
                 })
                 .then(response => response.json())
-                .then(data => {  // Fixed: was "then data =>"
+                .then(data => {
                     if (data.success) {
-                        document.querySelector(`.faq-item[data-id="${faqId}"]`).remove();
+                        const faqItem = document.querySelector(`#faq-items .faq-item[data-id="${faqId}"]`);
+                        if (faqItem) {
+                            faqItem.remove();
+                        }
                         
                         // Update FAQ count
                         const currentCount = parseInt(document.getElementById('faqCount').textContent);
@@ -1168,7 +1178,7 @@
             document.getElementById('category_order').value = 0;
             document.getElementById('category_active').checked = true;
             document.getElementById('categoryModal').style.display = 'block';
-            document.body.classList.add('modal-open'); // Prevent body scroll
+            document.body.classList.add('modal-open');
         }
 
         function editCategory(categoryId, categoryData) {
@@ -1181,46 +1191,50 @@
             document.getElementById('category_order').value = categoryData.order_index || 0;
             document.getElementById('category_active').checked = categoryData.is_active;
             document.getElementById('categoryModal').style.display = 'block';
-            document.body.classList.add('modal-open'); // Prevent body scroll
+            document.body.classList.add('modal-open');
         }
 
         function closeCategoryModal() {
             document.getElementById('categoryModal').style.display = 'none';
-            document.body.classList.remove('modal-open'); // Re-enable body scroll
+            document.body.classList.remove('modal-open');
         }
 
-        function deleteFAQ(faqId) {
-            if (confirm('Are you sure you want to delete this FAQ?')) {
-                fetch(`/admin/delete-faq/${faqId}`, {
+        function deleteCategory(categoryId) {
+            if (confirm('Are you sure you want to delete this category?\n\nNote: You cannot delete categories that have FAQs assigned to them.')) {
+                fetch(`/admin/delete-category/${categoryId}`, {
                     method: 'DELETE',
                     headers: {
                         'Content-Type': 'application/json',
                     }
                 })
                 .then(response => response.json())
-                .then(data => {  // Fixed: was "then data =>"
+                .then(data => {
                     if (data.success) {
-                        document.querySelector(`.faq-item[data-id="${faqId}"]`).remove();
+                        const categoryItem = document.querySelector(`#category-items .faq-item[data-id="${categoryId}"]`);
+                        if (categoryItem) {
+                            categoryItem.remove();
+                        }
                         
-                        // Update FAQ count
-                        const currentCount = parseInt(document.getElementById('faqCount').textContent);
-                        document.getElementById('faqCount').textContent = currentCount - 1;
+                        alert('✅ Category deleted successfully!');
                         
-                        alert('FAQ deleted successfully!');
+                        // Reload page to update category dropdown in FAQ section
+                        setTimeout(() => {
+                            location.reload();
+                        }, 500);
                     } else {
-                        alert('Failed to delete FAQ: ' + data.message);
+                        alert('❌ Failed to delete category: ' + data.message);
                     }
                 })
                 .catch(error => {
                     console.error('Error:', error);
-                    alert('An error occurred while deleting the FAQ.');
+                    alert('❌ An error occurred while deleting the category.');
                 });
             }
         }
 
         // Auto-generate slug from name
         document.getElementById('category_name')?.addEventListener('input', function(e) {
-            if (!document.getElementById('category_id').value) {  // Only for new categories
+            if (!document.getElementById('category_id').value) {
                 const slug = e.target.value
                     .toLowerCase()
                     .replace(/[^a-z0-9]+/g, '_')
@@ -1242,16 +1256,16 @@
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    alert('FAQ saved successfully!');
+                    alert('✅ FAQ saved successfully!');
                     closeFAQModal();
                     location.reload();
                 } else {
-                    alert('Failed to save FAQ: ' + data.message);
+                    alert('❌ Failed to save FAQ: ' + data.message);
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                alert('An error occurred while saving the FAQ.');
+                alert('❌ An error occurred while saving the FAQ.');
             });
         });
 
@@ -1268,16 +1282,16 @@
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    alert('Category saved successfully!');
+                    alert('✅ Category saved successfully!');
                     closeCategoryModal();
                     location.reload();
                 } else {
-                    alert('Failed to save category: ' + data.message);
+                    alert('❌ Failed to save category: ' + data.message);
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                alert('An error occurred while saving the category.');
+                alert('❌ An error occurred while saving the category.');
             });
         });
 
@@ -1321,6 +1335,17 @@
                 if (document.getElementById('categoryModal').style.display === 'block') {
                     closeCategoryModal();
                 }
+            }
+        });
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('System Settings page loaded');
+            
+            // Show general section by default
+            const generalSection = document.getElementById('general-section');
+            if (generalSection && !generalSection.classList.contains('active')) {
+                generalSection.classList.add('active');
             }
         });
     </script>
