@@ -1,162 +1,528 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>System Settings - Telegram Bot Admin</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <style>
-        .settings-container {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 20px;
-        }
+{% extends "index.html" %}
 
-        /* Enhanced Page Header */
+{% block title %}System Settings - Telegram Bot Admin{% endblock %}
+
+{% block content %}
+<style>
+    .settings-container {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+
+    /* Enhanced Page Header - Consistent with other pages */
+    .page-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 40px;
+        border-radius: 20px;
+        margin-bottom: 30px;
+        text-align: center;
+        box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+    }
+
+    .page-header h1 {
+        font-size: 2.5em;
+        margin: 0 0 10px 0;
+        font-weight: 700;
+        color: white;
+    }
+
+    .page-header p {
+        font-size: 1.2em;
+        opacity: 0.9;
+        margin: 0;
+        color: white;
+    }
+
+    /* Settings Navigation */
+    .settings-nav {
+        background: white;
+        padding: 20px;
+        border-radius: 15px;
+        margin-bottom: 30px;
+        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+        display: flex;
+        gap: 15px;
+        flex-wrap: wrap;
+    }
+
+    .settings-nav-btn {
+        padding: 12px 24px;
+        border: 2px solid #e9ecef;
+        background: white;
+        border-radius: 10px;
+        cursor: pointer;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: #6c757d;
+    }
+
+    .settings-nav-btn:hover {
+        border-color: #667eea;
+        color: #667eea;
+        transform: translateY(-2px);
+    }
+
+    .settings-nav-btn.active {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-color: transparent;
+    }
+
+    /* Settings Sections */
+    .settings-section {
+        background: white;
+        border-radius: 15px;
+        padding: 30px;
+        margin-bottom: 30px;
+        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+        display: none;
+    }
+
+    .settings-section.active {
+        display: block;
+    }
+
+    .section-title {
+        font-size: 1.8em;
+        font-weight: 700;
+        margin-bottom: 20px;
+        color: #333;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .section-description {
+        color: #6c757d;
+        margin-bottom: 30px;
+        font-size: 1.1em;
+    }
+
+    /* Form Styles */
+    .form-group {
+        margin-bottom: 25px;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 10px;
+        color: #333;
+        font-weight: 600;
+        font-size: 16px;
+    }
+
+    .form-group input[type="text"],
+    .form-group input[type="email"],
+    .form-group input[type="number"],
+    .form-group textarea,
+    .form-group select {
+        width: 100%;
+        padding: 12px 15px;
+        border: 2px solid #e9ecef;
+        border-radius: 10px;
+        font-size: 16px;
+        transition: all 0.3s ease;
+        box-sizing: border-box;
+    }
+
+    .form-group input:focus,
+    .form-group textarea:focus,
+    .form-group select:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    .form-group textarea {
+        min-height: 120px;
+        resize: vertical;
+    }
+
+    .form-help {
+        font-size: 13px;
+        color: #6c757d;
+        margin-top: 5px;
+        display: block;
+    }
+
+    /* FAQ Items */
+    .faq-items {
+        margin-top: 20px;
+    }
+
+    .faq-item {
+        background: #f8f9fa;
+        padding: 20px;
+        border-radius: 10px;
+        margin-bottom: 15px;
+        border-left: 4px solid #667eea;
+        transition: all 0.2s ease;
+    }
+
+    .faq-item:hover {
+        background: #f1f3f4;
+        transform: translateX(5px);
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    }
+
+    .faq-item-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 15px;
+    }
+
+    .faq-question {
+        font-weight: 600;
+        color: #333;
+        font-size: 16px;
+        flex: 1;
+    }
+
+    .faq-actions {
+        display: flex;
+        gap: 8px;
+    }
+
+    .btn-icon {
+        padding: 8px 12px;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        font-size: 14px;
+        font-weight: 600;
+    }
+
+    .btn-edit {
+        background: #fff3cd;
+        color: #856404;
+    }
+
+    .btn-edit:hover {
+        background: #ffe69c;
+    }
+
+    .btn-delete {
+        background: #ffebee;
+        color: #d32f2f;
+    }
+
+    .btn-delete:hover {
+        background: #ffcdd2;
+    }
+
+    .faq-answer {
+        color: #6c757d;
+        line-height: 1.6;
+        white-space: pre-wrap;
+    }
+
+    .btn-add-faq {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        color: white;
+        padding: 12px 24px;
+        border: none;
+        border-radius: 10px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 20px;
+    }
+
+    .btn-add-faq:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(40, 167, 69, 0.3);
+    }
+
+    /* Toggle Switch */
+    .toggle-switch {
+        position: relative;
+        display: inline-block;
+        width: 60px;
+        height: 30px;
+    }
+
+    .toggle-switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+
+    .toggle-slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #ccc;
+        transition: .4s;
+        border-radius: 30px;
+    }
+
+    .toggle-slider:before {
+        position: absolute;
+        content: "";
+        height: 22px;
+        width: 22px;
+        left: 4px;
+        bottom: 4px;
+        background-color: white;
+        transition: .4s;
+        border-radius: 50%;
+    }
+
+    input:checked+.toggle-slider {
+        background-color: #28a745;
+    }
+
+    input:checked+.toggle-slider:before {
+        transform: translateX(30px);
+    }
+
+    .toggle-label {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        margin-bottom: 20px;
+    }
+
+    /* Save Button */
+    .btn-save {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 15px 30px;
+        border: none;
+        border-radius: 10px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 16px;
+    }
+
+    .btn-save:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+    }
+
+    /* Modal Styles */
+    .modal {
+        display: none;
+        position: fixed;
+        z-index: 2000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        animation: fadeIn 0.3s ease;
+        overflow-y: auto;
+        padding: 20px 0;
+    }
+
+    .modal-content {
+        background-color: white;
+        margin: 20px auto;
+        border-radius: 15px;
+        width: 90%;
+        max-width: 600px;
+        max-height: calc(100vh - 80px);
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        animation: slideDown 0.3s ease;
+        position: relative;
+        display: flex;
+        flex-direction: column;
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+        }
+        to {
+            opacity: 1;
+        }
+    }
+
+    @keyframes slideDown {
+        from {
+            transform: translateY(-50px);
+            opacity: 0;
+        }
+        to {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    }
+
+    .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 25px 30px 20px 30px;
+        border-bottom: 2px solid #e9ecef;
+        border-radius: 15px 15px 0 0;
+        background: white;
+        flex-shrink: 0;
+    }
+
+    .modal-header h3 {
+        margin: 0;
+        color: #333;
+        font-size: 1.5em;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .close {
+        color: #aaa;
+        font-size: 28px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: color 0.2s ease;
+        line-height: 1;
+        padding: 0;
+        background: none;
+        border: none;
+    }
+
+    .close:hover,
+    .close:focus {
+        color: #000;
+    }
+
+    .modal-body {
+        padding: 30px;
+        overflow-y: auto;
+        flex: 1;
+        max-height: calc(100vh - 280px);
+    }
+
+    .modal-body::-webkit-scrollbar {
+        width: 8px;
+    }
+
+    .modal-body::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 10px;
+    }
+
+    .modal-body::-webkit-scrollbar-thumb {
+        background: #667eea;
+        border-radius: 10px;
+    }
+
+    .modal-body::-webkit-scrollbar-thumb:hover {
+        background: #5568d3;
+    }
+
+    .modal-footer {
+        display: flex;
+        gap: 10px;
+        justify-content: flex-end;
+        padding: 20px 30px 25px 30px;
+        border-top: 1px solid #e9ecef;
+        border-radius: 0 0 15px 15px;
+        background: white;
+        flex-shrink: 0;
+    }
+
+    .btn-secondary {
+        padding: 12px 20px;
+        background: #6c757d;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+    .btn-secondary:hover {
+        background: #5a6268;
+    }
+
+    /* Mobile Responsiveness */
+    @media (max-width: 768px) {
         .page-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: black;
-            padding: 40px;
-            border-radius: 20px;
-            margin-bottom: 30px;
-            text-align: center;
-            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+            padding: 30px 20px;
         }
 
         .page-header h1 {
-            font-size: 2.5em;
-            margin: 0 0 10px 0;
-            font-weight: 700;
+            font-size: 2em;
         }
 
         .page-header p {
-            font-size: 1.2em;
-            opacity: 0.9;
-            margin: 0;
+            font-size: 1em;
         }
 
-        @keyframes float {
-            0%, 100% { transform: translateY(0) rotate(0deg); }
-            50% { transform: translateY(-20px) rotate(5deg); }
-        }
-
-        .page-header-content {
-            position: relative;
-            z-index: 1;
-            text-align: center;
-        }
-
-        .page-header-icon {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            width: 80px;
-            height: 80px;
-            background: rgba(255, 255, 255, 0.2);
-            border-radius: 20px;
-            margin-bottom: 20px;
-            backdrop-filter: blur(10px);
-            border: 2px solid rgba(255, 255, 255, 0.3);
-        }
-
-        .page-header-icon i {
-            font-size: 2.5em;
-            color: white;
-        }
-
-        .page-header h1 {
-            font-size: 2.8em;
-            margin: 0 0 15px 0;
-            font-weight: 800;
-            letter-spacing: -0.5px;
-            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-        }
-
-        .page-header p {
-            font-size: 1.3em;
-            opacity: 0.95;
-            margin: 0;
-        }
-
-        /* Settings Navigation */
         .settings-nav {
-            background: white;
-            padding: 20px;
-            border-radius: 15px;
-            margin-bottom: 30px;
-            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
-            display: flex;
-            gap: 15px;
-            flex-wrap: wrap;
+            flex-direction: column;
+            padding: 15px;
         }
 
         .settings-nav-btn {
-            padding: 12px 24px;
-            border: 2px solid #e9ecef;
-            background: white;
-            border-radius: 10px;
-            cursor: pointer;
-            font-weight: 600;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            gap: 8px;
+            width: 100%;
+            justify-content: center;
         }
 
-        .settings-nav-btn:hover {
-            border-color: #667eea;
-            color: #667eea;
-            transform: translateY(-2px);
-        }
-
-        .settings-nav-btn.active {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border-color: transparent;
-        }
-
-        /* Settings Sections */
         .settings-section {
-            background: white;
-            border-radius: 15px;
-            padding: 30px;
-            margin-bottom: 30px;
-            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
-            display: none;
-        }
-
-        .settings-section.active {
-            display: block;
+            padding: 20px;
         }
 
         .section-title {
-            font-size: 1.8em;
-            font-weight: 700;
-            margin-bottom: 20px;
-            color: #333;
-            display: flex;
-            align-items: center;
-            gap: 12px;
+            font-size: 1.5em;
         }
 
-        .section-description {
-            color: #6c757d;
-            margin-bottom: 30px;
-            font-size: 1.1em;
+        .modal {
+            padding: 10px 0;
         }
 
-        /* Form Styles */
-        .form-group {
-            margin-bottom: 25px;
+        .modal-content {
+            width: 95%;
+            max-width: none;
+            margin: 10px auto;
+            max-height: calc(100vh - 40px);
         }
 
-        .form-group label {
-            display: block;
-            margin-bottom: 10px;
-            color: #333;
-            font-weight: 600;
-            font-size: 16px;
+        .modal-header {
+            padding: 20px;
+        }
+
+        .modal-header h3 {
+            font-size: 1.2em;
+        }
+
+        .modal-body {
+            padding: 20px;
+            max-height: calc(100vh - 220px);
+        }
+
+        .modal-footer {
+            padding: 15px 20px 20px 20px;
+            flex-direction: column;
+        }
+
+        .modal-footer button {
+            width: 100%;
         }
 
         .form-group input[type="text"],
@@ -164,985 +530,640 @@
         .form-group input[type="number"],
         .form-group textarea,
         .form-group select {
-            width: 100%;
-            padding: 12px 15px;
-            border: 2px solid #e9ecef;
-            border-radius: 10px;
             font-size: 16px;
-            transition: all 0.3s ease;
-            box-sizing: border-box;
-        }
-
-        .form-group input:focus,
-        .form-group textarea:focus,
-        .form-group select:focus {
-            outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-        }
-
-        .form-group textarea {
-            min-height: 120px;
-            resize: vertical;
-        }
-
-        .form-help {
-            font-size: 13px;
-            color: #6c757d;
-            margin-top: 5px;
-        }
-
-        /* FAQ Items */
-        .faq-items {
-            margin-top: 20px;
         }
 
         .faq-item {
-            background: #f8f9fa;
-            padding: 20px;
-            border-radius: 10px;
-            margin-bottom: 15px;
-            border-left: 4px solid #667eea;
+            padding: 15px;
         }
 
         .faq-item-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-        }
-
-        .faq-question {
-            font-weight: 600;
-            color: #333;
-            font-size: 16px;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 10px;
         }
 
         .faq-actions {
-            display: flex;
-            gap: 8px;
-        }
-
-        .btn-icon {
-            padding: 8px 12px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            font-size: 14px;
-        }
-
-        .btn-edit {
-            background: #fff3cd;
-            color: #856404;
-        }
-
-        .btn-edit:hover {
-            background: #ffe69c;
-        }
-
-        .btn-delete {
-            background: #ffebee;
-            color: #d32f2f;
-        }
-
-        .btn-delete:hover {
-            background: #ffcdd2;
-        }
-
-        .faq-answer {
-            color: #6c757d;
-            line-height: 1.6;
-            white-space: pre-wrap;
-        }
-
-        .btn-add-faq {
-            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
-            color: white;
-            padding: 12px 24px;
-            border: none;
-            border-radius: 10px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-bottom: 20px;
-        }
-
-        .btn-add-faq:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(40, 167, 69, 0.3);
-        }
-
-        /* Toggle Switch */
-        .toggle-switch {
-            position: relative;
-            display: inline-block;
-            width: 60px;
-            height: 30px;
-        }
-
-        .toggle-switch input {
-            opacity: 0;
-            width: 0;
-            height: 0;
-        }
-
-        .toggle-slider {
-            position: absolute;
-            cursor: pointer;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: #ccc;
-            transition: .4s;
-            border-radius: 30px;
-        }
-
-        .toggle-slider:before {
-            position: absolute;
-            content: "";
-            height: 22px;
-            width: 22px;
-            left: 4px;
-            bottom: 4px;
-            background-color: white;
-            transition: .4s;
-            border-radius: 50%;
-        }
-
-        input:checked + .toggle-slider {
-            background-color: #28a745;
-        }
-
-        input:checked + .toggle-slider:before {
-            transform: translateX(30px);
-        }
-
-        .toggle-label {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            margin-bottom: 20px;
-        }
-
-        /* Save Button */
-        .btn-save {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 15px 30px;
-            border: none;
-            border-radius: 10px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: inline-flex;
-            align-items: center;
-            gap: 10px;
-            font-size: 16px;
-        }
-
-        .btn-save:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
-        }
-
-        /* Modal - Updated for scrollability */
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 2000;
-            left: 0;
-            top: 0;
             width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.5);
-            animation: fadeIn 0.3s ease;
-            overflow-y: auto;
-            padding: 20px 0;
-        }
-
-        .modal-content {
-            background-color: white;
-            margin: 20px auto;
-            border-radius: 15px;
-            width: 90%;
-            max-width: 600px;
-            max-height: calc(100vh - 80px);
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
-            animation: slideDown 0.3s ease;
-            position: relative;
-            display: flex;
-            flex-direction: column;
-        }
-
-        /* Custom scrollbar for modal content */
-        .modal-content::-webkit-scrollbar {
-            width: 8px;
-        }
-
-        .modal-content::-webkit-scrollbar-track {
-            background: #f1f1f1;
-            border-radius: 10px;
-        }
-
-        .modal-content::-webkit-scrollbar-thumb {
-            background: #667eea;
-            border-radius: 10px;
-        }
-
-        .modal-content::-webkit-scrollbar-thumb:hover {
-            background: #5568d3;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-
-        @keyframes slideDown {
-            from { 
-                transform: translateY(-50px); 
-                opacity: 0; 
-            }
-            to { 
-                transform: translateY(0); 
-                opacity: 1; 
-            }
-        }
-
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 25px 30px 20px 30px;
-            border-bottom: 2px solid #e9ecef;
-            border-radius: 15px 15px 0 0;
-            background: white;
-            flex-shrink: 0;
-        }
-
-        .modal-header h3 {
-            margin: 0;
-            color: #333;
-            font-size: 1.5em;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .close {
-            color: #aaa;
-            font-size: 28px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: color 0.2s ease;
-            line-height: 1;
-            padding: 0;
-            background: none;
-            border: none;
-        }
-
-        .close:hover,
-        .close:focus {
-            color: #000;
-        }
-
-        /* Modal body - scrollable area */
-        .modal-body {
-            padding: 30px;
-            overflow-y: auto;
-            flex: 1;
-            max-height: calc(100vh - 280px);
-        }
-
-        /* Custom scrollbar for modal body */
-        .modal-body::-webkit-scrollbar {
-            width: 8px;
-        }
-
-        .modal-body::-webkit-scrollbar-track {
-            background: #f1f1f1;
-            border-radius: 10px;
-        }
-
-        .modal-body::-webkit-scrollbar-thumb {
-            background: #667eea;
-            border-radius: 10px;
-        }
-
-        .modal-body::-webkit-scrollbar-thumb:hover {
-            background: #5568d3;
-        }
-
-        /* Modal footer */
-        .modal-footer {
-            display: flex;
-            gap: 10px;
             justify-content: flex-end;
-            padding: 20px 30px 25px 30px;
-            border-top: 1px solid #e9ecef;
-            border-radius: 0 0 15px 15px;
-            background: white;
-            flex-shrink: 0;
         }
+    }
 
-        /* Mobile Responsiveness */
-        @media (max-width: 768px) {
-            .page-header {
-                padding: 40px 25px;
-            }
+    /* Prevent body scroll when modal is open */
+    body.modal-open {
+        overflow: hidden;
+    }
 
-            .page-header h1 {
-                font-size: 2.2em;
-            }
+    /* Filter Select Styling */
+    .filter-select {
+        padding: 8px 12px;
+        border: 2px solid #e9ecef;
+        border-radius: 8px;
+        font-size: 14px;
+        background: white;
+        min-width: 150px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
 
-            .settings-nav {
-                flex-direction: column;
-            }
+    .filter-select:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
 
-            .settings-nav-btn {
-                width: 100%;
-            }
+    /* Status indicators */
+    .status-indicator {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        margin-right: 5px;
+    }
 
-            .modal {
-                padding: 10px 0;
-            }
+    .status-active {
+        background-color: #28a745;
+    }
 
-            .modal-content {
-                width: 95%;
-                max-width: none;
-                margin: 10px auto;
-                max-height: calc(100vh - 40px);
-            }
+    .status-inactive {
+        background-color: #dc3545;
+    }
+</style>
 
-            .modal-header {
-                padding: 20px;
-            }
+<div class="settings-container">
+    <!-- Page Header -->
+    <div class="page-header">
+        <h1><i class="fas fa-cog"></i> System Settings</h1>
+        <p>Configure bot behavior, FAQ, and system preferences</p>
+    </div>
 
-            .modal-header h3 {
-                font-size: 1.2em;
-            }
+    <!-- Settings Navigation -->
+    <div class="settings-nav">
+        <button class="settings-nav-btn active" onclick="showSectionWithButton(this, 'general')">
+            <i class="fas fa-sliders-h"></i>
+            General Settings
+        </button>
+        <button class="settings-nav-btn" onclick="showSectionWithButton(this, 'category')">
+            <i class="fas fa-folder-open"></i>
+            Category Management
+        </button>
+        <button class="settings-nav-btn" onclick="showSectionWithButton(this, 'faq')">
+            <i class="fas fa-question-circle"></i>
+            FAQ Management
+        </button>
+        <button class="settings-nav-btn" onclick="showSectionWithButton(this, 'bot')">
+            <i class="fab fa-telegram"></i>
+            Bot Configuration
+        </button>
+        <button class="settings-nav-btn" onclick="showSectionWithButton(this, 'notifications')">
+            <i class="fas fa-bell"></i>
+            Notifications
+        </button>
+    </div>
 
-            .modal-body {
-                padding: 20px;
-                max-height: calc(100vh - 220px);
-            }
+    <!-- General Settings Section -->
+    <div class="settings-section active" id="general-section">
+        <h2 class="section-title">
+            <i class="fas fa-sliders-h"></i>
+            General Settings
+        </h2>
+        <p class="section-description">Configure general system settings and preferences</p>
 
-            .modal-footer {
-                padding: 15px 20px 20px 20px;
-            }
-
-            .form-group input[type="text"],
-            .form-group input[type="email"],
-            .form-group input[type="number"],
-            .form-group textarea,
-            .form-group select {
-                font-size: 16px;
-            }
-        }
-
-        /* Prevent body scroll when modal is open */
-        body.modal-open {
-            overflow: hidden;
-        }
-    </style>
-</head>
-<body>
-    {% extends "base.html" %}
-
-    {% block title %}System Settings - Telegram Bot Admin{% endblock %}
-
-    {% block content %}
-    <div class="settings-container">
-        <!-- Page Header -->
-        <div class="page-header">
-            <h1><i class="fas fa-cog"></i>System Settings</h1>
-            <p>Configure bot behavior, FAQ, and system preferences</p>
-        </div>
-
-        <!-- Settings Navigation -->
-        <div class="settings-nav">
-            <button class="settings-nav-btn active" onclick="showSectionWithButton(this, 'general')">
-                <i class="fas fa-sliders-h"></i>
-                General Settings
-            </button>
-            <button class="settings-nav-btn" onclick="showSectionWithButton(this, 'category')">
-                <i class="fas fa-folder-open"></i>
-                Category Management
-            </button>
-            <button class="settings-nav-btn" onclick="showSectionWithButton(this, 'faq')">
-                <i class="fas fa-question-circle"></i>
-                FAQ Management
-            </button>
-            <button class="settings-nav-btn" onclick="showSectionWithButton(this, 'bot')">
-                <i class="fab fa-telegram"></i>
-                Bot Configuration
-            </button>
-            <button class="settings-nav-btn" onclick="showSectionWithButton(this, 'notifications')">
-                <i class="fas fa-bell"></i>
-                Notifications
-            </button>
-        </div>
-
-        <!-- Category Management Section -->
-        <div class="settings-section" id="category-section">
-            <h2 class="section-title">
-                <i class="fas fa-folder-open"></i>
-                Category Management
-            </h2>
-            <p class="section-description">Manage FAQ categories to organize your questions</p>
-
-            <button class="btn-add-faq" onclick="showAddCategoryModal()">
-                <i class="fas fa-plus-circle"></i>
-                Add New Category
-            </button>
-
-            <div class="faq-items" id="category-items">
-                {% if categories and categories|length > 0 %}
-                    {% for category in categories %}
-                    <div class="faq-item" data-id="{{ category.id }}" data-slug="{{ category.slug }}"
-                         {% if not category.is_active %}style="opacity: 0.6;"{% endif %}>
-                        <div class="faq-item-header">
-                            <div class="faq-question">
-                                {% if not category.is_active %}
-                                    <span style="color: #dc3545; margin-right: 5px;">🔴</span>
-                                {% else %}
-                                    <span style="color: #28a745; margin-right: 5px;">🟢</span>
-                                {% endif %}
-                                <span style="font-size: 1.2em; margin-right: 8px;">{{ category.icon or '📁' }}</span>
-                                {{ category.name }}
-                                <span style="background: #e9ecef; padding: 2px 8px; border-radius: 10px; font-size: 11px; margin-left: 10px;">
-                                    {{ category.faq_count }} FAQ(s)
-                                </span>
-                            </div>
-                            <div class="faq-actions">
-                                <button class="btn-icon btn-edit" onclick='editCategory({{ category.id }}, {{ category|tojson }})' title="Edit">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                                <button class="btn-icon btn-delete" onclick="deleteCategory('{{ category.id }}')" title="Delete">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </div>
-                        </div>
-                        {% if category.description %}
-                        <div class="faq-answer">{{ category.description }}</div>
-                        {% endif %}
-                        <div style="margin-top: 10px; color: #6c757d; font-size: 13px;">
-                            <strong>Slug:</strong> {{ category.slug }} | 
-                            <strong>Order:</strong> {{ category.order_index }}
-                        </div>
-                    </div>
-                    {% endfor %}
-                {% else %}
-                    <div style="text-align: center; padding: 40px; color: #6c757d;">
-                        <i class="fas fa-folder-open" style="font-size: 3em; margin-bottom: 15px; opacity: 0.5;"></i>
-                        <h3>No Categories Available</h3>
-                        <p>Click "Add New Category" to create your first FAQ category.</p>
-                    </div>
-                {% endif %}
+        <form method="POST" action="{{ url_for('admin.save_general_settings') }}">
+            <div class="form-group">
+                <label for="system_name">System Name</label>
+                <input type="text" id="system_name" name="system_name"
+                    value="{{ settings.system_name if settings else 'IBS Info Chatbot' }}" required>
+                <small class="form-help">The name displayed across the system</small>
             </div>
-        </div>
 
-        <!-- General Settings Section -->
-        <div class="settings-section active" id="general-section">
-            <h2 class="section-title">
-                <i class="fas fa-sliders-h"></i>
-                General Settings
-            </h2>
-            <p class="section-description">Configure general system settings and preferences</p>
+            <div class="form-group">
+                <label for="welcome_message">Welcome Message</label>
+                <textarea id="welcome_message" name="welcome_message"
+                    placeholder="Enter welcome message for new users...">{{ settings.welcome_message if settings else 'Welcome to our support bot! How can we help you today?' }}</textarea>
+                <small class="form-help">Message sent to users when they start the bot</small>
+            </div>
 
-            <form method="POST" action="{{ url_for('admin.save_general_settings') }}">
-                <div class="form-group">
-                    <label for="system_name">System Name</label>
-                    <input type="text" id="system_name" name="system_name" 
-                           value="{{ settings.system_name if settings else 'IBS Info Chatbot' }}" required>
-                    <small class="form-help">The name displayed across the system</small>
+            <div class="form-group">
+                <label for="support_email">Support Email</label>
+                <input type="email" id="support_email" name="support_email"
+                    value="{{ settings.support_email if settings else '' }}" placeholder="support@example.com">
+                <small class="form-help">Email for support inquiries</small>
+            </div>
+
+            <div class="form-group">
+                <label for="max_chat_duration">Maximum Chat Duration (minutes)</label>
+                <input type="number" id="max_chat_duration" name="max_chat_duration"
+                    value="{{ settings.max_chat_duration if settings else 60 }}" min="5" max="480">
+                <small class="form-help">Auto-close chats after this duration of inactivity</small>
+            </div>
+
+            <div class="toggle-label">
+                <label class="toggle-switch">
+                    <input type="checkbox" name="auto_assign_chats" {{ 'checked' if settings and
+                        settings.auto_assign_chats else '' }}>
+                    <span class="toggle-slider"></span>
+                </label>
+                <div>
+                    <strong>Auto-assign Chats</strong>
+                    <p style="margin: 0; color: #6c757d; font-size: 14px;">Automatically assign new chats to available
+                        agents</p>
                 </div>
+            </div>
 
-                <div class="form-group">
-                    <label for="welcome_message">Welcome Message</label>
-                    <textarea id="welcome_message" name="welcome_message" 
-                              placeholder="Enter welcome message for new users...">{{ settings.welcome_message if settings else 'Welcome to our support bot! How can we help you today?' }}</textarea>
-                    <small class="form-help">Message sent to users when they start the bot</small>
+            <div class="toggle-label">
+                <label class="toggle-switch">
+                    <input type="checkbox" name="maintenance_mode" {{ 'checked' if settings and
+                        settings.maintenance_mode else '' }}>
+                    <span class="toggle-slider"></span>
+                </label>
+                <div>
+                    <strong>Maintenance Mode</strong>
+                    <p style="margin: 0; color: #6c757d; font-size: 14px;">Disable bot for regular users during
+                        maintenance</p>
                 </div>
+            </div>
 
-                <div class="form-group">
-                    <label for="support_email">Support Email</label>
-                    <input type="email" id="support_email" name="support_email" 
-                           value="{{ settings.support_email if settings else '' }}" 
-                           placeholder="support@example.com">
-                    <small class="form-help">Email for support inquiries</small>
-                </div>
-
-                <div class="form-group">
-                    <label for="max_chat_duration">Maximum Chat Duration (minutes)</label>
-                    <input type="number" id="max_chat_duration" name="max_chat_duration" 
-                           value="{{ settings.max_chat_duration if settings else 60 }}" 
-                           min="5" max="480">
-                    <small class="form-help">Auto-close chats after this duration of inactivity</small>
-                </div>
-
-                <div class="toggle-label">
-                    <label class="toggle-switch">
-                        <input type="checkbox" name="auto_assign_chats" 
-                               {{ 'checked' if settings and settings.auto_assign_chats else '' }}>
-                        <span class="toggle-slider"></span>
-                    </label>
-                    <div>
-                        <strong>Auto-assign Chats</strong>
-                        <p style="margin: 0; color: #6c757d; font-size: 14px;">Automatically assign new chats to available agents</p>
-                    </div>
-                </div>
-
-                <div class="toggle-label">
-                    <label class="toggle-switch">
-                        <input type="checkbox" name="maintenance_mode" 
-                               {{ 'checked' if settings and settings.maintenance_mode else '' }}>
-                        <span class="toggle-slider"></span>
-                    </label>
-                    <div>
-                        <strong>Maintenance Mode</strong>
-                        <p style="margin: 0; color: #6c757d; font-size: 14px;">Disable bot for regular users during maintenance</p>
-                    </div>
-                </div>
-
-                <button type="submit" class="btn-save">
-                    <i class="fas fa-save"></i>
-                    Save General Settings
-                </button>
-            </form>
-        </div>
-
-        <!-- FAQ Management Section -->
-        <div class="settings-section" id="faq-section">
-            <h2 class="section-title">
-                <i class="fas fa-question-circle"></i>
-                FAQ Management
-            </h2>
-            <p class="section-description">Manage frequently asked questions for your users</p>
-
-            <button class="btn-add-faq" onclick="showAddFAQModal()">
-                <i class="fas fa-plus-circle"></i>
-                Add New FAQ
+            <button type="submit" class="btn-save">
+                <i class="fas fa-save"></i>
+                Save General Settings
             </button>
+        </form>
+    </div>
 
-            <!-- Category Filter -->
-            <div style="margin-bottom: 20px;">
-                <select class="filter-select" id="categoryFilter" onchange="filterFAQsByCategory()" style="padding: 8px 12px; border: 2px solid #e9ecef; border-radius: 8px; font-size: 14px;">
-                    <option value="">All Categories</option>
-                    {% for category in categories %}
+    <!-- Category Management Section -->
+    <div class="settings-section" id="category-section">
+        <h2 class="section-title">
+            <i class="fas fa-folder-open"></i>
+            Category Management
+        </h2>
+        <p class="section-description">Manage FAQ categories to organize your questions</p>
+
+        <button class="btn-add-faq" onclick="showAddCategoryModal()">
+            <i class="fas fa-plus-circle"></i>
+            Add New Category
+        </button>
+
+        <div class="faq-items" id="category-items">
+            {% if categories and categories|length > 0 %}
+            {% for category in categories %}
+            <div class="faq-item" data-id="{{ category.id }}" data-slug="{{ category.slug }}" {% if not
+                category.is_active %}style="opacity: 0.6;" {% endif %}>
+                <div class="faq-item-header">
+                    <div class="faq-question">
+                        <span class="status-indicator status-{{ 'active' if category.is_active else 'inactive' }}"></span>
+                        <span style="font-size: 1.2em; margin-right: 8px;">{{ category.icon or '📁' }}</span>
+                        {{ category.name }}
+                        <span
+                            style="background: #e9ecef; padding: 2px 8px; border-radius: 10px; font-size: 11px; margin-left: 10px;">
+                            {{ category.faq_count }} FAQ(s)
+                        </span>
+                    </div>
+                    <div class="faq-actions">
+                        <button class="btn-icon btn-edit"
+                            onclick='editCategory({{ category.id }}, {{ category|tojson }})' title="Edit">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn-icon btn-delete" onclick="deleteCategory('{{ category.id }}')"
+                            title="Delete">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+                {% if category.description %}
+                <div class="faq-answer">{{ category.description }}</div>
+                {% endif %}
+                <div style="margin-top: 10px; color: #6c757d; font-size: 13px;">
+                    <strong>Slug:</strong> {{ category.slug }} |
+                    <strong>Order:</strong> {{ category.order_index }}
+                </div>
+            </div>
+            {% endfor %}
+            {% else %}
+            <div style="text-align: center; padding: 40px; color: #6c757d;">
+                <i class="fas fa-folder-open" style="font-size: 3em; margin-bottom: 15px; opacity: 0.5;"></i>
+                <h3>No Categories Available</h3>
+                <p>Click "Add New Category" to create your first FAQ category.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- FAQ Management Section -->
+    <div class="settings-section" id="faq-section">
+        <h2 class="section-title">
+            <i class="fas fa-question-circle"></i>
+            FAQ Management
+        </h2>
+        <p class="section-description">Manage frequently asked questions for your users</p>
+
+        <button class="btn-add-faq" onclick="showAddFAQModal()">
+            <i class="fas fa-plus-circle"></i>
+            Add New FAQ
+        </button>
+
+        <!-- Category Filter -->
+        <div style="margin-bottom: 20px;">
+            <select class="filter-select" id="categoryFilter" onchange="filterFAQsByCategory()">
+                <option value="">All Categories</option>
+                {% for category in categories %}
+                <option value="{{ category.id }}">
+                    {{ category.icon or '📁' }} {{ category.name }}
+                </option>
+                {% endfor %}
+            </select>
+            <span style="margin-left: 15px; color: #6c757d;">
+                Total: <strong id="faqCount">{{ faqs|length }}</strong> FAQs
+            </span>
+        </div>
+
+        <div class="faq-items" id="faq-items">
+            {% if faqs and faqs|length > 0 %}
+            {% for faq in faqs %}
+            <div class="faq-item" data-id="{{ faq.id }}" data-category="{{ faq.category_id }}"
+                data-question="{{ faq.question|replace('"', '&quot;') }}" 
+                data-answer="{{ faq.answer|replace('"', '&quot;')|replace('\n', '&#10;') }}" 
+                data-order="{{ faq.order_index }}"
+                data-active="{{ 'true' if faq.is_active else 'false' }}" 
+                {% if not faq.is_active %}style="opacity: 0.6;" {% endif %}>
+                <div class="faq-item-header">
+                    <div class="faq-question">
+                        <span class="status-indicator status-{{ 'active' if faq.is_active else 'inactive' }}"></span>
+                        {{ faq.question }}
+                        <span
+                            style="background: #e9ecef; padding: 2px 8px; border-radius: 10px; font-size: 11px; margin-left: 10px;">
+                            {{ faq.category_icon }} {{ faq.category_name }}
+                        </span>
+                    </div>
+                    <div class="faq-actions">
+                        <button class="btn-icon btn-edit" onclick='editFAQById({{ faq.id }})' title="Edit">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn-icon btn-delete" onclick="deleteFAQ({{ faq.id }})" title="Delete">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="faq-answer">{{ faq.answer }}</div>
+            </div>
+            {% endfor %}
+            {% else %}
+            <div style="text-align: center; padding: 40px; color: #6c757d;">
+                <i class="fas fa-question-circle" style="font-size: 3em; margin-bottom: 15px; opacity: 0.5;"></i>
+                <h3>No FAQs Available</h3>
+                <p>Click "Add New FAQ" to create your first FAQ entry.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Bot Configuration Section -->
+    <div class="settings-section" id="bot-section">
+        <h2 class="section-title">
+            <i class="fab fa-telegram"></i>
+            Bot Configuration
+        </h2>
+        <p class="section-description">Configure Telegram bot behavior and responses</p>
+
+        <form method="POST" action="{{ url_for('admin.save_bot_settings') }}">
+            <div class="form-group">
+                <label for="bot_username">Bot Username</label>
+                <input type="text" id="bot_username" name="bot_username"
+                    value="{{ settings.bot_username if settings else '@YourBotUsername' }}" readonly>
+                <small class="form-help">Your Telegram bot username (read-only)</small>
+            </div>
+
+            <div class="form-group">
+                <label for="response_timeout">Response Timeout (seconds)</label>
+                <input type="number" id="response_timeout" name="response_timeout"
+                    value="{{ settings.response_timeout if settings else 30 }}" min="10" max="300">
+                <small class="form-help">Time to wait for agent response before showing warning</small>
+            </div>
+
+            <div class="form-group">
+                <label for="offline_message">Offline Message</label>
+                <textarea id="offline_message" name="offline_message"
+                    placeholder="Message when no agents are available...">{{ settings.offline_message if settings else 'All our agents are currently busy. Please try again later or leave a message.' }}</textarea>
+                <small class="form-help">Message shown when no agents are available</small>
+            </div>
+
+            <div class="toggle-label">
+                <label class="toggle-switch">
+                    <input type="checkbox" name="enable_file_uploads" {{ 'checked' if settings and
+                        settings.enable_file_uploads else 'checked' }}>
+                    <span class="toggle-slider"></span>
+                </label>
+                <div>
+                    <strong>Enable File Uploads</strong>
+                    <p style="margin: 0; color: #6c757d; font-size: 14px;">Allow users to send files and images</p>
+                </div>
+            </div>
+
+            <div class="toggle-label">
+                <label class="toggle-switch">
+                    <input type="checkbox" name="enable_typing_indicator" {{ 'checked' if settings and
+                        settings.enable_typing_indicator else 'checked' }}>
+                    <span class="toggle-slider"></span>
+                </label>
+                <div>
+                    <strong>Typing Indicator</strong>
+                    <p style="margin: 0; color: #6c757d; font-size: 14px;">Show typing indicator when agent is
+                        responding</p>
+                </div>
+            </div>
+
+            <button type="submit" class="btn-save">
+                <i class="fas fa-save"></i>
+                Save Bot Settings
+            </button>
+        </form>
+    </div>
+
+    <!-- Notifications Section -->
+    <div class="settings-section" id="notifications-section">
+        <h2 class="section-title">
+            <i class="fas fa-bell"></i>
+            Notification Settings
+        </h2>
+        <p class="section-description">Configure email and push notifications</p>
+
+        <form method="POST" action="{{ url_for('admin.save_notification_settings') }}">
+            <div class="toggle-label">
+                <label class="toggle-switch">
+                    <input type="checkbox" name="email_notifications" {{ 'checked' if settings and
+                        settings.email_notifications else '' }}>
+                    <span class="toggle-slider"></span>
+                </label>
+                <div>
+                    <strong>Email Notifications</strong>
+                    <p style="margin: 0; color: #6c757d; font-size: 14px;">Send email notifications for important events
+                    </p>
+                </div>
+            </div>
+
+            <div class="toggle-label">
+                <label class="toggle-switch">
+                    <input type="checkbox" name="notify_new_user" {{ 'checked' if settings and settings.notify_new_user
+                        else 'checked' }}>
+                    <span class="toggle-slider"></span>
+                </label>
+                <div>
+                    <strong>New User Registration</strong>
+                    <p style="margin: 0; color: #6c757d; font-size: 14px;">Notify admins when new users register</p>
+                </div>
+            </div>
+
+            <div class="toggle-label">
+                <label class="toggle-switch">
+                    <input type="checkbox" name="notify_new_chat" {{ 'checked' if settings and settings.notify_new_chat
+                        else 'checked' }}>
+                    <span class="toggle-slider"></span>
+                </label>
+                <div>
+                    <strong>New Chat Session</strong>
+                    <p style="margin: 0; color: #6c757d; font-size: 14px;">Notify agents when new chat sessions start
+                    </p>
+                </div>
+            </div>
+
+            <div class="toggle-label">
+                <label class="toggle-switch">
+                    <input type="checkbox" name="notify_unassigned_chat" {{ 'checked' if settings and
+                        settings.notify_unassigned_chat else 'checked' }}>
+                    <span class="toggle-slider"></span>
+                </label>
+                <div>
+                    <strong>Unassigned Chats</strong>
+                    <p style="margin: 0; color: #6c757d; font-size: 14px;">Alert admins about unassigned chat sessions
+                    </p>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="notification_email">Notification Email Address</label>
+                <input type="email" id="notification_email" name="notification_email"
+                    value="{{ settings.notification_email if settings else '' }}" placeholder="admin@example.com">
+                <small class="form-help">Primary email for system notifications</small>
+            </div>
+
+            <button type="submit" class="btn-save">
+                <i class="fas fa-save"></i>
+                Save Notification Settings
+            </button>
+        </form>
+    </div>
+</div>
+
+<!-- Add/Edit FAQ Modal -->
+<div id="faqModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 id="modalTitle">
+                <i class="fas fa-plus-circle"></i> Add New FAQ
+            </h3>
+            <span class="close" onclick="closeFAQModal()">&times;</span>
+        </div>
+
+        <div class="modal-body">
+            <form id="faqForm" method="POST" action="{{ url_for('admin.save_faq') }}">
+                <input type="hidden" id="faq_id" name="faq_id">
+
+                <div class="form-group">
+                    <label for="faq_question">Question *</label>
+                    <input type="text" id="faq_question" name="question" required
+                        placeholder="Enter the FAQ question...">
+                </div>
+
+                <div class="form-group">
+                    <label for="faq_answer">Answer *</label>
+                    <textarea id="faq_answer" name="answer" required
+                        placeholder="Enter the detailed answer..."></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="faq_category">Category</label>
+                    <select id="faq_category" name="category_id">
+                        {% for category in categories %}
+                        {% if category.is_active %}
                         <option value="{{ category.id }}">
                             {{ category.icon or '📁' }} {{ category.name }}
                         </option>
-                    {% endfor %}
-                </select>
-                <span style="margin-left: 15px; color: #6c757d;">
-                    Total: <strong id="faqCount">{{ faqs|length }}</strong> FAQs
-                </span>
-            </div>
-
-            <div class="faq-items" id="faq-items">
-                {% if faqs and faqs|length > 0 %}
-                    {% for faq in faqs %}
-                    <div class="faq-item" 
-                         data-id="{{ faq.id }}" 
-                         data-category="{{ faq.category_id }}"
-                         data-question="{{ faq.question|replace('"', '&quot;') }}"
-                         data-answer="{{ faq.answer|replace('"', '&quot;')|replace('\n', '&#10;') }}"
-                         data-order="{{ faq.order_index }}"
-                         data-active="{{ 'true' if faq.is_active else 'false' }}"
-                         {% if not faq.is_active %}style="opacity: 0.6;"{% endif %}>
-                        <div class="faq-item-header">
-                            <div class="faq-question">
-                                {% if not faq.is_active %}
-                                    <span style="color: #dc3545; margin-right: 5px;">🔴</span>
-                                {% else %}
-                                    <span style="color: #28a745; margin-right: 5px;">🟢</span>
-                                {% endif %}
-                                {{ faq.question }}
-                                
-                                <span style="background: #e9ecef; padding: 2px 8px; border-radius: 10px; font-size: 11px; margin-left: 10px;">
-                                    {{ faq.category_icon }} {{ faq.category_name }}
-                                </span>
-                            </div>
-                            <div class="faq-actions">
-                                <button class="btn-icon btn-edit" onclick='editFAQById({{ faq.id }})' title="Edit">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                                <button class="btn-icon btn-delete" onclick="deleteFAQ({{ faq.id }})" title="Delete">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </div>
-                        </div>
-                        <div class="faq-answer">{{ faq.answer }}</div>
-                    </div>
-                    {% endfor %}
-                {% else %}
-                    <div style="text-align: center; padding: 40px; color: #6c757d;">
-                        <i class="fas fa-question-circle" style="font-size: 3em; margin-bottom: 15px; opacity: 0.5;"></i>
-                        <h3>No FAQs Available</h3>
-                        <p>Click "Add New FAQ" to create your first FAQ entry.</p>
-                    </div>
-                {% endif %}
-            </div>
-        </div>
-
-        <!-- Bot Configuration Section -->
-        <div class="settings-section" id="bot-section">
-            <h2 class="section-title">
-                <i class="fab fa-telegram"></i>
-                Bot Configuration
-            </h2>
-            <p class="section-description">Configure Telegram bot behavior and responses</p>
-
-            <form method="POST" action="{{ url_for('admin.save_bot_settings') }}">
-                <div class="form-group">
-                    <label for="bot_username">Bot Username</label>
-                    <input type="text" id="bot_username" name="bot_username" 
-                           value="{{ settings.bot_username if settings else '@YourBotUsername' }}" readonly>
-                    <small class="form-help">Your Telegram bot username (read-only)</small>
+                        {% endif %}
+                        {% endfor %}
+                    </select>
                 </div>
 
                 <div class="form-group">
-                    <label for="response_timeout">Response Timeout (seconds)</label>
-                    <input type="number" id="response_timeout" name="response_timeout" 
-                           value="{{ settings.response_timeout if settings else 30 }}" 
-                           min="10" max="300">
-                    <small class="form-help">Time to wait for agent response before showing warning</small>
-                </div>
-
-                <div class="form-group">
-                    <label for="offline_message">Offline Message</label>
-                    <textarea id="offline_message" name="offline_message" 
-                              placeholder="Message when no agents are available...">{{ settings.offline_message if settings else 'All our agents are currently busy. Please try again later or leave a message.' }}</textarea>
-                    <small class="form-help">Message shown when no agents are available</small>
+                    <label for="order_index">Display Order</label>
+                    <input type="number" id="order_index" name="order_index" value="0" min="0">
+                    <small class="form-help">Lower numbers appear first (0 = highest priority)</small>
                 </div>
 
                 <div class="toggle-label">
                     <label class="toggle-switch">
-                        <input type="checkbox" name="enable_file_uploads" 
-                               {{ 'checked' if settings and settings.enable_file_uploads else 'checked' }}>
+                        <input type="checkbox" id="faq_active" name="is_active" checked>
                         <span class="toggle-slider"></span>
                     </label>
                     <div>
-                        <strong>Enable File Uploads</strong>
-                        <p style="margin: 0; color: #6c757d; font-size: 14px;">Allow users to send files and images</p>
+                        <strong>Active</strong>
+                        <p style="margin: 0; color: #6c757d; font-size: 14px;">Show this FAQ to users in the bot</p>
                     </div>
                 </div>
-
-                <div class="toggle-label">
-                    <label class="toggle-switch">
-                        <input type="checkbox" name="enable_typing_indicator" 
-                               {{ 'checked' if settings and settings.enable_typing_indicator else 'checked' }}>
-                        <span class="toggle-slider"></span>
-                    </label>
-                    <div>
-                        <strong>Typing Indicator</strong>
-                        <p style="margin: 0; color: #6c757d; font-size: 14px;">Show typing indicator when agent is responding</p>
-                    </div>
-                </div>
-
-                <button type="submit" class="btn-save">
-                    <i class="fas fa-save"></i>
-                    Save Bot Settings
-                </button>
             </form>
         </div>
 
-        <!-- Notifications Section -->
-        <div class="settings-section" id="notifications-section">
-            <h2 class="section-title">
-                <i class="fas fa-bell"></i>
-                Notification Settings
-            </h2>
-            <p class="section-description">Configure email and push notifications</p>
+        <div class="modal-footer">
+            <button type="button" class="btn-secondary" onclick="closeFAQModal()">
+                <i class="fas fa-times"></i> Cancel
+            </button>
+            <button type="submit" form="faqForm" class="btn-save">
+                <i class="fas fa-save"></i> Save FAQ
+            </button>
+        </div>
+    </div>
+</div>
 
-            <form method="POST" action="{{ url_for('admin.save_notification_settings') }}">
-                <div class="toggle-label">
-                    <label class="toggle-switch">
-                        <input type="checkbox" name="email_notifications" 
-                               {{ 'checked' if settings and settings.email_notifications else '' }}>
-                        <span class="toggle-slider"></span>
-                    </label>
-                    <div>
-                        <strong>Email Notifications</strong>
-                        <p style="margin: 0; color: #6c757d; font-size: 14px;">Send email notifications for important events</p>
-                    </div>
-                </div>
+<!-- Add/Edit Category Modal -->
+<div id="categoryModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 id="categoryModalTitle">
+                <i class="fas fa-plus-circle"></i> Add New Category
+            </h3>
+            <span class="close" onclick="closeCategoryModal()">&times;</span>
+        </div>
 
-                <div class="toggle-label">
-                    <label class="toggle-switch">
-                        <input type="checkbox" name="notify_new_user" 
-                               {{ 'checked' if settings and settings.notify_new_user else 'checked' }}>
-                        <span class="toggle-slider"></span>
-                    </label>
-                    <div>
-                        <strong>New User Registration</strong>
-                        <p style="margin: 0; color: #6c757d; font-size: 14px;">Notify admins when new users register</p>
-                    </div>
-                </div>
+        <div class="modal-body">
+            <form id="categoryForm" method="POST" action="{{ url_for('admin.save_category') }}">
+                <input type="hidden" id="category_id" name="category_id">
 
-                <div class="toggle-label">
-                    <label class="toggle-switch">
-                        <input type="checkbox" name="notify_new_chat" 
-                               {{ 'checked' if settings and settings.notify_new_chat else 'checked' }}>
-                        <span class="toggle-slider"></span>
-                    </label>
-                    <div>
-                        <strong>New Chat Session</strong>
-                        <p style="margin: 0; color: #6c757d; font-size: 14px;">Notify agents when new chat sessions start</p>
-                    </div>
-                </div>
-
-                <div class="toggle-label">
-                    <label class="toggle-switch">
-                        <input type="checkbox" name="notify_unassigned_chat" 
-                               {{ 'checked' if settings and settings.notify_unassigned_chat else 'checked' }}>
-                        <span class="toggle-slider"></span>
-                    </label>
-                    <div>
-                        <strong>Unassigned Chats</strong>
-                        <p style="margin: 0; color: #6c757d; font-size: 14px;">Alert admins about unassigned chat sessions</p>
-                    </div>
+                <div class="form-group">
+                    <label for="category_name">Category Name *</label>
+                    <input type="text" id="category_name" name="name" required
+                        placeholder="e.g., Getting Started, Technical Support">
+                    <small class="form-help">Display name for the category</small>
                 </div>
 
                 <div class="form-group">
-                    <label for="notification_email">Notification Email Address</label>
-                    <input type="email" id="notification_email" name="notification_email" 
-                           value="{{ settings.notification_email if settings else '' }}" 
-                           placeholder="admin@example.com">
-                    <small class="form-help">Primary email for system notifications</small>
+                    <label for="category_slug">Slug *</label>
+                    <input type="text" id="category_slug" name="slug" required
+                        placeholder="e.g., getting_started, technical_support" pattern="[a-z0-9_]+"
+                        title="Only lowercase letters, numbers, and underscores">
+                    <small class="form-help">URL-friendly identifier (lowercase, no spaces)</small>
                 </div>
 
-                <button type="submit" class="btn-save">
-                    <i class="fas fa-save"></i>
-                    Save Notification Settings
-                </button>
+                <div class="form-group">
+                    <label for="category_icon">Icon/Emoji</label>
+                    <input type="text" id="category_icon" name="icon" value="📁" placeholder="📁">
+                    <small class="form-help">Emoji or icon to represent this category</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="category_description">Description</label>
+                    <textarea id="category_description" name="description"
+                        placeholder="Brief description of this category..."></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="category_order">Display Order</label>
+                    <input type="number" id="category_order" name="order_index" value="0" min="0">
+                    <small class="form-help">Lower numbers appear first</small>
+                </div>
+
+                <div class="toggle-label">
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="category_active" name="is_active" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                    <div>
+                        <strong>Active</strong>
+                        <p style="margin: 0; color: #6c757d; font-size: 14px;">Show this category to users</p>
+                    </div>
+                </div>
             </form>
         </div>
-    </div>
 
-    <!-- Add/Edit FAQ Modal -->
-    <div id="faqModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 id="modalTitle">
-                    <i class="fas fa-plus-circle"></i> Add New FAQ
-                </h3>
-                <span class="close" onclick="closeFAQModal()">&times;</span>
-            </div>
-            
-            <div class="modal-body">
-                <form id="faqForm" method="POST" action="{{ url_for('admin.save_faq') }}">
-                    <input type="hidden" id="faq_id" name="faq_id">
-                    
-                    <div class="form-group">
-                        <label for="faq_question">Question *</label>
-                        <input type="text" id="faq_question" name="question" required 
-                               placeholder="Enter the FAQ question...">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="faq_answer">Answer *</label>
-                        <textarea id="faq_answer" name="answer" required 
-                                  placeholder="Enter the detailed answer..."></textarea>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="faq_category">Category</label>
-                        <select id="faq_category" name="category_id">
-                            {% for category in categories %}
-                                {% if category.is_active %}
-                                <option value="{{ category.id }}">
-                                    {{ category.icon or '📁' }} {{ category.name }}
-                                </option>
-                                {% endif %}
-                            {% endfor %}
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="order_index">Display Order</label>
-                        <input type="number" id="order_index" name="order_index" value="0" min="0">
-                        <small class="form-help">Lower numbers appear first (0 = highest priority)</small>
-                    </div>
-
-                    <div class="toggle-label">
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="faq_active" name="is_active" checked>
-                            <span class="toggle-slider"></span>
-                        </label>
-                        <div>
-                            <strong>Active</strong>
-                            <p style="margin: 0; color: #6c757d; font-size: 14px;">Show this FAQ to users in the bot</p>
-                        </div>
-                    </div>
-                </form>
-            </div>
-            
-            <div class="modal-footer">
-                <button type="button" class="btn-icon" onclick="closeFAQModal()" 
-                        style="padding: 12px 20px; background: #6c757d; color: white;">
-                    <i class="fas fa-times"></i> Cancel
-                </button>
-                <button type="submit" form="faqForm" class="btn-save">
-                    <i class="fas fa-save"></i> Save FAQ
-                </button>
-            </div>
+        <div class="modal-footer">
+            <button type="button" class="btn-secondary" onclick="closeCategoryModal()">
+                <i class="fas fa-times"></i> Cancel
+            </button>
+            <button type="submit" form="categoryForm" class="btn-save">
+                <i class="fas fa-save"></i> Save Category
+            </button>
         </div>
     </div>
+</div>
 
-    <!-- Add/Edit Category Modal -->
-    <div id="categoryModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 id="categoryModalTitle">
-                    <i class="fas fa-plus-circle"></i> Add New Category
-                </h3>
-                <span class="close" onclick="closeCategoryModal()">&times;</span>
-            </div>
-            
-            <div class="modal-body">
-                <form id="categoryForm" method="POST" action="{{ url_for('admin.save_category') }}">
-                    <input type="hidden" id="category_id" name="category_id">
-                    
-                    <div class="form-group">
-                        <label for="category_name">Category Name *</label>
-                        <input type="text" id="category_name" name="name" required 
-                               placeholder="e.g., Getting Started, Technical Support">
-                        <small class="form-help">Display name for the category</small>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="category_slug">Slug *</label>
-                        <input type="text" id="category_slug" name="slug" required 
-                               placeholder="e.g., getting_started, technical_support"
-                               pattern="[a-z0-9_]+"
-                               title="Only lowercase letters, numbers, and underscores">
-                        <small class="form-help">URL-friendly identifier (lowercase, no spaces)</small>
-                    </div>
+<script>
+    // Section Navigation
+    function showSectionWithButton(buttonElement, sectionName) {
+        // Hide all sections
+        document.querySelectorAll('.settings-section').forEach(section => {
+            section.classList.remove('active');
+        });
 
-                    <div class="form-group">
-                        <label for="category_icon">Icon/Emoji</label>
-                        <input type="text" id="category_icon" name="icon" value="📁"
-                               placeholder="📁">
-                        <small class="form-help">Emoji or icon to represent this category</small>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="category_description">Description</label>
-                        <textarea id="category_description" name="description" 
-                                  placeholder="Brief description of this category..."></textarea>
-                    </div>
+        // Remove active class from all buttons
+        document.querySelectorAll('.settings-nav-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
 
-                    <div class="form-group">
-                        <label for="category_order">Display Order</label>
-                        <input type="number" id="category_order" name="order_index" value="0" min="0">
-                        <small class="form-help">Lower numbers appear first</small>
-                    </div>
-
-                    <div class="toggle-label">
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="category_active" name="is_active" checked>
-                            <span class="toggle-slider"></span>
-                        </label>
-                        <div>
-                            <strong>Active</strong>
-                            <p style="margin: 0; color: #6c757d; font-size: 14px;">Show this category to users</p>
-                        </div>
-                    </div>
-                </form>
-            </div>
-            
-            <div class="modal-footer">
-                <button type="button" class="btn-icon" onclick="closeCategoryModal()" 
-                        style="padding: 12px 20px; background: #6c757d; color: white;">
-                    <i class="fas fa-times"></i> Cancel
-                </button>
-                <button type="submit" form="categoryForm" class="btn-save">
-                    <i class="fas fa-save"></i> Save Category
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        // Section Navigation
-        function showSectionWithButton(buttonElement, sectionName) {
-            // Hide all sections
-            document.querySelectorAll('.settings-section').forEach(section => {
-                section.classList.remove('active');
-            });
-            
-            // Remove active class from all buttons
-            document.querySelectorAll('.settings-nav-btn').forEach(btn => {
-                btn.classList.remove('active');
-            });
-            
-            // Show selected section
-            const selectedSection = document.getElementById(sectionName + '-section');
-            if (selectedSection) {
-                selectedSection.classList.add('active');
-            }
-            
-            // Add active class to clicked button
-            if (buttonElement) {
-                buttonElement.classList.add('active');
-            }
-        }
-        
-        // FAQ Modal Functions
-        function showAddFAQModal() {
-            document.getElementById('modalTitle').innerHTML = '<i class="fas fa-plus-circle"></i> Add New FAQ';
-            document.getElementById('faq_id').value = '';
-            document.getElementById('faq_question').value = '';
-            document.getElementById('faq_answer').value = '';
-            document.getElementById('faq_category').value = '';
-            document.getElementById('order_index').value = 0;
-            document.getElementById('faq_active').checked = true;
-            document.getElementById('faqModal').style.display = 'block';
-            document.body.classList.add('modal-open');
+        // Show selected section
+        const selectedSection = document.getElementById(sectionName + '-section');
+        if (selectedSection) {
+            selectedSection.classList.add('active');
         }
 
-        function editFAQById(faqId) {
-            const faqItem = document.querySelector(`.faq-item[data-id="${faqId}"]`);
-            
-            if (!faqItem) {
-                alert('FAQ not found');
-                return;
-            }
-            
-            document.getElementById('modalTitle').innerHTML = '<i class="fas fa-edit"></i> Edit FAQ';
-            document.getElementById('faq_id').value = faqId;
-            document.getElementById('faq_question').value = faqItem.dataset.question;
-            document.getElementById('faq_answer').value = faqItem.dataset.answer;
-            document.getElementById('faq_category').value = faqItem.dataset.category;
-            document.getElementById('order_index').value = faqItem.dataset.order || 0;
-            document.getElementById('faq_active').checked = faqItem.dataset.active === 'true';
-            document.getElementById('faqModal').style.display = 'block';
-            document.body.classList.add('modal-open');
+        // Add active class to clicked button
+        if (buttonElement) {
+            buttonElement.classList.add('active');
+        }
+    }
+
+    // FAQ Modal Functions
+    function showAddFAQModal() {
+        document.getElementById('modalTitle').innerHTML = '<i class="fas fa-plus-circle"></i> Add New FAQ';
+        document.getElementById('faq_id').value = '';
+        document.getElementById('faq_question').value = '';
+        document.getElementById('faq_answer').value = '';
+        document.getElementById('faq_category').value = '';
+        document.getElementById('order_index').value = 0;
+        document.getElementById('faq_active').checked = true;
+        document.getElementById('faqModal').style.display = 'block';
+        document.body.classList.add('modal-open');
+    }
+
+    function editFAQById(faqId) {
+        const faqItem = document.querySelector(`.faq-item[data-id="${faqId}"]`);
+
+        if (!faqItem) {
+            alert('FAQ not found');
+            return;
         }
 
-        function closeFAQModal() {
-            document.getElementById('faqModal').style.display = 'none';
-            document.body.classList.remove('modal-open');
-        }
+        document.getElementById('modalTitle').innerHTML = '<i class="fas fa-edit"></i> Edit FAQ';
+        document.getElementById('faq_id').value = faqId;
+        document.getElementById('faq_question').value = faqItem.dataset.question;
+        document.getElementById('faq_answer').value = faqItem.dataset.answer;
+        document.getElementById('faq_category').value = faqItem.dataset.category;
+        document.getElementById('order_index').value = faqItem.dataset.order || 0;
+        document.getElementById('faq_active').checked = faqItem.dataset.active === 'true';
+        document.getElementById('faqModal').style.display = 'block';
+        document.body.classList.add('modal-open');
+    }
 
-        function deleteFAQ(faqId) {
-            if (confirm('Are you sure you want to delete this FAQ?')) {
-                fetch(`/admin/delete-faq/${faqId}`, {
-                    method: 'DELETE',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    }
-                })
+    function closeFAQModal() {
+        document.getElementById('faqModal').style.display = 'none';
+        document.body.classList.remove('modal-open');
+    }
+
+    function deleteFAQ(faqId) {
+        if (confirm('Are you sure you want to delete this FAQ?')) {
+            fetch(`/admin/delete-faq/${faqId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
@@ -1150,11 +1171,11 @@
                         if (faqItem) {
                             faqItem.remove();
                         }
-                        
+
                         // Update FAQ count
                         const currentCount = parseInt(document.getElementById('faqCount').textContent);
                         document.getElementById('faqCount').textContent = currentCount - 1;
-                        
+
                         alert('FAQ deleted successfully!');
                     } else {
                         alert('Failed to delete FAQ: ' + data.message);
@@ -1164,49 +1185,49 @@
                     console.error('Error:', error);
                     alert('An error occurred while deleting the FAQ.');
                 });
-            }
         }
+    }
 
-        // Category Modal Functions
-        function showAddCategoryModal() {
-            document.getElementById('categoryModalTitle').innerHTML = '<i class="fas fa-plus-circle"></i> Add New Category';
-            document.getElementById('category_id').value = '';
-            document.getElementById('category_name').value = '';
-            document.getElementById('category_slug').value = '';
-            document.getElementById('category_icon').value = '📁';
-            document.getElementById('category_description').value = '';
-            document.getElementById('category_order').value = 0;
-            document.getElementById('category_active').checked = true;
-            document.getElementById('categoryModal').style.display = 'block';
-            document.body.classList.add('modal-open');
-        }
+    // Category Modal Functions
+    function showAddCategoryModal() {
+        document.getElementById('categoryModalTitle').innerHTML = '<i class="fas fa-plus-circle"></i> Add New Category';
+        document.getElementById('category_id').value = '';
+        document.getElementById('category_name').value = '';
+        document.getElementById('category_slug').value = '';
+        document.getElementById('category_icon').value = '📁';
+        document.getElementById('category_description').value = '';
+        document.getElementById('category_order').value = 0;
+        document.getElementById('category_active').checked = true;
+        document.getElementById('categoryModal').style.display = 'block';
+        document.body.classList.add('modal-open');
+    }
 
-        function editCategory(categoryId, categoryData) {
-            document.getElementById('categoryModalTitle').innerHTML = '<i class="fas fa-edit"></i> Edit Category';
-            document.getElementById('category_id').value = categoryId;
-            document.getElementById('category_name').value = categoryData.name;
-            document.getElementById('category_slug').value = categoryData.slug;
-            document.getElementById('category_icon').value = categoryData.icon || '📁';
-            document.getElementById('category_description').value = categoryData.description || '';
-            document.getElementById('category_order').value = categoryData.order_index || 0;
-            document.getElementById('category_active').checked = categoryData.is_active;
-            document.getElementById('categoryModal').style.display = 'block';
-            document.body.classList.add('modal-open');
-        }
+    function editCategory(categoryId, categoryData) {
+        document.getElementById('categoryModalTitle').innerHTML = '<i class="fas fa-edit"></i> Edit Category';
+        document.getElementById('category_id').value = categoryId;
+        document.getElementById('category_name').value = categoryData.name;
+        document.getElementById('category_slug').value = categoryData.slug;
+        document.getElementById('category_icon').value = categoryData.icon || '📁';
+        document.getElementById('category_description').value = categoryData.description || '';
+        document.getElementById('category_order').value = categoryData.order_index || 0;
+        document.getElementById('category_active').checked = categoryData.is_active;
+        document.getElementById('categoryModal').style.display = 'block';
+        document.body.classList.add('modal-open');
+    }
 
-        function closeCategoryModal() {
-            document.getElementById('categoryModal').style.display = 'none';
-            document.body.classList.remove('modal-open');
-        }
+    function closeCategoryModal() {
+        document.getElementById('categoryModal').style.display = 'none';
+        document.body.classList.remove('modal-open');
+    }
 
-        function deleteCategory(categoryId) {
-            if (confirm('Are you sure you want to delete this category?\n\nNote: You cannot delete categories that have FAQs assigned to them.')) {
-                fetch(`/admin/delete-category/${categoryId}`, {
-                    method: 'DELETE',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    }
-                })
+    function deleteCategory(categoryId) {
+        if (confirm('Are you sure you want to delete this category?\n\nNote: You cannot delete categories that have FAQs assigned to them.')) {
+            fetch(`/admin/delete-category/${categoryId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
@@ -1214,9 +1235,9 @@
                         if (categoryItem) {
                             categoryItem.remove();
                         }
-                        
+
                         alert('✅ Category deleted successfully!');
-                        
+
                         // Reload page to update category dropdown in FAQ section
                         setTimeout(() => {
                             location.reload();
@@ -1229,30 +1250,30 @@
                     console.error('Error:', error);
                     alert('❌ An error occurred while deleting the category.');
                 });
-            }
         }
+    }
 
-        // Auto-generate slug from name
-        document.getElementById('category_name')?.addEventListener('input', function(e) {
-            if (!document.getElementById('category_id').value) {
-                const slug = e.target.value
-                    .toLowerCase()
-                    .replace(/[^a-z0-9]+/g, '_')
-                    .replace(/^_+|_+$/g, '');
-                document.getElementById('category_slug').value = slug;
-            }
-        });
+    // Auto-generate slug from name
+    document.getElementById('category_name')?.addEventListener('input', function (e) {
+        if (!document.getElementById('category_id').value) {
+            const slug = e.target.value
+                .toLowerCase()
+                .replace(/[^a-z0-9]+/g, '_')
+                .replace(/^_+|_+$/g, '');
+            document.getElementById('category_slug').value = slug;
+        }
+    });
 
-        // Form submission handling
-        document.getElementById('faqForm')?.addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const formData = new FormData(this);
-            
-            fetch(this.action, {
-                method: 'POST',
-                body: formData
-            })
+    // Form submission handling
+    document.getElementById('faqForm')?.addEventListener('submit', function (e) {
+        e.preventDefault();
+
+        const formData = new FormData(this);
+
+        fetch(this.action, {
+            method: 'POST',
+            body: formData
+        })
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
@@ -1267,18 +1288,18 @@
                 console.error('Error:', error);
                 alert('❌ An error occurred while saving the FAQ.');
             });
-        });
+    });
 
-        // Category form submission
-        document.getElementById('categoryForm')?.addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const formData = new FormData(this);
-            
-            fetch(this.action, {
-                method: 'POST',
-                body: formData
-            })
+    // Category form submission
+    document.getElementById('categoryForm')?.addEventListener('submit', function (e) {
+        e.preventDefault();
+
+        const formData = new FormData(this);
+
+        fetch(this.action, {
+            method: 'POST',
+            body: formData
+        })
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
@@ -1293,62 +1314,60 @@
                 console.error('Error:', error);
                 alert('❌ An error occurred while saving the category.');
             });
+    });
+
+    // Filter FAQs by Category
+    function filterFAQsByCategory() {
+        const categoryId = document.getElementById('categoryFilter').value;
+        const faqItems = document.querySelectorAll('#faq-items .faq-item');
+        let visibleCount = 0;
+
+        faqItems.forEach(item => {
+            if (!categoryId || item.dataset.category === categoryId) {
+                item.style.display = 'block';
+                visibleCount++;
+            } else {
+                item.style.display = 'none';
+            }
         });
 
-        // Filter FAQs by Category
-        function filterFAQsByCategory() {
-            const categoryId = document.getElementById('categoryFilter').value;
-            const faqItems = document.querySelectorAll('#faq-items .faq-item');
-            let visibleCount = 0;
-            
-            faqItems.forEach(item => {
-                if (!categoryId || item.dataset.category === categoryId) {
-                    item.style.display = 'block';
-                    visibleCount++;
-                } else {
-                    item.style.display = 'none';
-                }
-            });
-            
-            document.getElementById('faqCount').textContent = visibleCount;
-        }
+        document.getElementById('faqCount').textContent = visibleCount;
+    }
 
-        // Close modals when clicking outside
-        window.onclick = function(event) {
-            const faqModal = document.getElementById('faqModal');
-            const categoryModal = document.getElementById('categoryModal');
-            
-            if (event.target == faqModal) {
+    // Close modals when clicking outside
+    window.onclick = function (event) {
+        const faqModal = document.getElementById('faqModal');
+        const categoryModal = document.getElementById('categoryModal');
+
+        if (event.target == faqModal) {
+            closeFAQModal();
+        }
+        if (event.target == categoryModal) {
+            closeCategoryModal();
+        }
+    }
+
+    // Close modal on Escape key
+    document.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape') {
+            if (document.getElementById('faqModal').style.display === 'block') {
                 closeFAQModal();
             }
-            if (event.target == categoryModal) {
+            if (document.getElementById('categoryModal').style.display === 'block') {
                 closeCategoryModal();
             }
         }
+    });
 
-        // Close modal on Escape key
-        document.addEventListener('keydown', function(event) {
-            if (event.key === 'Escape') {
-                if (document.getElementById('faqModal').style.display === 'block') {
-                    closeFAQModal();
-                }
-                if (document.getElementById('categoryModal').style.display === 'block') {
-                    closeCategoryModal();
-                }
-            }
-        });
+    // Initialize on page load
+    document.addEventListener('DOMContentLoaded', function () {
+        console.log('System Settings page loaded');
 
-        // Initialize on page load
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('System Settings page loaded');
-            
-            // Show general section by default
-            const generalSection = document.getElementById('general-section');
-            if (generalSection && !generalSection.classList.contains('active')) {
-                generalSection.classList.add('active');
-            }
-        });
-    </script>
-    {% endblock %}
-</body>
-</html>
+        // Show general section by default
+        const generalSection = document.getElementById('general-section');
+        if (generalSection && !generalSection.classList.contains('active')) {
+            generalSection.classList.add('active');
+        }
+    });
+</script>
+{% endblock %}
