@@ -99,6 +99,24 @@ def telegram_auth():
         if result['success']:
             session['admin_token'] = result['token']
             session['admin_info'] = result['admin']
+            
+            # Format datetime fields for session storage
+            admin_id = result['admin']['id']
+            admin = db.query(Admin).filter(Admin.id == admin_id).first()
+            
+            if admin:
+                # Format last_login
+                if admin.last_login:
+                    session['admin_info']['last_login'] = admin.last_login.strftime('%Y-%m-%d %H:%M:%S')
+                else:
+                    session['admin_info']['last_login'] = None
+                
+                # Format created_at if needed
+                if admin.created_at:
+                    session['admin_info']['created_at'] = admin.created_at.strftime('%Y-%m-%d %H:%M:%S')
+                else:
+                    session['admin_info']['created_at'] = None
+            
             flash('Login successful!', 'success')
             return redirect(url_for('admin.dashboard'))
         else:

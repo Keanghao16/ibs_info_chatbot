@@ -5,8 +5,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Telegram Bot Admin Panel{% endblock %}</title>
-    <!-- <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}"> -->
-    <!-- <link rel="stylesheet" href="{{ url_for('static', filename='css/auth.css') }}"> -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
         /* Modern Base Styling */
@@ -449,7 +447,8 @@
 </head>
 
 <body>
-    <!-- Navigation Header -->
+    <!-- Navigation Header - Hide on login page -->
+    {% if not request.endpoint or request.endpoint != 'auth.login' %}
     <nav class="navbar">
         <div class="navbar-container">
             <a href="{{ url_for('admin.dashboard') }}" class="navbar-brand">
@@ -460,6 +459,7 @@
             <ul class="navbar-nav">
                 <li class="nav-item">
                     <a href="{{ url_for('admin.dashboard') }}"
+
                         class="nav-link {{ 'active' if request.endpoint == 'admin.dashboard' else '' }}">
                         <i class="fas fa-tachometer-alt"></i>
                         <span>Dashboard</span>
@@ -467,6 +467,7 @@
                 </li>
                 <li class="nav-item">
                     <a href="{{ url_for('users.list_users') }}"
+
                         class="nav-link {{ 'active' if request.endpoint == 'users.list_users' else '' }}">
                         <i class="fas fa-users"></i>
                         <span>Users</span>
@@ -474,6 +475,7 @@
                 </li>
                 <li class="nav-item">
                     <a href="{{ url_for('admin.chat_management') }}"
+
                         class="nav-link {{ 'active' if request.endpoint == 'admin.chat_management' else '' }}">
                         <i class="fas fa-comments"></i>
                         <span>Chats</span>
@@ -482,6 +484,7 @@
                 {% if session.admin_info and session.admin_info.role == 'super_admin' %}
                 <li class="nav-item">
                     <a href="{{ url_for('admin.manage_admins') }}"
+
                         class="nav-link {{ 'active' if request.endpoint == 'admin.manage_admins' else '' }}">
                         <i class="fas fa-user-shield"></i>
                         <span>Admins</span>
@@ -489,6 +492,7 @@
                 </li>
                 <li class="nav-item">
                     <a href="{{ url_for('admin.system_settings') }}"
+
                         class="nav-link {{ 'active' if request.endpoint == 'admin.system_settings' else '' }}">
                         <i class="fas fa-cogs"></i>
                         <span>System Settings</span>
@@ -540,9 +544,10 @@
             </button>
         </div>
     </nav>
+    {% endif %}
 
     <!-- Main Content -->
-    <div class="container">
+    <div class="container" style="{% if request.endpoint == 'auth.login' %}padding-top: 0;{% endif %}">
         <!-- Flash Messages -->
         {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
@@ -562,11 +567,13 @@
         </main>
     </div>
 
-    <!-- Footer -->
+    <!-- Footer - Hide on login page -->
+    {% if not request.endpoint or request.endpoint != 'auth.login' %}
     <footer class="footer">
         <p>&copy; 2024 Telegram Bot Admin Panel. Made with <i class="fas fa-heart" style="color: #e74c3c;"></i> for
             better user management.</p>
     </footer>
+    {% endif %}
 
     <!-- JavaScript -->
     <script>
