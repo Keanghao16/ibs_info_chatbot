@@ -156,6 +156,58 @@ class AuthService:
         
         return {"success": True, "message": "Admin account deactivated"}
     
+    def update_admin_profile(self, db: Session, admin_id: int, full_name: str, division: str = None):
+        """Update admin profile information"""
+        admin = db.query(Admin).filter(Admin.id == admin_id).first()
+        
+        if not admin:
+            return {"success": False, "message": "Admin not found"}
+        
+        if not full_name or not full_name.strip():
+            return {"success": False, "message": "Full name is required"}
+        
+        admin.full_name = full_name.strip()
+        
+        # Only update division for regular admins
+        if admin.role == AdminRole.admin and division is not None:
+            admin.division = division.strip()
+        
+        db.commit()
+        db.refresh(admin)
+        
+        return {
+            "success": True,
+            "message": "Profile updated successfully",
+            "admin": self._serialize_admin(admin)
+        }
+    
+    def toggle_admin_availability(self, db: Session, admin_id: int):
+        """Toggle admin availability for chat assignment"""
+        admin = db.query(Admin).filter(Admin.id == admin_id).first()
+        
+        if not admin:
+            return {"success": False, "message": "Admin not found"}
+        
+        # Only regular admins can change availability
+        if admin.role != AdminRole.admin:
+            return {
+                "success": False, 
+                "message": "Only regular admins can change availability status"
+            }
+        
+        admin.is_available = not admin.is_available
+        db.commit()
+        db.refresh(admin)
+        
+        status = "available" if admin.is_available else "unavailable"
+        
+        return {
+            "success": True,
+            "message": f"You are now {status} for new chat assignments",
+            "is_available": admin.is_available,
+            "admin": self._serialize_admin(admin)
+        }
+    
     def _serialize_admin(self, admin):
         """Helper function to serialize admin object"""
         return {

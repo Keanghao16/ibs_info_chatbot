@@ -1,35 +1,27 @@
-from flask import Flask, redirect, url_for
-from flask_sqlalchemy import SQLAlchemy
-from dotenv import load_dotenv
 import os
-import json
-import enum
+from flask import Flask, redirect, url_for
+from ..utils.config import Config
 
-class EnumEncoder(json.JSONEncoder):
-    def default(self, obj):
-        if isinstance(obj, enum.Enum):
-            return obj.value
-        return super().default(obj)
+ADMIN_PREFIX = os.getenv('ADMIN_URL_PREFIX', '/portal/admin')
 
-load_dotenv()
+from .routes.auth import auth_bp
+from .routes.admin import admin_bp
+from .routes.users import users_bp
+from .routes.chats import chats_bp
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv("SQLALCHEMY_DATABASE_URI")
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['SECRET_KEY'] = os.getenv("SECRET_KEY", "your_secret_key")
 
-# Set custom JSON encoder
-app.json_encoder = EnumEncoder
+# Load configuration
+app.config.from_object(Config)
 
-db = SQLAlchemy(app)
+# Set secret key explicitly
+app.secret_key = Config.SECRET_KEY
 
-# Import routes after app initialization to avoid circular imports
-from .routes import admin, users, chats, auth
-
-app.register_blueprint(auth.auth_bp)
-app.register_blueprint(admin.admin_bp)
-app.register_blueprint(users.users_bp)
-app.register_blueprint(chats.chats_bp)
+# Register blueprints with /portal/admin prefix
+app.register_blueprint(auth_bp, url_prefix=ADMIN_PREFIX)
+app.register_blueprint(admin_bp, url_prefix=ADMIN_PREFIX)
+app.register_blueprint(users_bp, url_prefix=ADMIN_PREFIX)
+app.register_blueprint(chats_bp, url_prefix=ADMIN_PREFIX)
 
 @app.route('/')
 def index():

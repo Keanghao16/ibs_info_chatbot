@@ -2,27 +2,27 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash,
 from ...database.connection import SessionLocal
 from ...database.models import User, ChatSession, Admin, ChatMessage, AdminRole, SystemSettings, FAQ
 from ...services.auth_service import AuthService
+from ...services.admin_service import AdminService
 from ...services.faq_service import FAQService
 from sqlalchemy.orm import joinedload
 from .auth import login_required, super_admin_required, any_admin_required
 
 admin_bp = Blueprint('admin', __name__)
+admin_service = AdminService()
 
-@admin_bp.route('/admin/dashboard')
-@any_admin_required  # Both super_admin and admin can access
+@admin_bp.route('/dashboard')
+@any_admin_required
 def dashboard():
     db = SessionLocal()
     try:
-        users = db.query(User).all()
-        chats = db.query(ChatSession).all()
+        users = admin_service.get_all_users(db)
+        chats = admin_service.get_all_chat_sessions(db)
         
-        # Get current admin info
         current_admin_id = session['admin_info']['id']
         current_admin = db.query(Admin).filter(Admin.id == current_admin_id).first()
         
-        # If admin role, show their specific stats
         if session['admin_info']['role'] == 'admin':
-            admin_chats = db.query(ChatSession).filter(ChatSession.admin_id == current_admin_id).all()
+            admin_chats = admin_service.get_admin_chat_sessions(db, current_admin_id)
             return render_template('dashboard.html', 
                                  users=users, 
                                  chats=chats, 
@@ -33,7 +33,7 @@ def dashboard():
     finally:
         db.close()
 
-@admin_bp.route('/admin/chat-management')
+@admin_bp.route('/chat-management')
 @any_admin_required
 def chat_management():
     """Chat management interface for admins to communicate with users"""
@@ -42,44 +42,34 @@ def chat_management():
         current_admin_id = session['admin_info']['id']
         
         if session['admin_info']['role'] == 'admin':
-            # Admin sees only their assigned chats
-            active_sessions = db.query(ChatSession).filter(
-                ChatSession.admin_id == current_admin_id,
-                ChatSession.status == 'active'
-            ).all()
+            active_sessions = admin_service.get_active_chat_sessions(db, current_admin_id)
         else:
-            # Super admin sees all active chats
-            active_sessions = db.query(ChatSession).filter(
-                ChatSession.status == 'active'
-            ).all()
+            active_sessions = admin_service.get_active_chat_sessions(db)
             
         return render_template('chat_management.html', sessions=active_sessions)
     finally:
         db.close()
 
-@admin_bp.route('/admin/chat/<int:session_id>')
+@admin_bp.route('/chat/<int:session_id>')
 @any_admin_required
 def chat_detail(session_id):
     """View specific chat session"""
     db = SessionLocal()
     try:
-        chat_session = db.query(ChatSession).filter(ChatSession.id == session_id).first()
-        
-        if not chat_session:
-            flash('Chat session not found.', 'error')
-            return redirect(url_for('admin.chat_management'))
-        
-        # Check if admin has access to this chat
         current_admin_id = session['admin_info']['id']
-        if (session['admin_info']['role'] == 'admin' and 
-            chat_session.admin_id != current_admin_id):
-            flash('Access denied. You can only view your assigned chats.', 'error')
+        admin_role = session['admin_info']['role']
+        
+        # Check access
+        access_result = admin_service.check_chat_access(db, session_id, current_admin_id, admin_role)
+        
+        if not access_result['success']:
+            flash(access_result['message'], 'error')
             return redirect(url_for('admin.chat_management'))
+        
+        chat_session = access_result['session']
         
         # Get messages for this session
-        messages = db.query(ChatMessage).filter(
-            ChatMessage.user_id == chat_session.user_id
-        ).order_by(ChatMessage.timestamp).all()
+        messages = admin_service.get_chat_messages(db, chat_session.user_id)
         
         return render_template('chat_detail.html', 
                              session=chat_session, 
@@ -96,29 +86,20 @@ def send_message():
         session_id = request.form.get('session_id')
         message_text = request.form.get('message')
         current_admin_id = session['admin_info']['id']
+        admin_role = session['admin_info']['role']
         
-        chat_session = db.query(ChatSession).filter(ChatSession.id == session_id).first()
-        
-        if not chat_session:
-            return jsonify({'success': False, 'message': 'Session not found'})
-        
-        # Create message record
-        new_message = ChatMessage(
-            user_id=chat_session.user_id,
+        result = admin_service.send_chat_message(
+            db=db,
+            session_id=session_id,
             admin_id=current_admin_id,
-            message=message_text,
-            is_from_admin=True
+            message_text=message_text,
+            admin_role=admin_role
         )
         
-        db.add(new_message)
-        db.commit()
-        
-        # Here you would integrate with your Telegram bot to send the message
-        # send_telegram_message(chat_session.user.telegram_id, message_text)
-        
-        return jsonify({'success': True, 'message': 'Message sent successfully'})
+        return jsonify(result)
         
     except Exception as e:
+        print(f"Error sending message: {e}")
         return jsonify({'success': False, 'message': str(e)})
     finally:
         db.close()
@@ -128,17 +109,17 @@ def send_message():
 def users():
     db = SessionLocal()
     try:
-        users = db.query(User).all()
+        users = admin_service.get_all_users(db)
         return render_template('users.html', users=users)
     finally:
         db.close()
 
-@admin_bp.route('/admin/manage-admins')
+@admin_bp.route('/manage-admins')
 @super_admin_required
 def manage_admins():
     db = SessionLocal()
     try:
-        admins = db.query(Admin).all()
+        admins = admin_service.get_all_admins(db)
         return render_template('manage_admins.html', admins=admins)
     finally:
         db.close()
@@ -164,7 +145,6 @@ def create_admin_telegram():
         )
         
         if result['success']:
-            # Update division if provided and role is admin
             if role == 'admin' and division:
                 new_admin = db.query(Admin).filter(Admin.telegram_id == telegram_id).first()
                 new_admin.division = division
@@ -188,21 +168,9 @@ def toggle_admin_status(admin_id):
     """Toggle admin active status"""
     db = SessionLocal()
     try:
-        admin = db.query(Admin).filter(Admin.id == admin_id).first()
-        
-        if not admin:
-            return jsonify({'success': False, 'message': 'Admin not found'})
-        
-        # Don't allow deactivating yourself
-        if admin.id == session['admin_info']['id']:
-            return jsonify({'success': False, 'message': 'You cannot deactivate your own account'})
-        
-        admin.is_active = not admin.is_active
-        db.commit()
-        
-        status = "activated" if admin.is_active else "deactivated"
-        return jsonify({'success': True, 'message': f'Admin {status} successfully'})
-        
+        current_admin_id = session['admin_info']['id']
+        result = admin_service.toggle_admin_status(db, admin_id, current_admin_id)
+        return jsonify(result)
     except Exception as e:
         print(f"Error toggling admin status: {e}")
         return jsonify({'success': False, 'message': 'Error updating admin status'})
@@ -216,17 +184,13 @@ def toggle_availability():
     db = SessionLocal()
     try:
         current_admin_id = session['admin_info']['id']
-        admin = db.query(Admin).filter(Admin.id == current_admin_id).first()
+        result = admin_service.toggle_admin_availability(db, current_admin_id)
         
-        if admin:
-            admin.is_available = not admin.is_available
-            db.commit()
-            
-            status = "available" if admin.is_available else "unavailable"
-            return jsonify({'success': True, 'status': status})
+        if result['success']:
+            # Update session
+            session['admin_info']['is_available'] = result['is_available']
         
-        return jsonify({'success': False, 'message': 'Admin not found'})
-        
+        return jsonify(result)
     finally:
         db.close()
 
@@ -236,23 +200,11 @@ def dashboard_stats():
     """API endpoint for dashboard statistics"""
     db = SessionLocal()
     try:
-        users_count = db.query(User).count()
-        chats_count = db.query(ChatSession).count()
+        admin_id = session['admin_info']['id'] if session['admin_info']['role'] == 'admin' else None
+        admin_role = session['admin_info']['role']
         
-        # If admin role, get their specific stats
-        admin_chats_count = 0
-        if session['admin_info']['role'] == 'admin':
-            current_admin_id = session['admin_info']['id']
-            admin_chats_count = db.query(ChatSession).filter(
-                ChatSession.admin_id == current_admin_id
-            ).count()
-        
-        return jsonify({
-            'success': True,
-            'users': users_count,
-            'chats': chats_count,
-            'admin_chats': admin_chats_count
-        })
+        result = admin_service.get_dashboard_stats(db, admin_id, admin_role)
+        return jsonify(result)
     finally:
         db.close()
 
@@ -262,26 +214,11 @@ def close_chat(session_id):
     """Close a chat session"""
     db = SessionLocal()
     try:
-        from ...database.models import SessionStatus
-        from datetime import datetime
-        
-        chat_session = db.query(ChatSession).filter(ChatSession.id == session_id).first()
-        
-        if not chat_session:
-            return jsonify({'success': False, 'message': 'Chat session not found'})
-        
-        # Check if admin has access to this chat
         current_admin_id = session['admin_info']['id']
-        if (session['admin_info']['role'] == 'admin' and 
-            chat_session.admin_id != current_admin_id):
-            return jsonify({'success': False, 'message': 'Access denied'})
+        admin_role = session['admin_info']['role']
         
-        # Close the session
-        chat_session.status = SessionStatus.closed
-        chat_session.end_time = datetime.now()
-        db.commit()
-        
-        return jsonify({'success': True, 'message': 'Chat session closed successfully'})
+        result = admin_service.close_chat_session(db, session_id, current_admin_id, admin_role)
+        return jsonify(result)
         
     except Exception as e:
         print(f"Error closing chat: {e}")
@@ -289,7 +226,7 @@ def close_chat(session_id):
     finally:
         db.close()
 
-@admin_bp.route('/admin/system-settings')
+@admin_bp.route('/system-settings')
 @super_admin_required
 def system_settings():
     """System settings page"""
