@@ -23,13 +23,13 @@ def dashboard():
         
         if session['admin_info']['role'] == 'admin':
             admin_chats = admin_service.get_admin_chat_sessions(db, current_admin_id)
-            return render_template('dashboard.html', 
+            return render_template('dashboard/dashboard.html', 
                                  users=users, 
                                  chats=chats, 
                                  admin_chats=admin_chats,
                                  current_admin=current_admin)
         
-        return render_template('dashboard.html', users=users, chats=chats)
+        return render_template('dashboard/dashboard.html', users=users, chats=chats)
     finally:
         db.close()
 
@@ -46,7 +46,7 @@ def chat_management():
         else:
             active_sessions = admin_service.get_active_chat_sessions(db)
             
-        return render_template('chat_management.html', sessions=active_sessions)
+        return render_template('chat/chat_management.html', sessions=active_sessions)
     finally:
         db.close()
 
@@ -110,7 +110,7 @@ def users():
     db = SessionLocal()
     try:
         users = admin_service.get_all_users(db)
-        return render_template('users.html', users=users)
+        return render_template('user/users.html', users=users)
     finally:
         db.close()
 
@@ -120,7 +120,7 @@ def manage_admins():
     db = SessionLocal()
     try:
         admins = admin_service.get_all_admins(db)
-        return render_template('manage_admins.html', admins=admins)
+        return render_template('admin/manage_admins.html', admins=admins)
     finally:
         db.close()
 
@@ -276,7 +276,7 @@ def system_settings():
             'faq_count': faq_service.get_category_faq_count(db, cat.id)
         } for cat in categories]
         
-        return render_template('system_settings.html', 
+        return render_template('system_setting/system_settings.html', 
                              settings=settings, 
                              faqs=faqs_dict,
                              categories=categories_dict)
@@ -596,5 +596,44 @@ def get_faqs_by_category(category_id):
                 'order_index': faq.order_index
             } for faq in faqs]
         })
+    finally:
+        db.close()
+
+@admin_bp.route('/admin-profile/<int:admin_id>')
+@super_admin_required
+def view_admin_profile(admin_id):
+    """View another admin's profile"""
+    db = SessionLocal()
+    try:
+        # Get the admin to view
+        admin = db.query(Admin).filter(Admin.id == admin_id).first()
+        
+        if not admin:
+            flash('Admin not found.', 'error')
+            return redirect(url_for('admin.manage_admins'))
+        
+        # Create a temporary admin_info dict for the template
+        admin_info = {
+            'id': admin.id,
+            'telegram_id': admin.telegram_id,
+            'telegram_username': admin.telegram_username,
+            'telegram_first_name': admin.telegram_first_name,
+            'telegram_last_name': admin.telegram_last_name,
+            'telegram_photo_url': admin.telegram_photo_url,
+            'full_name': admin.full_name,
+            'role': admin.role.value if admin.role else 'admin',
+            'is_active': admin.is_active,
+            'division': admin.division,
+            'is_available': admin.is_available,
+            'last_login': admin.last_login.strftime('%Y-%m-%d %H:%M:%S') if admin.last_login else None,
+            'created_at': admin.created_at.strftime('%Y-%m-%d %H:%M:%S') if admin.created_at else None
+        }
+        
+        # Flag to indicate this is viewing another admin's profile
+        is_viewing_other = True
+        
+        return render_template('admin/admin_profile_view.html', 
+                             admin_info=admin_info,
+                             is_viewing_other=is_viewing_other)
     finally:
         db.close()

@@ -9,7 +9,7 @@ def list_users():
     db = SessionLocal()
     try:
         users = db.query(User).all()
-        return render_template('users.html', users=users)
+        return render_template('user/users.html', users=users)
     finally:
         db.close()
 

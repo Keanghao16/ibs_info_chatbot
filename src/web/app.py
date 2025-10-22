@@ -2,7 +2,7 @@ import os
 from flask import Flask, redirect, url_for, session
 from ..utils.config import Config
 
-ADMIN_PREFIX = os.getenv('ADMIN_URL_PREFIX', '/portal/admin')
+ADMIN_PREFIX =  '/portal/admin'
 
 from .routes.auth import auth_bp
 from .routes.admin import admin_bp

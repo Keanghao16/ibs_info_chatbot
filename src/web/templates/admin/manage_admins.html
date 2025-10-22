@@ -935,15 +935,14 @@
 
     // Action Functions
     function viewAdmin(adminId) {
-        // Implement view admin details
-        console.log('View admin:', adminId);
-        window.location.href = `/admin/admin-details/${adminId}`;
+        // Redirect to admin profile view page
+        window.location.href = `/portal/admin/admin-profile/${adminId}`;
     }
 
     function editAdmin(adminId) {
         // Implement edit admin
         console.log('Edit admin:', adminId);
-        window.location.href = `/admin/edit-admin/${adminId}`;
+        window.location.href = `/portal/admin/edit-admin/${adminId}`;
     }
 
     function toggleAdminStatus(adminId, isActive) {
