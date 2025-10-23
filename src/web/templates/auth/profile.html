@@ -1,4 +1,4 @@
-{% extends "index.html" %}
+{% extends "master.html" %}
 
 {% block title %}Admin Profile - Telegram Bot Admin{% endblock %}
 
@@ -653,7 +653,7 @@
 
     <!-- Navigation Actions -->
     <div class="action-buttons">
-        <a href="{{ url_for('admin.dashboard') }}" class="btn-action btn-secondary">
+        <a href="{{ url_for('dashboard.dashboard') }}" class="btn-action btn-secondary">
             <i class="fas fa-home"></i>
             Back to Dashboard
         </a>

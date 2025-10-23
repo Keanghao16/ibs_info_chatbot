@@ -8,6 +8,8 @@ from .routes.auth import auth_bp
 from .routes.admin import admin_bp
 from .routes.users import users_bp
 from .routes.chats import chats_bp
+from .routes.dashboard import dashboard_bp
+from .routes.system_settings import system_settings_bp
 
 app = Flask(__name__)
 
@@ -22,6 +24,8 @@ app.register_blueprint(auth_bp, url_prefix=ADMIN_PREFIX)
 app.register_blueprint(admin_bp, url_prefix=ADMIN_PREFIX)
 app.register_blueprint(users_bp, url_prefix=ADMIN_PREFIX)
 app.register_blueprint(chats_bp, url_prefix=ADMIN_PREFIX)
+app.register_blueprint(dashboard_bp, url_prefix=ADMIN_PREFIX)
+app.register_blueprint(system_settings_bp, url_prefix=ADMIN_PREFIX)
 
 @app.route('/')
 def index():
@@ -37,7 +41,7 @@ def portal_admin_index():
     # Check if user is logged in by checking session
     if 'admin_token' in session and 'admin_info' in session:
         # User is logged in, redirect to dashboard
-        return redirect(url_for('admin.dashboard'))
+        return redirect(url_for('dashboard.dashboard'))
     else:
         # User is not logged in, redirect to login
         return redirect(url_for('auth.login'))

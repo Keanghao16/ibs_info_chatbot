@@ -118,7 +118,7 @@ def telegram_auth():
                     session['admin_info']['created_at'] = None
             
             flash('Login successful!', 'success')
-            return redirect(url_for('admin.dashboard'))
+            return redirect(url_for('dashboard.dashboard'))
         else:
             flash(result['message'], 'error')
             return redirect(url_for('auth.login'))

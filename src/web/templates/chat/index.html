@@ -1,4 +1,4 @@
-{% extends "index.html" %}
+{% extends "master.html" %}
 
 {% block title %}Chat Management - Telegram Bot Admin{% endblock %}
 
@@ -735,31 +735,30 @@
     }
 
     function sendMessage(sessionId) {
-        // Implement send message modal or redirect
         window.location.href = `/admin/chat/${sessionId}#send-message`;
     }
 
     function closeChat(sessionId) {
         if (confirm('Are you sure you want to close this chat session?')) {
-            fetch(`/admin/close-chat/${sessionId}`, {
+            fetch(`/admin/chat/close/${sessionId}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 }
             })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        alert('✅ Chat session closed successfully!');
-                        location.reload();
-                    } else {
-                        alert('❌ Failed to close chat: ' + data.message);
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert('❌ An error occurred while closing the chat.');
-                });
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('✅ Chat session closed successfully!');
+                    location.reload();
+                } else {
+                    alert('❌ Failed to close chat: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('❌ An error occurred while closing the chat.');
+            });
         }
     }
 

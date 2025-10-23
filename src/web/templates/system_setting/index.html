@@ -1,4 +1,4 @@
-{% extends "index.html" %}
+{% extends "master.html" %}
 
 {% block title %}System Settings - Telegram Bot Admin{% endblock %}
 
@@ -629,7 +629,7 @@
         </h2>
         <p class="section-description">Configure general system settings and preferences</p>
 
-        <form method="POST" action="{{ url_for('admin.save_general_settings') }}">
+        <form method="POST" action="{{ url_for('system_settings.save_general_settings') }}">
             <div class="form-group">
                 <label for="system_name">System Name</label>
                 <input type="text" id="system_name" name="system_name"
@@ -825,7 +825,7 @@
         </h2>
         <p class="section-description">Configure Telegram bot behavior and responses</p>
 
-        <form method="POST" action="{{ url_for('admin.save_bot_settings') }}">
+        <form method="POST" action="{{ url_for('system_settings.save_bot_settings') }}">
             <div class="form-group">
                 <label for="bot_username">Bot Username</label>
                 <input type="text" id="bot_username" name="bot_username"
@@ -887,7 +887,7 @@
         </h2>
         <p class="section-description">Configure email and push notifications</p>
 
-        <form method="POST" action="{{ url_for('admin.save_notification_settings') }}">
+        <form method="POST" action="{{ url_for('system_settings.save_notification_settings') }}">
             <div class="toggle-label">
                 <label class="toggle-switch">
                     <input type="checkbox" name="email_notifications" {{ 'checked' if settings and
@@ -965,7 +965,7 @@
         </div>
 
         <div class="modal-body">
-            <form id="faqForm" method="POST" action="{{ url_for('admin.save_faq') }}">
+            <form id="faqForm" method="POST" action="{{ url_for('system_settings.save_faq') }}">
                 <input type="hidden" id="faq_id" name="faq_id">
 
                 <div class="form-group">
@@ -1034,7 +1034,7 @@
         </div>
 
         <div class="modal-body">
-            <form id="categoryForm" method="POST" action="{{ url_for('admin.save_category') }}">
+            <form id="categoryForm" method="POST" action="{{ url_for('system_settings.save_category') }}">
                 <input type="hidden" id="category_id" name="category_id">
 
                 <div class="form-group">
@@ -1158,7 +1158,7 @@
 
     function deleteFAQ(faqId) {
         if (confirm('Are you sure you want to delete this FAQ?')) {
-            fetch(`/admin/delete-faq/${faqId}`, {
+            fetch(`/admin/system-settings/delete-faq/${faqId}`, {
                 method: 'DELETE',
                 headers: {
                     'Content-Type': 'application/json',
@@ -1222,7 +1222,7 @@
 
     function deleteCategory(categoryId) {
         if (confirm('Are you sure you want to delete this category?\n\nNote: You cannot delete categories that have FAQs assigned to them.')) {
-            fetch(`/admin/delete-category/${categoryId}`, {
+            fetch(`/admin/system-settings/delete-category/${categoryId}`, {
                 method: 'DELETE',
                 headers: {
                     'Content-Type': 'application/json',

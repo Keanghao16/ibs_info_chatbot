@@ -451,16 +451,16 @@
     {% if not request.endpoint or request.endpoint != 'auth.login' %}
     <nav class="navbar">
         <div class="navbar-container">
-            <a href="{{ url_for('admin.dashboard') }}" class="navbar-brand">
+            <a href="{{ url_for('dashboard.dashboard') }}" class="navbar-brand">
                 <i class="fab fa-telegram"></i>
                 <span>IBS Admin Panel</span>
             </a>
 
             <ul class="navbar-nav">
                 <li class="nav-item">
-                    <a href="{{ url_for('admin.dashboard') }}"
+                    <a href="{{ url_for('dashboard.dashboard') }}"
 
-                        class="nav-link {{ 'active' if request.endpoint == 'admin.dashboard' else '' }}">
+                        class="nav-link {{ 'active' if request.endpoint == 'dashboard.dashboard' else '' }}">
                         <i class="fas fa-tachometer-alt"></i>
                         <span>Dashboard</span>
                     </a>
@@ -474,9 +474,8 @@
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="{{ url_for('admin.chat_management') }}"
-
-                        class="nav-link {{ 'active' if request.endpoint == 'admin.chat_management' else '' }}">
+                    <a href="{{ url_for('chats.chat_management') }}"
+                        class="nav-link {{ 'active' if request.endpoint == 'chats.chat_management' else '' }}">
                         <i class="fas fa-comments"></i>
                         <span>Chats</span>
                     </a>
@@ -491,9 +490,8 @@
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="{{ url_for('admin.system_settings') }}"
-
-                        class="nav-link {{ 'active' if request.endpoint == 'admin.system_settings' else '' }}">
+                    <a href="{{ url_for('system_settings.index') }}"
+                        class="nav-link {{ 'active' if request.endpoint == 'system_settings.index' else '' }}">
                         <i class="fas fa-cogs"></i>
                         <span>System Settings</span>
                     </a>
