@@ -1,8 +1,11 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, session
 from ...database.connection import SessionLocal
 from ...database.models import User
 from ...services.user_service import UserService
 from .auth import any_admin_required, super_admin_required
+import asyncio
+from telegram import Bot
+import os
 
 users_bp = Blueprint('users', __name__)
 user_service = UserService()
@@ -29,8 +32,22 @@ def view_user(user_id):
             flash('User not found.', 'error')
             return redirect(url_for('users.list_users'))
         
-        # You can add more user details like chat history, messages, etc.
-        return render_template('user/user_detail.html', user=user)
+        # Create a user_info dict for the template
+        user_info = {
+            'id': user.id,
+            'telegram_id': user.telegram_id,
+            'username': user.username,
+            'first_name': user.first_name,
+            'last_name': user.last_name,
+            'full_name': user.full_name or f"{user.first_name or ''} {user.last_name or ''}".strip(),
+            'photo_url': user.photo_url,
+            'email': user.email if hasattr(user, 'email') else None,
+            'is_active': user.is_active,
+            'last_activity': user.last_activity,
+            'created_at': user.created_at
+        }
+        
+        return render_template('user/view.html', user_info=user_info)
     finally:
         db.close()
 
@@ -114,3 +131,53 @@ def search_users():
         })
     finally:
         db.close()
+
+@users_bp.route('/users/send-message', methods=['POST'])
+@any_admin_required
+def send_message_to_user():
+    """Send message to user via Telegram bot"""
+    try:
+        data = request.get_json()
+        telegram_id = data.get('telegram_id')
+        message = data.get('message')
+        
+        if not telegram_id or not message:
+            return jsonify({
+                'success': False,
+                'message': 'Missing telegram_id or message'
+            })
+        
+        # Get bot token from environment - check both BOT_TOKEN and TELEGRAM_BOT_TOKEN
+        bot_token = os.getenv('BOT_TOKEN') or os.getenv('TELEGRAM_BOT_TOKEN')
+        if not bot_token:
+            return jsonify({
+                'success': False,
+                'message': 'Bot token not configured'
+            })
+        
+        # Send message via Telegram bot
+        async def send_telegram_message():
+            bot = Bot(token=bot_token)
+            admin_name = session.get('admin_info', {}).get('full_name', 'Admin')
+            formatted_message = f"📩 *Message from {admin_name}*\n\n{message}"
+            
+            await bot.send_message(
+                chat_id=telegram_id,
+                text=formatted_message,
+                parse_mode='Markdown'
+            )
+        
+        # Run async function
+        asyncio.run(send_telegram_message())
+        
+        return jsonify({
+            'success': True,
+            'message': 'Message sent successfully'
+        })
+        
+    except Exception as e:
+        print(f"Error sending message: {e}")
+        return jsonify({
+            'success': False,
+            'message': f'Failed to send message: {str(e)}'
+        })

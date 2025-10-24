@@ -1,0 +1,728 @@
+{% extends "master.html" %}
+
+{% block title %}User Profile - {{ user_info.full_name or 'User' }}{% endblock %}
+
+{% block content %}
+<style>
+    .profile-container {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+
+    .page-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 40px;
+        border-radius: 20px;
+        margin-bottom: 30px;
+        text-align: center;
+        box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+    }
+
+    .page-header h1 {
+        font-size: 2.5em;
+        margin: 0 0 10px 0;
+        font-weight: 700;
+        color: white;
+    }
+
+    .page-header p {
+        font-size: 1.2em;
+        opacity: 0.9;
+        margin: 0;
+        color: white;
+    }
+
+    .profile-grid {
+        display: grid;
+        grid-template-columns: 1fr 2fr;
+        gap: 30px;
+        margin-bottom: 30px;
+    }
+
+    .profile-card {
+        background: white;
+        padding: 30px;
+        border-radius: 15px;
+        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+        text-align: center;
+    }
+
+    .profile-photo {
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        margin: 0 auto 20px;
+        display: block;
+        border: 4px solid #667eea;
+        object-fit: cover;
+    }
+
+    .profile-photo-placeholder {
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        margin: 0 auto 20px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 48px;
+        font-weight: bold;
+        border: 4px solid rgba(255, 255, 255, 0.3);
+    }
+
+    .profile-name {
+        font-size: 1.8em;
+        font-weight: 700;
+        color: #333;
+        margin-bottom: 10px;
+    }
+
+    .user-badge {
+        display: inline-block;
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-size: 13px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 20px;
+        background: #e3f2fd;
+        color: #1565c0;
+        border: 1px solid #90caf9;
+    }
+
+    .telegram-id-display {
+        background: linear-gradient(135deg, #37aee2 0%, #1e96c8 100%);
+        color: white;
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-size: 14px;
+        font-weight: 600;
+        display: inline-block;
+        margin-bottom: 15px;
+    }
+
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 13px;
+        font-weight: 600;
+    }
+
+    .status-active {
+        background: #d4edda;
+        color: #155724;
+    }
+
+    .status-inactive {
+        background: #f8d7da;
+        color: #721c24;
+    }
+
+    .profile-stats {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 15px;
+        margin-top: 20px;
+        padding-top: 20px;
+        border-top: 2px solid #e9ecef;
+    }
+
+    .stat-item {
+        text-align: center;
+    }
+
+    .stat-value {
+        font-size: 1.5em;
+        font-weight: 700;
+        color: #667eea;
+    }
+
+    .stat-label {
+        font-size: 13px;
+        color: #6c757d;
+        text-transform: uppercase;
+        font-weight: 600;
+        margin-top: 5px;
+    }
+
+    .info-section {
+        background: white;
+        padding: 30px;
+        border-radius: 15px;
+        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+        margin-bottom: 30px;
+    }
+
+    .section-title {
+        font-size: 1.5em;
+        font-weight: 700;
+        color: #333;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .info-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 20px;
+    }
+
+    .info-item {
+        padding: 15px;
+        background: #f8f9fa;
+        border-radius: 10px;
+        border-left: 4px solid #667eea;
+    }
+
+    .info-label {
+        font-size: 13px;
+        color: #6c757d;
+        text-transform: uppercase;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+        margin-bottom: 8px;
+    }
+
+    .info-value {
+        font-size: 16px;
+        color: #333;
+        font-weight: 600;
+        word-break: break-word;
+    }
+
+    .info-value a {
+        color: #37aee2;
+        text-decoration: none;
+        transition: color 0.2s ease;
+    }
+
+    .info-value a:hover {
+        color: #1e96c8;
+        text-decoration: underline;
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 15px;
+        margin-top: 30px;
+    }
+
+    .btn-action {
+        flex: 1;
+        padding: 15px 30px;
+        border: none;
+        border-radius: 10px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        font-size: 16px;
+        text-decoration: none;
+        color: white;
+    }
+
+    .btn-action:hover {
+        transform: translateY(-2px);
+        text-decoration: none;
+        color: white;
+    }
+
+    .btn-secondary {
+        background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
+    }
+
+    .btn-secondary:hover {
+        box-shadow: 0 5px 15px rgba(108, 117, 125, 0.3);
+    }
+
+    .btn-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+
+    .btn-primary:hover {
+        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+    }
+
+    .btn-success {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    }
+
+    .btn-success:hover {
+        box-shadow: 0 5px 15px rgba(40, 167, 69, 0.3);
+    }
+
+    .btn-danger {
+        background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+    }
+
+    .btn-danger:hover {
+        box-shadow: 0 5px 15px rgba(220, 53, 69, 0.3);
+    }
+
+    /* Modal Styles */
+    .modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        overflow: auto;
+        background-color: rgba(0, 0, 0, 0.5);
+    }
+
+    .modal-content {
+        max-width: 600px;
+        margin: 100px auto;
+        background: white;
+        padding: 30px;
+        border-radius: 15px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    }
+
+    .modal-header {
+        margin-bottom: 20px;
+        position: relative;
+    }
+
+    .modal-header h2 {
+        margin: 0;
+        color: #333;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .close-btn {
+        position: absolute;
+        right: 0;
+        top: 0;
+        background: none;
+        border: none;
+        font-size: 24px;
+        cursor: pointer;
+        color: #6c757d;
+        transition: color 0.2s ease;
+    }
+
+    .close-btn:hover {
+        color: #dc3545;
+    }
+
+    .form-group {
+        margin-bottom: 20px;
+    }
+
+    .form-label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 600;
+        color: #495057;
+    }
+
+    .form-input,
+    .form-textarea {
+        width: 100%;
+        padding: 10px;
+        border: 2px solid #e9ecef;
+        border-radius: 8px;
+        font-family: inherit;
+        font-size: 14px;
+        transition: border-color 0.2s ease;
+    }
+
+    .form-input:focus,
+    .form-textarea:focus {
+        outline: none;
+        border-color: #667eea;
+    }
+
+    .form-input[readonly] {
+        background: #f8f9fa;
+        cursor: not-allowed;
+    }
+
+    .form-textarea {
+        resize: vertical;
+        min-height: 100px;
+    }
+
+    .modal-actions {
+        display: flex;
+        gap: 10px;
+        justify-content: flex-end;
+        margin-top: 20px;
+    }
+
+    .btn-modal {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .btn-modal-cancel {
+        background: #6c757d;
+        color: white;
+    }
+
+    .btn-modal-cancel:hover {
+        background: #5a6268;
+    }
+
+    .btn-modal-send {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+
+    .btn-modal-send:hover {
+        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+    }
+
+    @media (max-width: 1024px) {
+        .profile-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .info-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .page-header {
+            padding: 30px 20px;
+        }
+
+        .action-buttons {
+            flex-direction: column;
+        }
+
+        .btn-action {
+            width: 100%;
+        }
+
+        .modal-content {
+            margin: 50px 20px;
+        }
+    }
+</style>
+
+<div class="profile-container">
+    <!-- Page Header -->
+    <div class="page-header">
+        <h1><i class="fas fa-user-circle"></i> User Profile</h1>
+        <p>Viewing {{ user_info.full_name or 'User' }}'s profile</p>
+    </div>
+
+    <!-- Profile Grid -->
+    <div class="profile-grid">
+        <!-- Profile Card -->
+        <div class="profile-card">
+            {% if user_info.photo_url %}
+            <img src="{{ user_info.photo_url }}" alt="Profile Photo" class="profile-photo">
+            {% else %}
+            <div class="profile-photo-placeholder">
+                {{ user_info.first_name[0] if user_info.first_name else
+                user_info.full_name[0] if user_info.full_name else 'U' }}
+            </div>
+            {% endif %}
+
+            <div class="profile-name">{{ user_info.full_name or 'Unknown User' }}</div>
+
+            <span class="user-badge">
+                <i class="fas fa-user"></i> Bot User
+            </span>
+
+            <div>
+                <span class="telegram-id-display">
+                    <i class="fab fa-telegram"></i> {{ user_info.telegram_id }}
+                </span>
+            </div>
+
+            <div style="margin-top: 20px;">
+                <span class="status-badge status-{{ 'active' if user_info.is_active else 'inactive' }}">
+                    {% if user_info.is_active %}
+                    <i class="fas fa-check-circle"></i> Active
+                    {% else %}
+                    <i class="fas fa-times-circle"></i> Inactive
+                    {% endif %}
+                </span>
+            </div>
+
+            <div class="profile-stats">
+                <div class="stat-item">
+                    <div class="stat-value">
+                        {% if user_info.last_activity %}
+                        <span id="daysSinceActive">0</span>
+                        {% else %}
+                        0
+                        {% endif %}
+                    </div>
+                    <div class="stat-label">Days Since Active</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">
+                        {% if user_info.created_at %}
+                        <span id="daysMember">0</span>
+                        {% else %}
+                        0
+                        {% endif %}
+                    </div>
+                    <div class="stat-label">Days as Member</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- User Information -->
+        <div class="info-section">
+            <h3 class="section-title">
+                <i class="fas fa-info-circle"></i>
+                User Information
+            </h3>
+
+            <div class="info-grid">
+                <div class="info-item">
+                    <div class="info-label"><i class="fas fa-user"></i> Full Name</div>
+                    <div class="info-value">{{ user_info.full_name or 'Not set' }}</div>
+                </div>
+
+                <div class="info-item">
+                    <div class="info-label"><i class="fab fa-telegram"></i> Telegram Name</div>
+                    <div class="info-value">
+                        {{ user_info.first_name or '' }} {{ user_info.last_name or '' }}
+                    </div>
+                </div>
+
+                <div class="info-item">
+                    <div class="info-label"><i class="fas fa-at"></i> Username</div>
+                    <div class="info-value">
+                        {% if user_info.username %}
+                        <a href="https://t.me/{{ user_info.username }}" target="_blank">
+                            @{{ user_info.username }}
+                        </a>
+                        {% else %}
+                        Not set
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="info-item">
+                    <div class="info-label"><i class="fas fa-id-badge"></i> Telegram ID</div>
+                    <div class="info-value">{{ user_info.telegram_id }}</div>
+                </div>
+
+                <div class="info-item">
+                    <div class="info-label"><i class="fas fa-clock"></i> Last Activity</div>
+                    <div class="info-value">
+                        {% if user_info.last_activity %}
+                        {{ user_info.last_activity.strftime('%Y-%m-%d %H:%M:%S') if user_info.last_activity is not string else user_info.last_activity[:19] }}
+                        {% else %}
+                        Never
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="info-item">
+                    <div class="info-label"><i class="fas fa-calendar-plus"></i> Joined Date</div>
+                    <div class="info-value">
+                        {% if user_info.created_at %}
+                        {{ user_info.created_at.strftime('%Y-%m-%d %H:%M:%S') if user_info.created_at is not string else user_info.created_at[:19] }}
+                        {% else %}
+                        Unknown
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="info-item">
+                    <div class="info-label"><i class="fas fa-toggle-on"></i> Account Status</div>
+                    <div class="info-value">
+                        {% if user_info.is_active %}
+                        <span style="color: #28a745;"><i class="fas fa-check-circle"></i> Active</span>
+                        {% else %}
+                        <span style="color: #dc3545;"><i class="fas fa-times-circle"></i> Inactive</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="info-item">
+                    <div class="info-label"><i class="fas fa-envelope"></i> Email</div>
+                    <div class="info-value">{{ user_info.email or 'Not provided' }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigation Actions -->
+    <div class="action-buttons">
+        <a href="{{ url_for('users.list_users') }}" class="btn-action btn-secondary">
+            <i class="fas fa-arrow-left"></i>
+            Back to Users
+        </a>
+        <button onclick="messageUser('{{ user_info.telegram_id }}')" class="btn-action btn-success">
+            <i class="fas fa-paper-plane"></i>
+            Send Message
+        </button>
+        {% if session.admin_info.role == 'super_admin' %}
+        <button onclick="toggleUserStatus({{ user_info.id }}, {{ user_info.is_active|lower }})" 
+                class="btn-action btn-danger">
+            <i class="fas fa-{{ 'user-slash' if user_info.is_active else 'user-check' }}"></i>
+            {{ 'Deactivate' if user_info.is_active else 'Activate' }} User
+        </button>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Message Modal -->
+<div id="messageModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>
+                <i class="fas fa-paper-plane"></i> Send Message to User
+            </h2>
+            <button onclick="closeMessageModal()" class="close-btn">×</button>
+        </div>
+        
+        <div class="modal-body">
+            <div class="form-group">
+                <label class="form-label">
+                    <i class="fab fa-telegram"></i> Telegram ID
+                </label>
+                <input type="text" id="modalTelegramId" class="form-input" readonly>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">
+                    <i class="fas fa-comment-dots"></i> Message
+                </label>
+                <textarea id="modalMessage" class="form-textarea" placeholder="Type your message here..."></textarea>
+            </div>
+        </div>
+
+        <div class="modal-actions">
+            <button onclick="closeMessageModal()" class="btn-modal btn-modal-cancel">
+                <i class="fas fa-times"></i> Cancel
+            </button>
+            <button onclick="sendMessageFromModal()" class="btn-modal btn-modal-send">
+                <i class="fas fa-paper-plane"></i> Send Message
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const now = new Date();
+
+        // Calculate days since last activity
+        {% if user_info.last_activity %}
+        const lastActivity = new Date('{{ user_info.last_activity.strftime("%Y-%m-%d %H:%M:%S") if user_info.last_activity is not string else user_info.last_activity[:19] }}');
+        const daysSinceActive = Math.floor((now - lastActivity) / (1000 * 60 * 60 * 24));
+        document.getElementById('daysSinceActive').textContent = daysSinceActive;
+        {% endif %}
+
+        // Calculate days as member
+        {% if user_info.created_at %}
+        const createdAt = new Date('{{ user_info.created_at.strftime("%Y-%m-%d %H:%M:%S") if user_info.created_at is not string else user_info.created_at[:19] }}');
+        const daysMember = Math.floor((now - createdAt) / (1000 * 60 * 60 * 24));
+        document.getElementById('daysMember').textContent = daysMember;
+        {% endif %}
+    });
+
+    // Message Modal Functions
+    function messageUser(telegramId) {
+        document.getElementById('messageModal').style.display = 'block';
+        document.getElementById('modalTelegramId').value = telegramId;
+        document.getElementById('modalMessage').value = '';
+        document.getElementById('modalMessage').focus();
+    }
+
+    function closeMessageModal() {
+        document.getElementById('messageModal').style.display = 'none';
+    }
+
+    function sendMessageFromModal() {
+        const telegramId = document.getElementById('modalTelegramId').value;
+        const message = document.getElementById('modalMessage').value.trim();
+        
+        if (!message) {
+            alert('⚠️ Please enter a message');
+            return;
+        }
+        
+        // Send message via API
+        fetch('/portal/admin/users/send-message', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                telegram_id: telegramId,
+                message: message
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('✅ Message sent successfully!');
+                closeMessageModal();
+            } else {
+                alert('❌ Failed to send message: ' + (data.message || 'Unknown error'));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('❌ Failed to send message. Please try again.');
+        });
+    }
+
+    // Close modal when clicking outside
+    window.onclick = function(event) {
+        const modal = document.getElementById('messageModal');
+        if (event.target === modal) {
+            closeMessageModal();
+        }
+    }
+
+    // Toggle User Status Function
+    function toggleUserStatus(userId, currentStatus) {
+        const action = currentStatus ? 'deactivate' : 'activate';
+        if (confirm(`Are you sure you want to ${action} this user?`)) {
+            fetch(`/portal/admin/users/toggle-status/${userId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert(data.message || 'Failed to update user status');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Failed to update user status. Please try again.');
+            });
+        }
+    }
+</script>
+{% endblock %}

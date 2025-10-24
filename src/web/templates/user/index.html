@@ -665,6 +665,48 @@
     <!-- Modal content will be populated by JavaScript -->
 </div>
 
+<!-- Message Modal -->
+<div id="messageModal" class="modal" style="display: none;">
+    <div class="modal-content" style="max-width: 600px; margin: 100px auto; background: white; padding: 30px; border-radius: 15px; box-shadow: 0 10px 40px rgba(0,0,0,0.2);">
+        <div class="modal-header" style="margin-bottom: 20px;">
+            <h2 style="margin: 0; color: #333;">
+                <i class="fas fa-paper-plane"></i> Send Message to User
+            </h2>
+            <button onclick="closeMessageModal()" style="background: none; border: none; font-size: 24px; cursor: pointer; float: right; color: #6c757d;">×</button>
+        </div>
+        
+        <div class="modal-body">
+            <div style="margin-bottom: 15px;">
+                <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #495057;">
+                    <i class="fab fa-telegram"></i> Telegram ID:
+                </label>
+                <input type="text" id="modalTelegramId" readonly 
+                       style="width: 100%; padding: 10px; border: 2px solid #e9ecef; border-radius: 8px; background: #f8f9fa;">
+            </div>
+            
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #495057;">
+                    <i class="fas fa-comment-dots"></i> Message:
+                </label>
+                <textarea id="modalMessage" rows="5" 
+                          placeholder="Type your message here..."
+                          style="width: 100%; padding: 10px; border: 2px solid #e9ecef; border-radius: 8px; resize: vertical; font-family: inherit;"></textarea>
+            </div>
+            
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button onclick="closeMessageModal()" 
+                        style="padding: 10px 20px; border: none; border-radius: 8px; background: #6c757d; color: white; font-weight: 600; cursor: pointer;">
+                    Cancel
+                </button>
+                <button onclick="sendMessageFromModal()" 
+                        style="padding: 10px 20px; border: none; border-radius: 8px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; font-weight: 600; cursor: pointer;">
+                    <i class="fas fa-paper-plane"></i> Send Message
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
     // Search and Filter Functionality
     const searchInput = document.getElementById('searchInput');
@@ -787,18 +829,55 @@
 
     // Action Functions
     function viewUser(userId) {
-        // Implement user details modal
-        console.log('View user:', userId);
-        // You can implement a modal or redirect to user details page
+        // Redirect to user profile view page
+        window.location.href = `/portal/admin/users/${userId}`;
     }
 
     function messageUser(telegramId) {
-        // Implement messaging functionality
-        const message = prompt('Enter message to send to user:');
-        if (message) {
-            // Send API request to send message
-            console.log('Send message to:', telegramId, 'Message:', message);
+        // Show modal
+        document.getElementById('messageModal').style.display = 'block';
+        document.getElementById('modalTelegramId').value = telegramId;
+        document.getElementById('modalMessage').value = '';
+        document.getElementById('modalMessage').focus();
+    }
+
+    function closeMessageModal() {
+        document.getElementById('messageModal').style.display = 'none';
+    }
+
+    function sendMessageFromModal() {
+        const telegramId = document.getElementById('modalTelegramId').value;
+        const message = document.getElementById('modalMessage').value.trim();
+        
+        if (!message) {
+            alert('Please enter a message');
+            return;
         }
+        
+        // Send message via API
+        fetch('/portal/admin/users/send-message', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                telegram_id: telegramId,
+                message: message
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('✅ Message sent successfully!');
+                closeMessageModal();
+            } else {
+                alert('❌ Failed to send message: ' + (data.message || 'Unknown error'));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('❌ Failed to send message. Please try again.');
+        });
     }
 
     // Update the toggleUserStatus function to use the new endpoint
@@ -831,6 +910,14 @@
         // Implement CSV export
         console.log('Exporting users to CSV...');
         // You can implement CSV generation and download here
+    }
+
+    // Close modal when clicking outside
+    window.onclick = function(event) {
+        const modal = document.getElementById('messageModal');
+        if (event.target === modal) {
+            closeMessageModal();
+        }
     }
 
     // Initialize
