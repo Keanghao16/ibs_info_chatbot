@@ -2,7 +2,7 @@ from telegram import Update
 from telegram.ext import ContextTypes
 from ..keyboards.inline import main_keyboard
 from ...database.connection import SessionLocal
-from ...services.user_service import find_or_create_user
+from ...services.user_service import UserService
 from ...database.models import User
 from datetime import datetime
 
@@ -36,8 +36,9 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         
         user_data = TelegramUserData(user, photo_url)
         
-        # Use the find_or_create_user service function
-        existing_user = find_or_create_user(db, user_data)
+        # Create UserService instance and use it
+        user_service = UserService()
+        existing_user = user_service.find_or_create_user(db, user_data)
         
         # Check if this is a new user (just created)
         is_new_user = existing_user.created_at and (

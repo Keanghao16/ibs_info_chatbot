@@ -2,7 +2,7 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
 from ...database.connection import SessionLocal
 from ...database.models import ChatSession, User, Admin, AdminRole, FAQ
-from ...services.user_service import find_or_create_user
+from ...services.user_service import UserService
 from ...services.faq_service import FAQService
 
 async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -35,7 +35,10 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 self.photo_url = photo_url
         
         user_data = TelegramUserData(telegram_user, photo_url)
-        user = find_or_create_user(db, user_data)
+        
+        # Create UserService instance and use it
+        user_service = UserService()
+        user = user_service.find_or_create_user(db, user_data)
 
         if query.data == "start_chat":
             if user:
