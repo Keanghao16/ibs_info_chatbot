@@ -6,6 +6,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Telegram Bot Admin Panel{% endblock %}</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- Add Socket.IO and extra scripts HERE in the head -->
+    {% block extra_head %}{% endblock %}
+    
     <style>
         /* Modern Base Styling */
         * {
@@ -566,7 +570,7 @@
     </div>
 
     <!-- Footer - Hide on login page -->
-    {% if not request.endpoint or request.endpoint != 'auth.login' %}
+    {% if not request.endpoint or (request.endpoint != 'auth.login' and request.endpoint != 'chats.live_chat') %}
     <footer class="footer">
         <p>&copy; 2024 Telegram Bot Admin Panel. Made with <i class="fas fa-heart" style="color: #e74c3c;"></i> for
             better user management.</p>

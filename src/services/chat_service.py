@@ -89,11 +89,39 @@ class ChatService:
             "chat_message": new_message
         }
     
-    def get_chat_messages(self, db: Session, user_id: int):
-        """Get all messages for a user"""
-        return db.query(ChatMessage).filter(
-            ChatMessage.user_id == user_id
-        ).order_by(ChatMessage.timestamp).all()
+    def get_chat_messages(self, db: Session, user_id: int, admin_id: int = None):
+        """Get all messages for a user, optionally filtered by admin"""
+        query = db.query(ChatMessage).filter(ChatMessage.user_id == user_id)
+        
+        # If admin_id provided, filter messages for this specific chat session
+        if admin_id:
+            query = query.filter(
+                (ChatMessage.admin_id == admin_id) | (ChatMessage.admin_id == None)
+            )
+        
+        return query.order_by(ChatMessage.timestamp).all()
+    
+    def get_session_messages(self, db: Session, session_id: int):
+        """Get messages for a specific chat session"""
+        # Get the session first
+        session = db.query(ChatSession).filter(ChatSession.id == session_id).first()
+        
+        if not session:
+            return []
+        
+        # Get messages for this user and admin combination
+        query = db.query(ChatMessage).filter(
+            ChatMessage.user_id == session.user_id
+        )
+        
+        # Filter by admin if assigned
+        if session.admin_id:
+            query = query.filter(
+                (ChatMessage.admin_id == session.admin_id) | 
+                (ChatMessage.admin_id == None)
+            )
+        
+        return query.order_by(ChatMessage.timestamp).all()
     
     def check_chat_access(self, db: Session, session_id: int, admin_id: int, admin_role: str):
         """Check if admin has access to a specific chat"""

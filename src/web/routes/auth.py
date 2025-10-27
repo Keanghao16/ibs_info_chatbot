@@ -39,7 +39,7 @@ def super_admin_required(f):
         admin_role = session['admin_info'].get('role')
         if admin_role != 'super_admin':
             flash('Access denied. Super Admin privileges required.', 'error')
-            return redirect(url_for('admin.dashboard'))
+            return redirect(url_for('dashboard.dashboard'))
         
         return f(*args, **kwargs)
     return decorated_function
@@ -191,4 +191,4 @@ def change_availability():
     finally:
         db.close()
     
-    return redirect(url_for('admin.dashboard'))
+    return redirect(url_for('dashboard.dashboard'))

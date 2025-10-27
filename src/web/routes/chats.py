@@ -136,3 +136,66 @@ def user_chat_history(user_id):
     finally:
         db.close()
 
+@chats_bp.route('/live-chat')
+@any_admin_required
+def live_chat():
+    """Live chat interface with WebSocket"""
+    db = SessionLocal()
+    try:
+        current_admin_id = session['admin_info']['id']
+        admin_role = session['admin_info']['role']
+        
+        # Get active sessions
+        if admin_role == 'admin':
+            sessions = chat_service.get_active_chat_sessions(db, current_admin_id)
+        else:
+            sessions = chat_service.get_active_chat_sessions(db)
+            
+        return render_template('chat/live_chat.html', sessions=sessions)
+    finally:
+        db.close()
+
+@chats_bp.route('/chat/<int:session_id>/messages')
+@any_admin_required
+def get_chat_messages_route(session_id):  # Renamed to avoid confusion
+    """Get messages for a specific chat session"""
+    print(f"📩 GET /chat/{session_id}/messages endpoint called")  # Debug log
+    db = SessionLocal()
+    try:
+        current_admin_id = session['admin_info']['id']
+        admin_role = session['admin_info']['role']
+        
+        print(f"Admin {current_admin_id} requesting messages for session {session_id}")
+        
+        # Check access
+        access_result = chat_service.check_chat_access(db, session_id, current_admin_id, admin_role)
+        
+        if not access_result['success']:
+            print(f"❌ Access denied: {access_result['message']}")
+            return jsonify({'success': False, 'message': access_result['message']})
+        
+        chat_session = access_result['session']
+        print(f"✅ Access granted. User ID: {chat_session.user_id}")
+        
+        # Get messages for this specific session
+        messages = chat_service.get_session_messages(db, session_id)
+        print(f"📨 Found {len(messages)} messages")
+        
+        return jsonify({
+            'success': True,
+            'messages': [{
+                'id': msg.id,
+                'message': msg.message,
+                'is_from_admin': msg.is_from_admin,
+                'timestamp': msg.timestamp.isoformat() if msg.timestamp else None,
+                'admin_name': msg.admin.full_name if msg.admin else None
+            } for msg in messages]
+        })
+    except Exception as e:
+        print(f"❌ Error getting messages: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'message': str(e)})
+    finally:
+        db.close()
+
