@@ -1,8 +1,8 @@
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
 from ...database.connection import SessionLocal
-from ...database.models import ChatSession, User, Admin, AdminRole, FAQ
-from ...services.user_service import UserService
+from ...database.models import ChatSession, Admin, AdminRole
+from ...services.user_service import get_user_or_admin_by_telegram_id, create_user_if_not_admin
 from ...services.faq_service import FAQService
 
 async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -11,10 +11,9 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     db = SessionLocal()
     try:
-        user_id = query.from_user.id
         telegram_user = query.from_user
         
-        # Get user profile photo if not already saved
+        # Get user profile photo
         photo_url = None
         try:
             photos = await context.bot.get_user_profile_photos(telegram_user.id, limit=1)
@@ -25,20 +24,30 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         except Exception as e:
             print(f"Error fetching user photo: {e}")
         
-        # Create user data object with photo
-        class TelegramUserData:
-            def __init__(self, telegram_user, photo_url=None):
-                self.id = telegram_user.id
-                self.username = telegram_user.username
-                self.first_name = telegram_user.first_name
-                self.last_name = telegram_user.last_name
-                self.photo_url = photo_url
+        # Check if user is admin
+        record, user_type = get_user_or_admin_by_telegram_id(db, str(telegram_user.id))
         
-        user_data = TelegramUserData(telegram_user, photo_url)
+        if user_type == "admin":
+            await query.edit_message_text(
+                "⚠️ Admin accounts cannot use regular user features.\n"
+                "Please use the admin panel."
+            )
+            return
         
-        # Create UserService instance and use it
-        user_service = UserService()
-        user = user_service.find_or_create_user(db, user_data)
+        # Create user if not exists
+        user = create_user_if_not_admin(
+            db=db,
+            telegram_id=str(telegram_user.id),
+            username=telegram_user.username,
+            first_name=telegram_user.first_name,
+            last_name=telegram_user.last_name,
+            full_name=telegram_user.full_name,
+            photo_url=photo_url
+        )
+        
+        if not user:
+            await query.edit_message_text("⚠️ Please use /start first.")
+            return
 
         if query.data == "start_chat":
             if user:

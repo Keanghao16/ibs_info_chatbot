@@ -1,20 +1,19 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session, jsonify
 from ...database.connection import SessionLocal
-from ...database.models import User, ChatSession, Admin, ChatMessage, AdminRole
-from ...services.auth_service import AuthService
 from ...services.admin_service import AdminService
-from .auth import login_required, super_admin_required, any_admin_required
+from .auth import super_admin_required, any_admin_required
 
 admin_bp = Blueprint('admin', __name__)
 admin_service = AdminService()
 
-@admin_bp.route('/manage-admins')
+@admin_bp.route('/administrators')
 @super_admin_required
 def manage_admins():
+    """List all administrators"""
     db = SessionLocal()
     try:
         admins = admin_service.get_all_admins(db)
-        return render_template('admin/manage_admins.html', admins=admins)
+        return render_template('admin/index.html', admins=admins)
     finally:
         db.close()
 
@@ -24,39 +23,41 @@ def create_admin_telegram():
     """Create new admin using Telegram ID"""
     db = SessionLocal()
     try:
-        auth_service = AuthService()
-        
         telegram_id = request.form.get('telegram_id')
         full_name = request.form.get('full_name')
         role = request.form.get('role', 'admin')
         division = request.form.get('division')
         
-        result = auth_service.create_admin_telegram(
+        # Validate inputs
+        if not telegram_id or not full_name:
+            flash('Telegram ID and Full Name are required.', 'error')
+            return redirect(url_for('admin.manage_admins'))
+        
+        # Create admin using service
+        result = admin_service.create_admin(
             db=db,
             telegram_id=telegram_id,
             full_name=full_name,
-            role=role
+            role=role,
+            division=division
         )
         
         if result['success']:
-            if role == 'admin' and division:
-                new_admin = db.query(Admin).filter(Admin.telegram_id == telegram_id).first()
-                new_admin.division = division
-                db.commit()
-            
-            flash('Admin created successfully!', 'success')
+            flash(result['message'], 'success')
         else:
             flash(result['message'], 'error')
             
     except Exception as e:
         print(f"Error creating admin: {e}")
+        import traceback
+        traceback.print_exc()
         flash('Error creating admin account.', 'error')
     finally:
         db.close()
     
     return redirect(url_for('admin.manage_admins'))
 
-@admin_bp.route('/admin/toggle-admin-status/<int:admin_id>', methods=['POST'])
+@admin_bp.route('/admin/toggle-admin-status/<string:admin_id>', methods=['POST'])
 @super_admin_required
 def toggle_admin_status(admin_id):
     """Toggle admin active status"""
@@ -67,6 +68,8 @@ def toggle_admin_status(admin_id):
         return jsonify(result)
     except Exception as e:
         print(f"Error toggling admin status: {e}")
+        import traceback
+        traceback.print_exc()
         return jsonify({'success': False, 'message': 'Error updating admin status'})
     finally:
         db.close()
@@ -83,46 +86,113 @@ def toggle_availability():
         if result['success']:
             # Update session
             session['admin_info']['is_available'] = result['is_available']
+            session.modified = True
         
         return jsonify(result)
+    except Exception as e:
+        print(f"Error toggling availability: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'message': 'Error updating availability'})
     finally:
         db.close()
 
-@admin_bp.route('/admin-profile/<int:admin_id>')
+@admin_bp.route('/administrators/<string:admin_id>')
 @super_admin_required
 def view_admin_profile(admin_id):
     """View another admin's profile"""
     db = SessionLocal()
     try:
-        # Get the admin to view
-        admin = db.query(Admin).filter(Admin.id == admin_id).first()
+        admin_info = admin_service.get_admin_info(db, admin_id)
         
-        if not admin:
+        if not admin_info:
             flash('Admin not found.', 'error')
             return redirect(url_for('admin.manage_admins'))
-        
-        # Create a temporary admin_info dict for the template
-        admin_info = {
-            'id': admin.id,
-            'telegram_id': admin.telegram_id,
-            'telegram_username': admin.telegram_username,
-            'telegram_first_name': admin.telegram_first_name,
-            'telegram_last_name': admin.telegram_last_name,
-            'telegram_photo_url': admin.telegram_photo_url,
-            'full_name': admin.full_name,
-            'role': admin.role.value if admin.role else 'admin',
-            'is_active': admin.is_active,
-            'division': admin.division,
-            'is_available': admin.is_available,
-            'last_login': admin.last_login.strftime('%Y-%m-%d %H:%M:%S') if admin.last_login else None,
-            'created_at': admin.created_at.strftime('%Y-%m-%d %H:%M:%S') if admin.created_at else None
-        }
         
         # Flag to indicate this is viewing another admin's profile
         is_viewing_other = True
         
-        return render_template('admin/admin_profile_view.html', 
+        return render_template('admin/view.html', 
                              admin_info=admin_info,
                              is_viewing_other=is_viewing_other)
+    finally:
+        db.close()
+
+@admin_bp.route('/administrators/<string:admin_id>/edit', methods=['GET', 'POST'])
+@super_admin_required
+def edit_admin(admin_id):
+    """Edit admin profile"""
+    db = SessionLocal()
+    try:
+        if request.method == 'POST':
+            # Get form data
+            full_name = request.form.get('full_name', '').strip()
+            division = request.form.get('division', '').strip()
+            role = request.form.get('role')
+            
+            # Update admin using service
+            result = admin_service.update_admin_profile(
+                db=db,
+                admin_id=admin_id,
+                full_name=full_name,
+                division=division,
+                role=role
+            )
+            
+            if result['success']:
+                flash(result['message'], 'success')
+                return redirect(url_for('admin.view_admin_profile', admin_id=admin_id))
+            else:
+                flash(result['message'], 'error')
+        
+        # GET request - show edit form
+        admin_info = admin_service.get_admin_info(db, admin_id)
+        
+        if not admin_info:
+            flash('Admin not found.', 'error')
+            return redirect(url_for('admin.administrators'))
+        
+        return render_template('admin/edit.html', admin_info=admin_info)
+        
+    except Exception as e:
+        print(f"Error editing admin: {e}")
+        import traceback
+        traceback.print_exc()
+        flash('Error updating admin profile.', 'error')
+        return redirect(url_for('admin.manage_admins'))
+    finally:
+        db.close()
+
+@admin_bp.route('/admin/delete-admin/<string:admin_id>', methods=['POST'])
+@super_admin_required
+def delete_admin(admin_id):
+    """Delete admin account (super admin only)"""
+    db = SessionLocal()
+    try:
+        current_admin_id = session['admin_info']['id']
+        result = admin_service.delete_admin(db, admin_id, current_admin_id)
+        return jsonify(result)
+    except Exception as e:
+        print(f"Error deleting admin: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'success': False,
+            'message': f'Error deleting admin: {str(e)}'
+        })
+    finally:
+        db.close()
+
+@admin_bp.route('/admin/api/stats')
+@super_admin_required
+def admin_stats():
+    """API endpoint for admin statistics"""
+    db = SessionLocal()
+    try:
+        result = admin_service.get_admin_statistics(db)
+        return jsonify(result)
+    except Exception as e:
+        print(f"Error fetching admin stats: {e}")
+        return jsonify({"success": False, "message": "Error fetching statistics"})
     finally:
         db.close()

@@ -1,7 +1,10 @@
-from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, DateTime, Enum, func, Text
+from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, DateTime, Enum, func, Text, event, text
 from sqlalchemy.orm import relationship
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.dialects.mysql import CHAR
 from .connection import Base
 import enum
+import uuid
 
 class SessionStatus(enum.Enum):
     active = "active"
@@ -14,8 +17,8 @@ class AdminRole(enum.Enum):
 class User(Base):
     __tablename__ = "users"
 
-    id = Column(Integer, primary_key=True, index=True)
-    telegram_id = Column(String(50), unique=True, nullable=False)
+    id = Column(CHAR(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    telegram_id = Column(String(50), unique=True, nullable=False, index=True)
     username = Column(String(255), nullable=True)
     first_name = Column(String(255), nullable=True)
     last_name = Column(String(255), nullable=True)
@@ -31,8 +34,8 @@ class User(Base):
 class Admin(Base):
     __tablename__ = "admins"
 
-    id = Column(Integer, primary_key=True, index=True)
-    telegram_id = Column(String(50), unique=True, nullable=False)
+    id = Column(CHAR(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    telegram_id = Column(String(50), unique=True, nullable=False, index=True)
     telegram_username = Column(String(255), nullable=True)
     telegram_first_name = Column(String(255), nullable=True)
     telegram_last_name = Column(String(255), nullable=True)
@@ -54,8 +57,8 @@ class ChatSession(Base):
     __tablename__ = "sessions"
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"))
-    admin_id = Column(Integer, ForeignKey("admins.id"))
+    user_id = Column(CHAR(36), ForeignKey("users.id"))
+    admin_id = Column(CHAR(36), ForeignKey("admins.id"), nullable=True)
     start_time = Column(DateTime(timezone=True), server_default=func.now())
     end_time = Column(DateTime(timezone=True), nullable=True)
     status = Column(Enum(SessionStatus), default=SessionStatus.active)
@@ -67,8 +70,8 @@ class ChatMessage(Base):
     __tablename__ = "chat_messages"
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"))
-    admin_id = Column(Integer, ForeignKey("admins.id"), nullable=True)
+    user_id = Column(CHAR(36), ForeignKey("users.id"))
+    admin_id = Column(CHAR(36), ForeignKey("admins.id"), nullable=True)
     message = Column(Text, nullable=False)
     timestamp = Column(DateTime(timezone=True), server_default=func.now())
     is_from_admin = Column(Boolean, default=False)
@@ -134,3 +137,37 @@ class FAQ(Base):
     
     # Relationship
     faq_category = relationship("FAQCategory", back_populates="faqs")
+
+# Add these event listeners at the end of the file
+
+@event.listens_for(User, 'before_insert')
+@event.listens_for(User, 'before_update')
+def check_user_telegram_id_not_in_admins(mapper, connection, target):
+    """Prevent telegram_id from existing in both users and admins tables"""
+    if target.telegram_id:
+        result = connection.execute(
+            text("SELECT 1 FROM admins WHERE telegram_id = :telegram_id LIMIT 1"),
+            {"telegram_id": target.telegram_id}
+        ).first()
+        if result:
+            raise IntegrityError(
+                f"Telegram ID {target.telegram_id} already exists as admin",
+                params=None,
+                orig=None
+            )
+
+@event.listens_for(Admin, 'before_insert')
+@event.listens_for(Admin, 'before_update')
+def check_admin_telegram_id_not_in_users(mapper, connection, target):
+    """Prevent telegram_id from existing in both users and admins tables"""
+    if target.telegram_id:
+        result = connection.execute(
+            text("SELECT 1 FROM users WHERE telegram_id = :telegram_id LIMIT 1"),
+            {"telegram_id": target.telegram_id}
+        ).first()
+        if result:
+            raise IntegrityError(
+                f"Telegram ID {target.telegram_id} already exists as user",
+                params=None,
+                orig=None
+            )

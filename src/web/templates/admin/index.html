@@ -936,19 +936,18 @@
     // Action Functions
     function viewAdmin(adminId) {
         // Redirect to admin profile view page
-        window.location.href = `/portal/admin/admin-profile/${adminId}`;
+        window.location.href = `/portal/admin/administrators/${adminId}`;
     }
 
     function editAdmin(adminId) {
-        // Implement edit admin
-        console.log('Edit admin:', adminId);
-        window.location.href = `/portal/admin/edit-admin/${adminId}`;
+        // FIXED: Use correct URL prefix with /admin/ before /edit-admin/
+        window.location.href = `/portal/admin/administrators/${adminId}/edit`;
     }
 
     function toggleAdminStatus(adminId, isActive) {
         const action = isActive ? 'deactivate' : 'activate';
         if (confirm(`Are you sure you want to ${action} this administrator?`)) {
-            fetch(`/admin/toggle-admin-status/${adminId}`, {
+            fetch(`/portal/admin/admin/toggle-admin-status/${adminId}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -960,12 +959,12 @@
                     if (data.success) {
                         location.reload();
                     } else {
-                        alert('Failed to update status: ' + data.message);
+                        alert('Error: ' + data.message);
                     }
                 })
                 .catch(error => {
                     console.error('Error:', error);
-                    alert('An error occurred while updating admin status.');
+                    alert('Error toggling admin status');
                 });
         }
     }
