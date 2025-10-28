@@ -471,15 +471,14 @@
                 </li>
                 <li class="nav-item">
                     <a href="{{ url_for('users.list_users') }}"
-
-                        class="nav-link {{ 'active' if request.endpoint == 'users.list_users' else '' }}">
+                        class="nav-link {{ 'active' if request.endpoint and request.endpoint.startswith('users.') else '' }}">
                         <i class="fas fa-users"></i>
                         <span>Users</span>
                     </a>
                 </li>
                 <li class="nav-item">
                     <a href="{{ url_for('chats.chat_management') }}"
-                        class="nav-link {{ 'active' if request.endpoint == 'chats.chat_management' else '' }}">
+                        class="nav-link {{ 'active' if request.endpoint and request.endpoint.startswith('chats.') else '' }}">
                         <i class="fas fa-comments"></i>
                         <span>Chats</span>
                     </a>
@@ -487,8 +486,7 @@
                 {% if session.admin_info and session.admin_info.role == 'super_admin' %}
                 <li class="nav-item">
                     <a href="{{ url_for('admin.manage_admins') }}"
-
-                        class="nav-link {{ 'active' if request.endpoint == 'admin.manage_admins' else '' }}">
+                        class="nav-link {{ 'active' if request.endpoint and request.endpoint.startswith('admin.') else '' }}">
                         <i class="fas fa-user-shield"></i>
                         <span>Admins</span>
                     </a>
@@ -526,12 +524,7 @@
                         <i class="fas fa-user"></i>
                         My Profile
                     </a>
-                    {% if session.admin_info.role == 'admin' %}
-                    <a href="#" onclick="toggleAvailability()" class="dropdown-item">
-                        <i class="fas fa-toggle-{{ 'on' if session.admin_info.is_available else 'off' }}"></i>
-                        {{ 'Set Unavailable' if session.admin_info.is_available else 'Set Available' }}
-                    </a>
-                    {% endif %}
+
                     <div style="border-top: 1px solid #eee; margin: 8px 0;"></div>
                     <a href="{{ url_for('auth.logout') }}" class="dropdown-item danger">
                         <i class="fas fa-sign-out-alt"></i>
