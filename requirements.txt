@@ -9,3 +9,6 @@ gunicorn
 PyJWT==2.8.0
 Werkzeug==2.3.7
 cryptography>=3.4.8
+flask-socketio==5.3.6
+python-socketio==5.11.0
+eventlet==0.33.3

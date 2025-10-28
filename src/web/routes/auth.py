@@ -16,7 +16,7 @@ def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if 'admin_token' not in session:
-            return redirect(url_for('auth.login'))
+            return redirect(url_for('auth.login'))  # Will automatically use /portal/admin/login
         
         # Verify token
         token_result = auth_service.verify_token(session['admin_token'])
@@ -39,7 +39,7 @@ def super_admin_required(f):
         admin_role = session['admin_info'].get('role')
         if admin_role != 'super_admin':
             flash('Access denied. Super Admin privileges required.', 'error')
-            return redirect(url_for('admin.dashboard'))
+            return redirect(url_for('dashboard.dashboard'))
         
         return f(*args, **kwargs)
     return decorated_function
@@ -63,10 +63,10 @@ def any_admin_required(f):
 @auth_bp.route('/login')
 def login():
     """Show Telegram login page"""
-    bot_username = os.getenv("BOT_USERNAME", "YourBotUsername")  # Add this to .env
+    bot_username = os.getenv("BOT_USERNAME", "YourBotUsername")
     return render_template('auth/login.html', bot_username=bot_username)
 
-@auth_bp.route('/auth/telegram', methods=['GET', 'POST'])
+@auth_bp.route('/telegram', methods=['GET', 'POST'])
 def telegram_auth():
     """Handle Telegram authentication callback"""
     telegram_data = {}
@@ -99,8 +99,26 @@ def telegram_auth():
         if result['success']:
             session['admin_token'] = result['token']
             session['admin_info'] = result['admin']
+            
+            # Format datetime fields for session storage
+            admin_id = result['admin']['id']
+            admin = db.query(Admin).filter(Admin.id == admin_id).first()
+            
+            if admin:
+                # Format last_login
+                if admin.last_login:
+                    session['admin_info']['last_login'] = admin.last_login.strftime('%Y-%m-%d %H:%M:%S')
+                else:
+                    session['admin_info']['last_login'] = None
+                
+                # Format created_at if needed
+                if admin.created_at:
+                    session['admin_info']['created_at'] = admin.created_at.strftime('%Y-%m-%d %H:%M:%S')
+                else:
+                    session['admin_info']['created_at'] = None
+            
             flash('Login successful!', 'success')
-            return redirect(url_for('admin.dashboard'))
+            return redirect(url_for('dashboard.dashboard'))
         else:
             flash(result['message'], 'error')
             return redirect(url_for('auth.login'))
@@ -123,36 +141,27 @@ def logout():
 def profile():
     return render_template('auth/profile.html')
 
-@auth_bp.route('/auth/update-profile', methods=['POST'])
+@auth_bp.route('/update-profile', methods=['POST'])
 @login_required
 def update_profile():
     """Update admin profile information."""
     full_name = request.form.get('full_name', '').strip()
     division = request.form.get('division', '').strip()
     
-    if not full_name:
-        flash('Full name is required.', 'error')
-        return redirect(url_for('auth.profile'))
-    
     db = SessionLocal()
     try:
         admin_id = session.get('admin_info', {}).get('id')
-        admin = db.query(Admin).filter(Admin.id == admin_id).first()
+        result = auth_service.update_admin_profile(db, admin_id, full_name, division)
         
-        if admin:
-            admin.full_name = full_name
-            if admin.role == AdminRole.admin:  # Only regular admins have divisions
-                admin.division = division
-            db.commit()
+        if result['success']:
+            # Update session info with new data
+            session['admin_info']['full_name'] = result['admin']['full_name']
+            if result['admin']['role'] == 'admin':
+                session['admin_info']['division'] = result['admin']['division']
             
-            # Update session info
-            session['admin_info']['full_name'] = full_name
-            if admin.role == AdminRole.admin:
-                session['admin_info']['division'] = division
-            
-            flash('Profile updated successfully!', 'success')
+            flash(result['message'], 'success')
         else:
-            flash('Admin not found.', 'error')
+            flash(result['message'], 'error')
     except Exception as e:
         print(f"Error updating profile: {e}")
         flash('Error updating profile.', 'error')
@@ -161,34 +170,25 @@ def update_profile():
     
     return redirect(url_for('auth.profile'))
 
-@auth_bp.route('/auth/change-availability', methods=['POST'])
+@auth_bp.route('/change-availability', methods=['POST'])
 @any_admin_required
 def change_availability():
     """Toggle admin availability for chat assignment."""
-    if session.get('admin_info', {}).get('role') != 'admin':
-        flash('Only regular admins can change availability status.', 'error')
-        return redirect(url_for('admin.dashboard'))
-    
     db = SessionLocal()
     try:
         admin_id = session.get('admin_info', {}).get('id')
-        admin = db.query(Admin).filter(Admin.id == admin_id).first()
+        result = auth_service.toggle_admin_availability(db, admin_id)
         
-        if admin:
-            admin.is_available = not admin.is_available
-            db.commit()
-            
+        if result['success']:
             # Update session info
-            session['admin_info']['is_available'] = admin.is_available
-            
-            status = "available" if admin.is_available else "unavailable"
-            flash(f"You are now {status} for new chat assignments.", "success")
+            session['admin_info']['is_available'] = result['is_available']
+            flash(result['message'], 'success')
         else:
-            flash("Admin not found.", "error")
+            flash(result['message'], 'error')
     except Exception as e:
         print(f"Error changing availability: {e}")
         flash("Error updating availability status.", "error")
     finally:
         db.close()
     
-    return redirect(url_for('admin.dashboard'))
+    return redirect(url_for('dashboard.dashboard'))

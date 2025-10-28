@@ -1,226 +1,698 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Profile</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/auth.css') }}">
-    <style>
-        .profile-photo {
-            width: 80px;
-            height: 80px;
-            border-radius: 50%;
-            margin: 0 auto 20px;
-            display: block;
-            border: 3px solid #667eea;
+{% extends "master.html" %}
+
+{% block title %}Admin Profile - Telegram Bot Admin{% endblock %}
+
+{% block content %}
+<style>
+    .profile-container {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+
+    /* Enhanced Page Header - Consistent with other pages */
+    .page-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 40px;
+        border-radius: 20px;
+        margin-bottom: 30px;
+        text-align: center;
+        box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+    }
+
+    .page-header h1 {
+        font-size: 2.5em;
+        margin: 0 0 10px 0;
+        font-weight: 700;
+        color: white;
+    }
+
+    .page-header p {
+        font-size: 1.2em;
+        opacity: 0.9;
+        margin: 0;
+        color: white;
+    }
+
+    /* Profile Grid Layout */
+    .profile-grid {
+        display: grid;
+        grid-template-columns: 1fr 2fr;
+        gap: 30px;
+        margin-bottom: 30px;
+    }
+
+    /* Profile Card */
+    .profile-card {
+        background: white;
+        padding: 30px;
+        border-radius: 15px;
+        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+        text-align: center;
+    }
+
+    .profile-photo {
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        margin: 0 auto 20px;
+        display: block;
+        border: 4px solid #667eea;
+        object-fit: cover;
+    }
+
+    .profile-photo-placeholder {
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        margin: 0 auto 20px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 48px;
+        font-weight: bold;
+        border: 4px solid rgba(255, 255, 255, 0.3);
+    }
+
+    .profile-name {
+        font-size: 1.8em;
+        font-weight: 700;
+        color: #333;
+        margin-bottom: 10px;
+    }
+
+    .role-badge {
+        display: inline-block;
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-size: 13px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 20px;
+    }
+
+    .role-super_admin {
+        background: #ffebee;
+        color: #c62828;
+        border: 1px solid #ef9a9a;
+    }
+
+    .role-admin {
+        background: #e3f2fd;
+        color: #1565c0;
+        border: 1px solid #90caf9;
+    }
+
+    .telegram-id-display {
+        background: linear-gradient(135deg, #37aee2 0%, #1e96c8 100%);
+        color: white;
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-size: 14px;
+        font-weight: 600;
+        display: inline-block;
+        margin-bottom: 15px;
+    }
+
+    .profile-stats {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 15px;
+        margin-top: 20px;
+        padding-top: 20px;
+        border-top: 2px solid #e9ecef;
+    }
+
+    .stat-item {
+        text-align: center;
+    }
+
+    .stat-value {
+        font-size: 1.5em;
+        font-weight: 700;
+        color: #667eea;
+    }
+
+    .stat-label {
+        font-size: 13px;
+        color: #6c757d;
+        text-transform: uppercase;
+        font-weight: 600;
+        margin-top: 5px;
+    }
+
+    /* Info Sections */
+    .info-section {
+        background: white;
+        padding: 30px;
+        border-radius: 15px;
+        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+        margin-bottom: 30px;
+    }
+
+    .section-title {
+        font-size: 1.5em;
+        font-weight: 700;
+        color: #333;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .info-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 20px;
+    }
+
+    .info-item {
+        padding: 15px;
+        background: #f8f9fa;
+        border-radius: 10px;
+        border-left: 4px solid #667eea;
+    }
+
+    .info-label {
+        font-size: 13px;
+        color: #6c757d;
+        text-transform: uppercase;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+        margin-bottom: 8px;
+    }
+
+    .info-value {
+        font-size: 16px;
+        color: #333;
+        font-weight: 600;
+        word-break: break-word;
+    }
+
+    .info-value a {
+        color: #37aee2;
+        text-decoration: none;
+        transition: color 0.2s ease;
+    }
+
+    .info-value a:hover {
+        color: #1e96c8;
+        text-decoration: underline;
+    }
+
+    /* Status Badge */
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 13px;
+        font-weight: 600;
+    }
+
+    .status-available {
+        background: #d4edda;
+        color: #155724;
+    }
+
+    .status-unavailable {
+        background: #fff3cd;
+        color: #856404;
+    }
+
+    /* Update Form Section */
+    .update-section {
+        background: white;
+        padding: 30px;
+        border-radius: 15px;
+        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+        margin-bottom: 30px;
+    }
+
+    .form-group {
+        margin-bottom: 25px;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 10px;
+        color: #333;
+        font-weight: 600;
+        font-size: 16px;
+    }
+
+    .form-group input {
+        width: 100%;
+        padding: 12px 15px;
+        border: 2px solid #e9ecef;
+        border-radius: 10px;
+        font-size: 16px;
+        transition: all 0.3s ease;
+        box-sizing: border-box;
+    }
+
+    .form-group input:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    .form-help {
+        font-size: 13px;
+        color: #6c757d;
+        margin-top: 5px;
+        display: block;
+    }
+
+    /* Buttons */
+    .btn-save {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 15px 30px;
+        border: none;
+        border-radius: 10px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 16px;
+    }
+
+    .btn-save:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+    }
+
+    .btn-toggle {
+        background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);
+        color: white;
+        padding: 12px 24px;
+        border: none;
+        border-radius: 10px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .btn-toggle:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(255, 193, 7, 0.3);
+    }
+
+    .btn-toggle.available {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    }
+
+    .btn-toggle.available:hover {
+        box-shadow: 0 5px 15px rgba(40, 167, 69, 0.3);
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 15px;
+        margin-top: 30px;
+    }
+
+    .btn-action {
+        flex: 1;
+        padding: 15px 30px;
+        border: none;
+        border-radius: 10px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        font-size: 16px;
+        text-decoration: none;
+        color: white;
+    }
+
+    .btn-action:hover {
+        transform: translateY(-2px);
+        text-decoration: none;
+        color: white;
+    }
+
+    .btn-secondary {
+        background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
+    }
+
+    .btn-secondary:hover {
+        box-shadow: 0 5px 15px rgba(108, 117, 125, 0.3);
+    }
+
+    .btn-danger {
+        background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+    }
+
+    .btn-danger:hover {
+        box-shadow: 0 5px 15px rgba(220, 53, 69, 0.3);
+    }
+
+    /* Availability Section */
+    .availability-section {
+        background: white;
+        padding: 30px;
+        border-radius: 15px;
+        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+        margin-bottom: 30px;
+    }
+
+    .availability-info {
+        background: #e3f2fd;
+        padding: 20px;
+        border-radius: 10px;
+        border-left: 4px solid #2196f3;
+        margin-bottom: 20px;
+    }
+
+    .availability-info p {
+        margin: 0;
+        color: #0d47a1;
+        line-height: 1.6;
+    }
+
+    /* Mobile Responsiveness */
+    @media (max-width: 1024px) {
+        .profile-grid {
+            grid-template-columns: 1fr;
         }
-        .profile-info {
-            background: #f8f9fa;
-            padding: 25px;
-            border-radius: 10px;
-            margin: 20px 0;
+
+        .info-grid {
+            grid-template-columns: 1fr;
         }
-        .info-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 12px 0;
-            border-bottom: 1px solid #e9ecef;
+    }
+
+    @media (max-width: 768px) {
+        .page-header {
+            padding: 30px 20px;
         }
-        .info-row:last-child {
-            border-bottom: none;
+
+        .page-header h1 {
+            font-size: 2em;
         }
-        .info-label {
-            font-weight: 600;
-            color: #495057;
-            flex: 1;
+
+        .page-header p {
+            font-size: 1em;
         }
-        .info-value {
-            flex: 2;
-            text-align: right;
-            color: #6c757d;
+
+        .profile-card,
+        .info-section,
+        .update-section,
+        .availability-section {
+            padding: 20px;
         }
-        .telegram-badge {
-            background: linear-gradient(135deg, #37aee2 0%, #1e96c8 100%);
-            color: white;
-            padding: 4px 12px;
-            border-radius: 15px;
-            font-size: 12px;
-            font-weight: 600;
+
+        .action-buttons {
+            flex-direction: column;
         }
-        .role-badge {
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 600;
-            text-transform: uppercase;
+
+        .btn-action {
+            width: 100%;
         }
-        .role-super_admin {
-            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
-            color: white;
+
+        .profile-name {
+            font-size: 1.5em;
         }
-        .role-admin {
-            background: linear-gradient(135deg, #4834d4 0%, #667eea 100%);
-            color: white;
+    }
+
+    @media (max-width: 480px) {
+
+        .profile-photo,
+        .profile-photo-placeholder {
+            width: 100px;
+            height: 100px;
+            font-size: 40px;
         }
-        .update-section {
-            background: white;
-            padding: 25px;
-            border-radius: 10px;
-            margin: 20px 0;
-            border: 1px solid #dee2e6;
+
+        .profile-stats {
+            grid-template-columns: 1fr;
         }
-    </style>
-</head>
-<body>
-    <div class="auth-container">
-        <div class="auth-card" style="max-width: 600px;">
-            <h2>Admin Profile</h2>
-            
-            {% with messages = get_flashed_messages(with_categories=true) %}
-                {% if messages %}
-                    {% for category, message in messages %}
-                        <div class="alert alert-{{ category }}">{{ message }}</div>
-                    {% endfor %}
-                {% endif %}
-            {% endwith %}
-            
-            <!-- Profile Photo -->
+    }
+</style>
+
+<div class="profile-container">
+    <!-- Page Header -->
+    <div class="page-header">
+        <h1><i class="fas fa-user-circle"></i> My Profile</h1>
+        <p>View and manage your account information and preferences</p>
+    </div>
+
+    <!-- Profile Grid -->
+    <div class="profile-grid">
+        <!-- Profile Card -->
+        <div class="profile-card">
             {% if session.admin_info.telegram_photo_url %}
-                <img src="{{ session.admin_info.telegram_photo_url }}" alt="Profile Photo" class="profile-photo">
+            <img src="{{ session.admin_info.telegram_photo_url }}" alt="Profile Photo" class="profile-photo">
             {% else %}
-                <div class="profile-photo" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; color: white; font-size: 24px; font-weight: bold;">
-                    {{ session.admin_info.telegram_first_name[0] if session.admin_info.telegram_first_name else session.admin_info.full_name[0] if session.admin_info.full_name else '?' }}
-                </div>
+            <div class="profile-photo-placeholder">
+                {{ session.admin_info.telegram_first_name[0] if session.admin_info.telegram_first_name else
+                session.admin_info.full_name[0] if session.admin_info.full_name else '?' }}
+            </div>
             {% endif %}
-            
-            <!-- Profile Information -->
-            <div class="profile-info">
-                <h3 style="margin-top: 0; color: #333; text-align: center;">Account Information</h3>
-                
-                <div class="info-row">
-                    <span class="info-label">👤 Full Name:</span>
-                    <span class="info-value">{{ session.admin_info.full_name or 'Not set' }}</span>
-                </div>
-                
-                <div class="info-row">
-                    <span class="info-label">🏷️ Role:</span>
-                    <span class="info-value">
-                        <span class="role-badge role-{{ session.admin_info.role }}">
-                            {% if session.admin_info.role == 'super_admin' %}
-                                🔧 Super Administrator
-                            {% else %}
-                                👨‍💼 Administrator
-                            {% endif %}
-                        </span>
-                    </span>
-                </div>
-                
-                <div class="info-row">
-                    <span class="info-label">📱 Telegram ID:</span>
-                    <span class="info-value">
-                        <span class="telegram-badge">{{ session.admin_info.telegram_id }}</span>
-                    </span>
-                </div>
-                
-                <div class="info-row">
-                    <span class="info-label">👤 Telegram Name:</span>
-                    <span class="info-value">
-                        {{ session.admin_info.telegram_first_name or '' }} {{ session.admin_info.telegram_last_name or '' }}
-                    </span>
-                </div>
-                
-                <div class="info-row">
-                    <span class="info-label">@ Username:</span>
-                    <span class="info-value">
-                        {% if session.admin_info.telegram_username %}
-                            <a href="https://t.me/{{ session.admin_info.telegram_username }}" target="_blank" style="color: #37aee2; text-decoration: none;">
-                                @{{ session.admin_info.telegram_username }}
-                            </a>
-                        {% else %}
-                            Not set
-                        {% endif %}
-                    </span>
-                </div>
-                
-                {% if session.admin_info.role == 'admin' %}
-                    <div class="info-row">
-                        <span class="info-label">🏢 Division:</span>
-                        <span class="info-value">{{ session.admin_info.division or 'Not assigned' }}</span>
-                    </div>
-                    
-                    <div class="info-row">
-                        <span class="info-label">🟢 Available for Chats:</span>
-                        <span class="info-value">
-                            {% if session.admin_info.is_available %}
-                                <span style="color: #28a745; font-weight: 600;">✅ Available</span>
-                            {% else %}
-                                <span style="color: #dc3545; font-weight: 600;">❌ Unavailable</span>
-                            {% endif %}
-                        </span>
-                    </div>
+
+            <div class="profile-name">{{ session.admin_info.full_name or 'Not Set' }}</div>
+
+            <span class="role-badge role-{{ session.admin_info.role }}">
+                {% if session.admin_info.role == 'super_admin' %}
+                <i class="fas fa-crown"></i> Super Administrator
+                {% else %}
+                <i class="fas fa-user-tie"></i> Administrator
                 {% endif %}
-                
-                <div class="info-row">
-                    <span class="info-label">🕐 Last Login:</span>
-                    <span class="info-value">{{ session.admin_info.last_login[:19] if session.admin_info.last_login else 'Never' }}</span>
-                </div>
-                
-                <div class="info-row">
-                    <span class="info-label">📅 Account Created:</span>
-                    <span class="info-value">{{ session.admin_info.created_at[:19] if session.admin_info.created_at else 'Unknown' }}</span>
-                </div>
+            </span>
+
+            <div>
+                <span class="telegram-id-display">
+                    <i class="fab fa-telegram"></i> {{ session.admin_info.telegram_id }}
+                </span>
             </div>
-            
-            <!-- Update Profile Section -->
-            <div class="update-section">
-                <h3>Update Profile Information</h3>
-                <form method="POST" action="{{ url_for('auth.update_profile') }}">
-                    <div class="form-group">
-                        <label for="full_name">Full Name:</label>
-                        <input type="text" id="full_name" name="full_name" 
-                               value="{{ session.admin_info.full_name or '' }}" 
-                               placeholder="Enter your full name" required>
-                    </div>
-                    
-                    {% if session.admin_info.role == 'admin' %}
-                    <div class="form-group">
-                        <label for="division">Division/Department:</label>
-                        <input type="text" id="division" name="division" 
-                               value="{{ session.admin_info.division or '' }}" 
-                               placeholder="e.g., Customer Support, Sales">
-                    </div>
-                    {% endif %}
-                    
-                    <button type="submit" class="btn btn-primary">💾 Update Profile</button>
-                </form>
-            </div>
-            
-            <!-- Availability Toggle for Admins -->
+
             {% if session.admin_info.role == 'admin' %}
-            <div class="update-section">
-                <h3>Availability Settings</h3>
-                <p style="color: #6c757d; margin-bottom: 15px;">
-                    Control whether you can receive new chat assignments from users.
-                </p>
-                <form method="POST" action="{{ url_for('auth.change_availability') }}">
-                    <button type="submit" class="btn {{ 'btn-warning' if session.admin_info.is_available else 'btn-success' }}" style="width: auto;">
-                        {% if session.admin_info.is_available %}
-                            🔴 Set Unavailable
-                        {% else %}
-                            🟢 Set Available
-                        {% endif %}
-                    </button>
-                </form>
+            <div style="margin-top: 20px;">
+                <span
+                    class="status-badge status-{{ 'available' if session.admin_info.is_available else 'unavailable' }}">
+                    {% if session.admin_info.is_available %}
+                    <i class="fas fa-circle"></i> Available for Chats
+                    {% else %}
+                    <i class="fas fa-circle"></i> Unavailable
+                    {% endif %}
+                </span>
             </div>
             {% endif %}
-            
-            <!-- Navigation -->
-            <div style="margin-top: 30px; display: flex; gap: 10px; flex-wrap: wrap;">
-                <a href="{{ url_for('admin.dashboard') }}" class="btn btn-secondary" style="flex: 1; min-width: 150px;">🏠 Back to Dashboard</a>
-                <a href="{{ url_for('auth.logout') }}" class="btn" style="background: #dc3545; flex: 1; min-width: 150px;">🚪 Logout</a>
+
+            <div class="profile-stats">
+                <div class="stat-item">
+                    <div class="stat-value">
+                        {% if session.admin_info.last_login %}
+                        <span id="daysSinceLogin">0</span>
+                        {% else %}
+                        0
+                        {% endif %}
+                    </div>
+                    <div class="stat-label">Days Since Login</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">
+                        {% if session.admin_info.created_at %}
+                        <span id="monthsActive">0</span>
+                        {% else %}
+                        0
+                        {% endif %}
+                    </div>
+                    <div class="stat-label">Months Active</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Account Information -->
+        <div class="info-section">
+            <h3 class="section-title">
+                <i class="fas fa-info-circle"></i>
+                Account Information
+            </h3>
+
+            <div class="info-grid">
+                <div class="info-item">
+                    <div class="info-label"><i class="fas fa-user"></i> Full Name</div>
+                    <div class="info-value">{{ session.admin_info.full_name or 'Not set' }}</div>
+                </div>
+
+                <div class="info-item">
+                    <div class="info-label"><i class="fab fa-telegram"></i> Telegram Name</div>
+                    <div class="info-value">
+                        {{ session.admin_info.telegram_first_name or '' }} {{ session.admin_info.telegram_last_name or
+                        '' }}
+                    </div>
+                </div>
+
+                <div class="info-item">
+                    <div class="info-label"><i class="fas fa-at"></i> Username</div>
+                    <div class="info-value">
+                        {% if session.admin_info.telegram_username %}
+                        <a href="https://t.me/{{ session.admin_info.telegram_username }}" target="_blank">
+                            @{{ session.admin_info.telegram_username }}
+                        </a>
+                        {% else %}
+                        Not set
+                        {% endif %}
+                    </div>
+                </div>
+
+                {% if session.admin_info.role == 'admin' %}
+                <div class="info-item">
+                    <div class="info-label"><i class="fas fa-building"></i> Division</div>
+                    <div class="info-value">{{ session.admin_info.division or 'Not assigned' }}</div>
+                </div>
+                {% endif %}
+
+                <div class="info-item">
+                    <div class="info-label"><i class="fas fa-clock"></i> Last Login</div>
+                    <div class="info-value">
+                        {% if session.admin_info.last_login %}
+                        {{ session.admin_info.last_login[:19] if session.admin_info.last_login is string else
+                        session.admin_info.last_login.strftime('%Y-%m-%d %H:%M') }}
+                        {% else %}
+                        Never
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="info-item">
+                    <div class="info-label"><i class="fas fa-calendar-plus"></i> Account Created</div>
+                    <div class="info-value">
+                        {% if session.admin_info.created_at %}
+                        {{ session.admin_info.created_at[:19] if session.admin_info.created_at is string else
+                        session.admin_info.created_at.strftime('%Y-%m-%d %H:%M') }}
+                        {% else %}
+                        Unknown
+                        {% endif %}
+                    </div>
+                </div>
             </div>
         </div>
     </div>
-</body>
-</html>
+
+    <!-- Update Profile Section -->
+    <div class="update-section">
+        <h3 class="section-title">
+            <i class="fas fa-edit"></i>
+            Update Profile Information
+        </h3>
+
+        <form method="POST" action="{{ url_for('auth.update_profile') }}">
+            <div class="form-group">
+                <label for="full_name"><i class="fas fa-user"></i> Full Name *</label>
+                <input type="text" id="full_name" name="full_name" value="{{ session.admin_info.full_name or '' }}"
+                    placeholder="Enter your full name" required>
+                <small class="form-help">This name will be displayed across the admin panel</small>
+            </div>
+
+            {% if session.admin_info.role == 'admin' %}
+            <div class="form-group">
+                <label for="division"><i class="fas fa-building"></i> Division/Department</label>
+                <input type="text" id="division" name="division" value="{{ session.admin_info.division or '' }}"
+                    placeholder="e.g., Customer Support, Sales, Technical">
+                <small class="form-help">Your department or team designation</small>
+            </div>
+            {% endif %}
+
+            <button type="submit" class="btn-save">
+                <i class="fas fa-save"></i>
+                Update Profile
+            </button>
+        </form>
+    </div>
+
+    <!-- Availability Toggle for Admins -->
+    {% if session.admin_info.role == 'admin' %}
+    <div class="availability-section">
+        <h3 class="section-title">
+            <i class="fas fa-toggle-on"></i>
+            Availability Settings
+        </h3>
+
+        <div class="availability-info">
+            <p>
+                <strong><i class="fas fa-info-circle"></i> About Availability:</strong><br>
+                Control whether you can receive new chat assignments from users. When unavailable,
+                you won't receive new chat requests but can still manage existing conversations.
+            </p>
+        </div>
+
+        <form method="POST" action="{{ url_for('auth.change_availability') }}" style="display: inline;">
+            <button type="submit" class="btn-toggle {{ 'available' if not session.admin_info.is_available else '' }}">
+                {% if session.admin_info.is_available %}
+                <i class="fas fa-times-circle"></i> Set Unavailable
+                {% else %}
+                <i class="fas fa-check-circle"></i> Set Available
+                {% endif %}
+            </button>
+        </form>
+
+        <p style="margin-top: 15px; color: #6c757d; font-size: 14px;">
+            Current Status:
+            <strong style="color: {{ '#28a745' if session.admin_info.is_available else '#ffc107' }};">
+                {{ 'Available' if session.admin_info.is_available else 'Unavailable' }}
+            </strong>
+        </p>
+    </div>
+    {% endif %}
+
+    <!-- Navigation Actions -->
+    <div class="action-buttons">
+        <a href="{{ url_for('dashboard.dashboard') }}" class="btn-action btn-secondary">
+            <i class="fas fa-home"></i>
+            Back to Dashboard
+        </a>
+        <a href="{{ url_for('auth.logout') }}" class="btn-action btn-danger">
+            <i class="fas fa-sign-out-alt"></i>
+            Logout
+        </a>
+    </div>
+</div>
+
+<script>
+    // Calculate days and months from dates
+    document.addEventListener('DOMContentLoaded', function () {
+        // Calculate days since last login
+        {% if session.admin_info.last_login %}
+        const lastLogin = new Date('{{ session.admin_info.last_login[:19] if session.admin_info.last_login is string else session.admin_info.last_login.strftime("%Y-%m-%d %H:%M:%S") }}');
+        const now = new Date();
+        const daysSinceLogin = Math.floor((now - lastLogin) / (1000 * 60 * 60 * 24));
+        document.getElementById('daysSinceLogin').textContent = daysSinceLogin;
+        {% endif %}
+
+        // Calculate months active
+        {% if session.admin_info.created_at %}
+        const createdAt = new Date('{{ session.admin_info.created_at[:19] if session.admin_info.created_at is string else session.admin_info.created_at.strftime("%Y-%m-%d %H:%M:%S") }}');
+        const monthsActive = Math.floor((now - createdAt) / (1000 * 60 * 60 * 24 * 30));
+        document.getElementById('monthsActive').textContent = monthsActive;
+        {% endif %}
+
+        // Auto-hide alerts after 5 seconds
+        const alerts = document.querySelectorAll('.alert');
+        alerts.forEach(alert => {
+            setTimeout(() => {
+                alert.style.transition = 'opacity 0.5s ease';
+                alert.style.opacity = '0';
+                setTimeout(() => {
+                    alert.remove();
+                }, 500);
+            }, 5000);
+        });
+    });
+</script>
+{% endblock %}

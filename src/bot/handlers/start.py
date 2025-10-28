@@ -2,8 +2,9 @@ from telegram import Update
 from telegram.ext import ContextTypes
 from ..keyboards.inline import main_keyboard
 from ...database.connection import SessionLocal
-from ...services.user_service import create_user, get_user_by_id
+from ...services.user_service import UserService
 from ...database.models import User
+from datetime import datetime
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
@@ -11,35 +12,42 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Save or update user information in database
     db = SessionLocal()
     try:
-        # Check if user already exists
-        existing_user = db.query(User).filter(User.telegram_id == str(user.id)).first()
+        # Get user profile photos
+        photo_url = None
+        try:
+            photos = await context.bot.get_user_profile_photos(user.id, limit=1)
+            if photos.total_count > 0:
+                # Get the first (current) profile photo - use the largest size
+                photo = photos.photos[0][-1]  # Get largest size (last in array)
+                file = await context.bot.get_file(photo.file_id)
+                photo_url = file.file_path
+                print(f"User photo URL: {photo_url}")  # Debug
+        except Exception as e:
+            print(f"Error fetching user photo: {e}")
         
-        if not existing_user:
-            # Create new user
-            user_data = {
-                "telegram_id": str(user.id),
-                "full_name": user.full_name or f"{user.first_name} {user.last_name or ''}".strip(),
-                "username": user.username,
-                "is_active": True
-            }
-            create_user(db, user_data)
+        # Create a user data object with photo
+        class TelegramUserData:
+            def __init__(self, telegram_user, photo_url=None):
+                self.id = telegram_user.id
+                self.username = telegram_user.username
+                self.first_name = telegram_user.first_name
+                self.last_name = telegram_user.last_name
+                self.photo_url = photo_url
+        
+        user_data = TelegramUserData(user, photo_url)
+        
+        # Create UserService instance and use it
+        user_service = UserService()
+        existing_user = user_service.find_or_create_user(db, user_data)
+        
+        # Check if this is a new user (just created)
+        is_new_user = existing_user.created_at and (
+            datetime.now() - existing_user.created_at.replace(tzinfo=None)
+        ).total_seconds() < 5  # Created within last 5 seconds
+        
+        if is_new_user:
             welcome_message = f"👋 Welcome {user.first_name}! You've been registered successfully."
         else:
-            # Update existing user info if changed
-            updated = False
-            if existing_user.full_name != (user.full_name or f"{user.first_name} {user.last_name or ''}".strip()):
-                existing_user.full_name = user.full_name or f"{user.first_name} {user.last_name or ''}".strip()
-                updated = True
-            if existing_user.username != user.username:
-                existing_user.username = user.username
-                updated = True
-            if not existing_user.is_active:
-                existing_user.is_active = True
-                updated = True
-                
-            if updated:
-                db.commit()
-            
             welcome_message = f"👋 Welcome back {user.first_name}!"
         
         await update.message.reply_text(
@@ -50,6 +58,8 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         
     except Exception as e:
         print(f"Error saving user: {e}")
+        import traceback
+        traceback.print_exc()  # Print full error trace
         await update.message.reply_text(
             f"👋 Hello {user.first_name}! Welcome to our Telegram bot. "
             "Use the buttons below to navigate.",

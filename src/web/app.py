@@ -1,39 +1,59 @@
-from flask import Flask, redirect, url_for
-from flask_sqlalchemy import SQLAlchemy
-from dotenv import load_dotenv
 import os
-import json
-import enum
+from flask import Flask, redirect, url_for, session
+from ..utils.config import Config
+from .websocket_manager import socketio
 
-class EnumEncoder(json.JSONEncoder):
-    def default(self, obj):
-        if isinstance(obj, enum.Enum):
-            return obj.value
-        return super().default(obj)
+ADMIN_PREFIX =  '/portal/admin'
 
-load_dotenv()
+from .routes.auth import auth_bp
+from .routes.admin import admin_bp
+from .routes.users import users_bp
+from .routes.chats import chats_bp
+from .routes.dashboard import dashboard_bp
+from .routes.system_settings import system_settings_bp
 
-app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv("SQLALCHEMY_DATABASE_URI")
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['SECRET_KEY'] = os.getenv("SECRET_KEY", "your_secret_key")
+def create_app():
+    app = Flask(__name__)
+    # Load configuration
+    app.config.from_object(Config)
 
-# Set custom JSON encoder
-app.json_encoder = EnumEncoder
+    # Set secret key explicitly
+    app.secret_key = Config.SECRET_KEY
 
-db = SQLAlchemy(app)
+    # Initialize SocketIO
+    socketio.init_app(app)
 
-# Import routes after app initialization to avoid circular imports
-from .routes import admin, users, chats, auth
+    # Register blueprints with /portal/admin prefix
+    app.register_blueprint(auth_bp, url_prefix=ADMIN_PREFIX)
+    app.register_blueprint(admin_bp, url_prefix=ADMIN_PREFIX)
+    app.register_blueprint(users_bp, url_prefix=ADMIN_PREFIX)
+    app.register_blueprint(chats_bp, url_prefix=ADMIN_PREFIX)
+    app.register_blueprint(dashboard_bp, url_prefix=ADMIN_PREFIX)
+    app.register_blueprint(system_settings_bp, url_prefix=ADMIN_PREFIX)
 
-app.register_blueprint(auth.auth_bp)
-app.register_blueprint(admin.admin_bp)
-app.register_blueprint(users.users_bp)
-app.register_blueprint(chats.chats_bp)
+    @app.route('/')
+    def index():
+        """Root redirect - goes to portal admin"""
+        return redirect(url_for('portal_admin_index'))
 
-@app.route('/')
-def index():
-    return redirect(url_for('auth.login'))
+    @app.route('/portal/admin')
+    def portal_admin_index():
+        """
+        Portal admin index route
+        Redirects to dashboard if logged in, otherwise to login
+        """
+        # Check if user is logged in by checking session
+        if 'admin_token' in session and 'admin_info' in session:
+            # User is logged in, redirect to dashboard
+            return redirect(url_for('dashboard.dashboard'))
+        else:
+            # User is not logged in, redirect to login
+            return redirect(url_for('auth.login'))
+    
+    return app
+
+# Create app instance for imports
+app = create_app()
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    socketio.run(app, host='0.0.0.0', port=5000, debug=True)

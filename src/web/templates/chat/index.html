@@ -1,0 +1,813 @@
+{% extends "master.html" %}
+
+{% block title %}Chat Management - Telegram Bot Admin{% endblock %}
+
+{% block content %}
+<style>
+    .chat-container {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+
+    /* Enhanced Page Header - Consistent with other pages */
+    .page-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 40px;
+        border-radius: 20px;
+        margin-bottom: 30px;
+        text-align: center;
+        box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+    }
+
+    .page-header h1 {
+        font-size: 2.5em;
+        margin: 0 0 10px 0;
+        font-weight: 700;
+        color: white;
+    }
+
+    .page-header p {
+        font-size: 1.2em;
+        opacity: 0.9;
+        margin: 0;
+        color: white;
+    }
+
+    /* Statistics Overview */
+    .stats-overview {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 20px;
+        margin-bottom: 30px;
+    }
+
+    .stat-card {
+        background: white;
+        padding: 25px;
+        border-radius: 15px;
+        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+        text-align: center;
+        transition: transform 0.3s ease;
+        border-left: 5px solid;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-5px);
+    }
+
+    .stat-card.active {
+        border-color: #28a745;
+    }
+
+    .stat-card.closed {
+        border-color: #6c757d;
+    }
+
+    .stat-card.pending {
+        border-color: #ffc107;
+    }
+
+    .stat-card.total {
+        border-color: #667eea;
+    }
+
+    .stat-number {
+        font-size: 2.5em;
+        font-weight: 700;
+        margin-bottom: 5px;
+    }
+
+    .stat-number.active {
+        color: #28a745;
+    }
+
+    .stat-number.closed {
+        color: #6c757d;
+    }
+
+    .stat-number.pending {
+        color: #ffc107;
+    }
+
+    .stat-number.total {
+        color: #667eea;
+    }
+
+    .stat-label {
+        color: #6c757d;
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 14px;
+        letter-spacing: 0.5px;
+    }
+
+    /* Controls Section */
+    .controls-section {
+        background: white;
+        padding: 30px;
+        border-radius: 15px;
+        margin-bottom: 30px;
+        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+    }
+
+    .search-filters {
+        display: flex;
+        gap: 15px;
+        flex-wrap: wrap;
+        align-items: center;
+    }
+
+    .search-box {
+        flex: 1;
+        min-width: 300px;
+        position: relative;
+    }
+
+    .search-input {
+        width: 100%;
+        padding: 12px 45px 12px 15px;
+        border: 2px solid #e9ecef;
+        border-radius: 10px;
+        font-size: 16px;
+        transition: all 0.3s ease;
+    }
+
+    .search-input:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    .search-icon {
+        position: absolute;
+        right: 15px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #6c757d;
+        font-size: 18px;
+    }
+
+    .filter-select {
+        padding: 12px 15px;
+        border: 2px solid #e9ecef;
+        border-radius: 10px;
+        font-size: 14px;
+        background: white;
+        min-width: 150px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .filter-select:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    /* Chat Sessions Container */
+    .chat-sessions-container {
+        background: white;
+        border-radius: 15px;
+        overflow: hidden;
+        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+    }
+
+    .table-header {
+        background: linear-gradient(135deg, #495057 0%, #343a40 100%);
+        color: white;
+        padding: 20px 30px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .table-title {
+        font-size: 1.4em;
+        font-weight: 700;
+        margin: 0;
+    }
+
+    .results-count {
+        font-size: 14px;
+        opacity: 0.9;
+    }
+
+    /* Chat Sessions Table */
+    .chat-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .chat-table th {
+        background: #f8f9fa;
+        padding: 15px 20px;
+        text-align: left;
+        font-weight: 600;
+        color: #495057;
+        border-bottom: 2px solid #dee2e6;
+        font-size: 14px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .chat-table td {
+        padding: 20px;
+        border-bottom: 1px solid #f1f3f4;
+        vertical-align: middle;
+    }
+
+    .chat-table tbody tr {
+        transition: all 0.2s ease;
+    }
+
+    .chat-table tbody tr:hover {
+        background: #f8f9fa;
+        transform: translateX(5px);
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    }
+
+    /* Chat table specific styling */
+    .chat-table .user-info {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+
+    .chat-table .user-avatar {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        border: 3px solid #e9ecef;
+        object-fit: cover;
+    }
+
+    .chat-table .user-avatar-placeholder {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: bold;
+        font-size: 18px;
+        flex-shrink: 0;
+    }
+
+    .user-details h4 {
+        margin: 0 0 5px 0;
+        font-size: 16px;
+        font-weight: 600;
+        color: #333;
+    }
+
+    .user-meta {
+        font-size: 13px;
+        color: #6c757d;
+    }
+
+    .status-badge {
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+    .status-active {
+        background: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+    }
+
+    .status-closed {
+        background: #d6d8db;
+        color: #383d41;
+        border: 1px solid #c6c8ca;
+    }
+
+    .message-count {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-weight: 600;
+        font-size: 14px;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+    .action-buttons-cell {
+        display: flex;
+        gap: 8px;
+    }
+
+    .btn-action {
+        padding: 8px 12px;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 12px;
+        font-weight: 600;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+    .btn-view {
+        background: #e3f2fd;
+        color: #1976d2;
+    }
+
+    .btn-view:hover {
+        background: #bbdefb;
+    }
+
+    .btn-close {
+        background: #ffebee;
+        color: #d32f2f;
+    }
+
+    .btn-close:hover {
+        background: #ffcdd2;
+    }
+
+    .btn-message {
+        background: #f3e5f5;
+        color: #7b1fa2;
+    }
+
+    .btn-message:hover {
+        background: #e1bee7;
+    }
+
+    .no-chats {
+        text-align: center;
+        padding: 60px 20px;
+        color: #6c757d;
+    }
+
+    .no-chats i {
+        font-size: 4em;
+        margin-bottom: 20px;
+        opacity: 0.5;
+    }
+
+    .no-chats h3 {
+        margin: 0 0 10px 0;
+        font-size: 1.5em;
+    }
+
+    /* Pulse animation for active status */
+    @keyframes pulse {
+        0%,
+        100% {
+            opacity: 1;
+        }
+
+        50% {
+            opacity: 0.5;
+        }
+    }
+
+    .pulse-animation {
+        animation: pulse 2s infinite;
+    }
+
+    /* Mobile Responsiveness */
+    @media (max-width: 768px) {
+        .page-header {
+            padding: 30px 20px;
+        }
+
+        .page-header h1 {
+            font-size: 2em;
+        }
+
+        .page-header p {
+            font-size: 1em;
+        }
+
+        .search-filters {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .search-box {
+            min-width: auto;
+        }
+
+        .chat-table {
+            font-size: 14px;
+        }
+
+        .chat-table th,
+        .chat-table td {
+            padding: 10px;
+        }
+
+        .chat-table .user-info {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 10px;
+        }
+
+        .action-buttons-cell {
+            flex-direction: column;
+        }
+
+        .table-header {
+            padding: 15px 20px;
+            flex-direction: column;
+            gap: 10px;
+            text-align: center;
+        }
+    }
+
+    /* Live Chat Button */
+    .btn-live-chat {
+        display: inline-block;
+        background: white;
+        color: #667eea;
+        padding: 12px 30px;
+        border-radius: 25px;
+        font-weight: 600;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        font-size: 16px;
+    }
+
+    .btn-live-chat:hover {
+        background: #f8f9fa;
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+    }
+
+    .btn-live-chat i {
+        margin-right: 8px;
+        animation: pulse-icon 2s infinite;
+    }
+
+    @keyframes pulse-icon {
+        0%,
+        100% {
+            transform: scale(1);
+        }
+
+        50% {
+            transform: scale(1.2);
+        }
+    }
+</style>
+
+<div class="chat-container">
+    <!-- Page Header -->
+    <div class="page-header">
+        <h1><i class="fas fa-comments"></i> Chat Management</h1>
+        <p>Monitor and manage all chat sessions between users and support agents</p>
+        
+        <!-- Add Live Chat Button -->
+        <div style="margin-top: 20px;">
+            <a href="{{ url_for('chats.live_chat') }}" class="btn-live-chat">
+                <i class="fas fa-comment-dots"></i> Open Live Chat
+            </a>
+        </div>
+    </div>
+
+    <!-- Statistics Overview -->
+    <div class="stats-overview">
+        <div class="stat-card active">
+            <div class="stat-number active">
+                {{ sessions|selectattr("status.value", "equalto", "active")|list|length if sessions else 0 }}
+            </div>
+            <div class="stat-label">🟢 Active Chats</div>
+        </div>
+        <div class="stat-card closed">
+            <div class="stat-number closed">
+                {{ sessions|selectattr("status.value", "equalto", "closed")|list|length if sessions else 0 }}
+            </div>
+            <div class="stat-label">⚫ Closed Chats</div>
+        </div>
+        <div class="stat-card total">
+            <div class="stat-number total">{{ sessions|length if sessions else 0 }}</div>
+            <div class="stat-label">💬 Total Sessions</div>
+        </div>
+        <div class="stat-card pending">
+            <div class="stat-number pending">
+                {{ sessions|selectattr("admin_id", "none")|list|length if sessions else 0 }}
+            </div>
+            <div class="stat-label">⏳ Unassigned</div>
+        </div>
+    </div>
+
+    <!-- Controls Section -->
+    <div class="controls-section">
+        <div class="search-filters">
+            <div class="search-box">
+                <input type="text" class="search-input" id="searchInput"
+                    placeholder="Search by user name or Telegram ID...">
+                <i class="fas fa-search search-icon"></i>
+            </div>
+
+            <select class="filter-select" id="statusFilter">
+                <option value="">All Status</option>
+                <option value="active">Active Only</option>
+                <option value="closed">Closed Only</option>
+            </select>
+
+            <select class="filter-select" id="agentFilter">
+                <option value="">All Agents</option>
+                <option value="unassigned">Unassigned</option>
+                {% if session.admin_info.role == 'admin' %}
+                <option value="mine">My Chats</option>
+                {% endif %}
+            </select>
+
+            <select class="filter-select" id="sortFilter">
+                <option value="newest">Newest First</option>
+                <option value="oldest">Oldest First</option>
+                <option value="most_messages">Most Messages</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- Chat Sessions Table -->
+    <div class="chat-sessions-container">
+        <div class="table-header">
+            <h3 class="table-title">
+                <i class="fas fa-list"></i> All Chat Sessions
+            </h3>
+            <div class="results-count" id="resultsCount">
+                Showing {{ sessions|length if sessions else 0 }} sessions
+            </div>
+        </div>
+
+        {% if sessions and sessions|length > 0 %}
+        <table class="chat-table" id="chatTable">
+            <thead>
+                <tr>
+                    <th><i class="fas fa-user"></i> User</th>
+                    <th><i class="fas fa-user-tie"></i> Agent</th>
+                    <th><i class="fas fa-clock"></i> Started</th>
+                    <th><i class="fas fa-history"></i> Duration</th>
+                    <th><i class="fas fa-comments"></i> Messages</th>
+                    <th><i class="fas fa-toggle-on"></i> Status</th>
+                    <th><i class="fas fa-cog"></i> Actions</th>
+                </tr>
+            </thead>
+            <tbody id="chatTableBody">
+                {% for session in sessions %}
+                <tr data-session-id="{{ session.id }}"
+                    data-status="{{ session.status.value if session.status else 'unknown' }}"
+                    data-user-name="{{ (session.user.full_name or (session.user.first_name ~ ' ' ~ session.user.last_name))|trim|lower if session.user else '' }}"
+                    data-agent-id="{{ session.admin_id or 0 }}"
+                    data-timestamp="{{ session.start_time.timestamp() if session.start_time else 0 }}">
+
+                    <td>
+                        <div class="user-info">
+                            {% if session.user %}
+                            {% if session.user.photo_url %}
+                            <img src="{{ session.user.photo_url }}" alt="Avatar" class="user-avatar">
+                            {% else %}
+                            <div class="user-avatar-placeholder">
+                                {{ (session.user.first_name[0] if session.user.first_name else 'U') }}
+                            </div>
+                            {% endif %}
+
+                            <div class="user-details">
+                                <h4>{{ (session.user.full_name or (session.user.first_name ~ ' ' ~
+                                    session.user.last_name))|trim or 'Unknown User' }}</h4>
+                                <div class="user-meta">
+                                    <i class="fab fa-telegram"></i> {{ session.user.telegram_id }}
+                                </div>
+                            </div>
+                            {% else %}
+                            <div class="user-details">
+                                <h4>Unknown User</h4>
+                                <div class="user-meta">User data not available</div>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </td>
+
+                    <td>
+                        {% if session.admin %}
+                        <div class="user-info">
+                            {% if session.admin.telegram_photo_url %}
+                            <img src="{{ session.admin.telegram_photo_url }}" alt="Agent" class="user-avatar">
+                            {% else %}
+                            <div class="user-avatar-placeholder">
+                                {{ session.admin.full_name[0] if session.admin.full_name else 'A' }}
+                            </div>
+                            {% endif %}
+                            <div class="user-details">
+                                <h4>{{ session.admin.full_name }}</h4>
+                                <div class="user-meta">
+                                    {{ session.admin.division or 'Support Team' }}
+                                </div>
+                            </div>
+                        </div>
+                        {% else %}
+                        <span style="color: #ffc107; font-weight: 600;">
+                            <i class="fas fa-exclamation-triangle"></i> Unassigned
+                        </span>
+                        {% endif %}
+                    </td>
+
+                    <td>
+                        <div>
+                            <i class="fas fa-calendar-alt"></i>
+                            {{ session.start_time.strftime('%Y-%m-%d') if session.start_time else 'Unknown' }}
+                        </div>
+                        <small style="color: #6c757d;">
+                            {{ session.start_time.strftime('%H:%M:%S') if session.start_time else '' }}
+                        </small>
+                    </td>
+
+                    <td>
+                        {% if session.status.value == 'active' %}
+                        <span style="color: #28a745; font-weight: 600;">
+                            <i class="fas fa-circle pulse-animation"></i> Ongoing
+                        </span>
+                        {% elif session.end_time %}
+                        {% set duration = (session.end_time - session.start_time).total_seconds() %}
+                        {% set hours = (duration // 3600)|int %}
+                        {% set minutes = ((duration % 3600) // 60)|int %}
+                        <div>
+                            {% if hours > 0 %}
+                            {{ hours }}h {{ minutes }}m
+                            {% else %}
+                            {{ minutes }}m
+                            {% endif %}
+                        </div>
+                        {% else %}
+                        <span style="color: #6c757d;">N/A</span>
+                        {% endif %}
+                    </td>
+
+                    <td>
+                        <span class="message-count">
+                            <i class="fas fa-envelope"></i> 0
+                        </span>
+                    </td>
+
+                    <td>
+                        <span class="status-badge status-{{ session.status.value if session.status else 'unknown' }}">
+                            {% if session.status and session.status.value == 'active' %}
+                            <i class="fas fa-check-circle"></i> Active
+                            {% else %}
+                            <i class="fas fa-times-circle"></i> Closed
+                            {% endif %}
+                        </span>
+                    </td>
+
+                    <td>
+                        <div class="action-buttons-cell">
+                            <button class="btn-action btn-view" onclick="viewChat('{{ session.id }}')"
+                                title="View Chat">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button class="btn-action btn-message" onclick="sendMessage('{{ session.id }}')"
+                                title="Send Message">
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
+                            {% if session.status and session.status.value == 'active' %}
+                            <button class="btn-action btn-close" onclick="closeChat('{{ session.id }}')"
+                                title="Close Session">
+                                <i class="fas fa-ban"></i>
+                            </button>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="no-chats">
+            <i class="fas fa-comments-slash"></i>
+            <h3>No Chat Sessions Found</h3>
+            <p>There are currently no chat sessions to display.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+    // Search and Filter Functionality
+    const searchInput = document.getElementById('searchInput');
+    const statusFilter = document.getElementById('statusFilter');
+    const agentFilter = document.getElementById('agentFilter');
+    const sortFilter = document.getElementById('sortFilter');
+    const chatTable = document.getElementById('chatTableBody');
+    const resultsCount = document.getElementById('resultsCount');
+
+    let allRows = Array.from(chatTable?.querySelectorAll('tr') || []);
+
+    // Search and filter functionality
+    searchInput?.addEventListener('input', filterAndSort);
+    statusFilter?.addEventListener('change', filterAndSort);
+    agentFilter?.addEventListener('change', filterAndSort);
+    sortFilter?.addEventListener('change', filterAndSort);
+
+    function filterAndSort() {
+        if (!chatTable) return;
+
+        const searchTerm = searchInput.value.toLowerCase();
+        const statusValue = statusFilter.value;
+        const agentValue = agentFilter.value;
+        const sortValue = sortFilter.value;
+
+        let filteredRows = allRows.filter(row => {
+            const userName = row.dataset.userName || '';
+            const status = row.dataset.status;
+            const agentId = parseInt(row.dataset.agentId);
+
+            const matchesSearch = !searchTerm || userName.includes(searchTerm);
+            const matchesStatus = !statusValue || status === statusValue;
+
+            let matchesAgent = true;
+            if (agentValue === 'unassigned') {
+                matchesAgent = agentId === 0;
+            } else if (agentValue === 'mine') {
+                matchesAgent = agentId === {{ session.admin_info.id }};
+            }
+
+            return matchesSearch && matchesStatus && matchesAgent;
+        });
+
+        // Sort filtered rows
+        filteredRows.sort((a, b) => {
+            const aTime = parseFloat(a.dataset.timestamp);
+            const bTime = parseFloat(b.dataset.timestamp);
+
+            switch (sortValue) {
+                case 'oldest':
+                    return aTime - bTime;
+                case 'most_messages':
+                    // This would need message count data
+                    return 0;
+                default: // newest
+                    return bTime - aTime;
+            }
+        });
+
+        // Clear table and add filtered rows
+        chatTable.innerHTML = '';
+        filteredRows.forEach(row => {
+            chatTable.appendChild(row);
+        });
+
+        // Update results count
+        resultsCount.textContent = `Showing ${filteredRows.length} sessions`;
+    }
+
+    // Action Functions
+    function viewChat(sessionId) {
+        window.location.href = `/admin/chat/${sessionId}`;
+    }
+
+    function sendMessage(sessionId) {
+        window.location.href = `/admin/chat/${sessionId}#send-message`;
+    }
+
+    function closeChat(sessionId) {
+        if (confirm('Are you sure you want to close this chat session?')) {
+            fetch(`/admin/chat/close/${sessionId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('✅ Chat session closed successfully!');
+                    location.reload();
+                } else {
+                    alert('❌ Failed to close chat: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('❌ An error occurred while closing the chat.');
+            });
+        }
+    }
+
+    // Auto-refresh every 30 seconds
+    setInterval(() => {
+        location.reload();
+    }, 30000);
+</script>
+{% endblock %}
