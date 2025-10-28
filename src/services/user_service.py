@@ -65,9 +65,10 @@ def promote_user_to_admin(db: Session, telegram_id: str, promoted_by_admin_id: s
                           role: AdminRole = AdminRole.admin, **admin_data) -> Admin:
     """
     Promote a user to admin:
-    1. Create admin record
-    2. Delete user record
-    3. Transfer chat history ownership
+    1. Get user data
+    2. Delete user record FIRST (to avoid constraint violation)
+    3. Create admin record
+    4. Transfer chat history ownership
     """
     # Get user
     user = db.query(User).filter(User.telegram_id == telegram_id).first()
@@ -77,41 +78,58 @@ def promote_user_to_admin(db: Session, telegram_id: str, promoted_by_admin_id: s
     # Check if already admin
     existing_admin = db.query(Admin).filter(Admin.telegram_id == telegram_id).first()
     if existing_admin:
-        raise ValueError(f"User is already an admin")
+        raise ValueError(f"This user is already an admin with role: {existing_admin.role.value}")
     
     try:
-        # Create admin record with UUID
+        # Store user data before deletion
+        user_data = {
+            'telegram_id': user.telegram_id,
+            'telegram_username': user.username,
+            'telegram_first_name': user.first_name,
+            'telegram_last_name': user.last_name,
+            'telegram_photo_url': user.photo_url,
+            'full_name': user.full_name or f"{user.first_name or ''} {user.last_name or ''}".strip(),
+        }
+        
+        # Store sessions for transfer
+        user_sessions = list(user.sessions)
+        
+        # DELETE USER FIRST to avoid constraint violation
+        db.delete(user)
+        db.flush()  # Flush the deletion to database
+        
+        # Now create admin record (no constraint violation)
         admin = Admin(
             id=str(uuid.uuid4()),
-            telegram_id=user.telegram_id,
-            telegram_username=user.username,
-            telegram_first_name=user.first_name,
-            telegram_last_name=user.last_name,
-            telegram_photo_url=user.photo_url,
-            full_name=user.full_name or f"{user.first_name} {user.last_name}".strip(),
+            telegram_id=user_data['telegram_id'],
+            telegram_username=user_data['telegram_username'],
+            telegram_first_name=user_data['telegram_first_name'],
+            telegram_last_name=user_data['telegram_last_name'],
+            telegram_photo_url=user_data['telegram_photo_url'],
+            full_name=user_data['full_name'],
             role=role,
             is_active=True,
+            created_at=datetime.now(),
             **admin_data
         )
         db.add(admin)
-        db.flush()  # Get admin.id before deleting user
+        db.flush()  # Get admin.id
         
-        # Transfer chat sessions ownership (if needed)
-        # Update sessions where user was the participant
-        for session in user.sessions:
+        # Transfer chat sessions ownership
+        for session in user_sessions:
             session.admin_id = admin.id
-        
-        # Delete user record
-        db.delete(user)
         
         db.commit()
         db.refresh(admin)
         
-        print(f"User {telegram_id} promoted to {role.value} by admin {promoted_by_admin_id}")
+        print(f"✅ User {telegram_id} promoted to {role.value} by admin {promoted_by_admin_id}")
         return admin
         
     except Exception as e:
         db.rollback()
+        print(f"❌ Error promoting user: {str(e)}")
+        import traceback
+        traceback.print_exc()
         raise Exception(f"Failed to promote user: {str(e)}")
 
 def demote_admin_to_user(db: Session, telegram_id: str) -> User:

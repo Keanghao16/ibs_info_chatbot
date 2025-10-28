@@ -232,24 +232,34 @@ def promote_to_admin(user_id):
         
         # Get admin data from request
         data = request.get_json()
+        role = data.get('role', 'admin')  # Get role from request
         division = data.get('division', 'Support')
+        
+        # Validate role
+        if role not in ['admin', 'super_admin']:
+            return jsonify({'success': False, 'message': 'Invalid role specified'})
         
         # Get current admin ID from session
         current_admin_id = session.get('admin_info', {}).get('id')
         
         # Promote user
         from ...database.models import AdminRole
+        admin_role = AdminRole.super_admin if role == 'super_admin' else AdminRole.admin
+        
         admin = promote_user_to_admin(
             db=db,
             telegram_id=user.telegram_id,
             promoted_by_admin_id=current_admin_id,
-            role=AdminRole.admin,
-            division=division
+            role=admin_role,
+            division=division if role == 'admin' else None,
+            is_available=True if role == 'admin' else None
         )
+        
+        role_name = 'Super Administrator' if role == 'super_admin' else 'Admin/Agent'
         
         return jsonify({
             'success': True,
-            'message': f'User promoted to admin successfully',
+            'message': f'User promoted to {role_name} successfully',
             'admin': {
                 'id': admin.id,
                 'full_name': admin.full_name,
@@ -259,6 +269,8 @@ def promote_to_admin(user_id):
         
     except Exception as e:
         print(f"Error promoting user: {e}")
+        import traceback
+        traceback.print_exc()
         return jsonify({'success': False, 'message': str(e)})
     finally:
         db.close()
