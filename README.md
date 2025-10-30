@@ -127,15 +127,11 @@ python -m src.database.migrations.recreate_tables
 2. Create FAQ categories:
    ```bash
    python -m src.database.migrations.seed_categories
-   # or
-   python seed_categories.py
    ```
 
 3. Create FAQs:
    ```bash
    python -m src.database.migrations.seed_faqs
-   # or
-   python seed_faqs.py
    ```
 
 ## Running the Bot
