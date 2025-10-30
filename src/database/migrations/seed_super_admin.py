@@ -1,6 +1,12 @@
-from src.database.connection import SessionLocal
-from src.database.models import Admin, AdminRole
+import sys
+import os
 from datetime import datetime
+
+# Add the src directory to the Python path
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
+
+from ..connection import SessionLocal
+from ..models import Admin, AdminRole
 
 def create_telegram_super_admin():
     """Create super admin using Telegram ID"""

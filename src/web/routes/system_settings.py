@@ -1,8 +1,7 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from ...database.connection import SessionLocal
 from ...database.models import SystemSettings, FAQ
-from ...services.system_setting_service import SystemSettingService
-from ...services.faq_service import FAQService
+from ...services import SystemSettingService, FAQService
 from sqlalchemy.orm import joinedload
 from .auth import super_admin_required
 

@@ -2,8 +2,10 @@ from telegram import Update
 from telegram.ext import ContextTypes
 from ..keyboards.inline import main_keyboard, admin_keyboard
 from ...database.connection import SessionLocal
-from ...services.user_service import get_user_or_admin_by_telegram_id, create_user_if_not_admin
+from ...services import UserService  
 from datetime import datetime
+
+user_service = UserService()
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
@@ -22,10 +24,11 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
             print(f"Error fetching user photo: {e}")
         
         # Check if user is admin or regular user
-        record, user_type = get_user_or_admin_by_telegram_id(db, str(user.id))
+        result = user_service.get_user_or_admin_by_telegram_id(db, str(user.id))  # ✅ Use service
         
-        if user_type == "admin":
+        if result and result['type'] == "admin":
             # User is an admin - show admin interface
+            record = result['data']
             welcome_message = f"👋 Welcome back, {record.full_name}!\n"
             welcome_message += f"🔐 Role: {record.role.value.replace('_', ' ').title()}\n"
             if record.division:
@@ -42,7 +45,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
             
         else:
             # Create or get regular user (won't create if already admin)
-            created_user = create_user_if_not_admin(
+            create_result = user_service.create_user_if_not_admin(  # ✅ Use service
                 db=db,
                 telegram_id=str(user.id),
                 username=user.username,
@@ -52,7 +55,8 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 photo_url=photo_url
             )
             
-            if created_user:
+            if create_result['success']:
+                created_user = create_result['user']
                 # Check if newly created
                 is_new_user = created_user.created_at and (
                     datetime.now() - created_user.created_at.replace(tzinfo=None)

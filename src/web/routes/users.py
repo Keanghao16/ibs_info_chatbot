@@ -1,53 +1,14 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, session
 from ...database.connection import SessionLocal
 from ...database.models import User
-from ...services.user_service import (
-    get_user_by_id,
-    get_user_or_admin_by_telegram_id,
-    create_user_if_not_admin,
-    promote_user_to_admin,
-    demote_admin_to_user
-)
+from ...services import UserService  # ✅ Import UserService class
 from .auth import any_admin_required, super_admin_required
 import asyncio
 from telegram import Bot
 import os
 
 users_bp = Blueprint('users', __name__)
-
-def get_all_users(db):
-    """Helper function to get all users"""
-    return db.query(User).order_by(User.created_at.desc()).all()
-
-def delete_user(db, user_id):
-    """Helper function to delete user"""
-    try:
-        user = get_user_by_id(db, user_id)
-        if not user:
-            return {'success': False, 'message': 'User not found'}
-        
-        db.delete(user)
-        db.commit()
-        return {'success': True, 'message': f'User {user.full_name} deleted successfully'}
-    except Exception as e:
-        db.rollback()
-        return {'success': False, 'message': f'Error deleting user: {str(e)}'}
-
-def toggle_user_status(db, user_id):
-    """Helper function to toggle user active status"""
-    try:
-        user = get_user_by_id(db, user_id)
-        if not user:
-            return {'success': False, 'message': 'User not found'}
-        
-        user.is_active = not user.is_active
-        db.commit()
-        
-        status = "activated" if user.is_active else "deactivated"
-        return {'success': True, 'message': f'User {status} successfully', 'is_active': user.is_active}
-    except Exception as e:
-        db.rollback()
-        return {'success': False, 'message': f'Error updating user: {str(e)}'}
+user_service = UserService()  # ✅ Create service instance
 
 @users_bp.route('/users')
 @any_admin_required
@@ -55,7 +16,7 @@ def list_users():
     """List all users with management interface"""
     db = SessionLocal()
     try:
-        users = get_all_users(db)
+        users = user_service.get_all_users(db)  # ✅ Use service method
         return render_template('user/index.html', users=users)
     finally:
         db.close()
@@ -66,7 +27,7 @@ def view_user(user_id):
     """View user details"""
     db = SessionLocal()
     try:
-        user = get_user_by_id(db, user_id)
+        user = user_service.get_user_by_id(db, user_id)  # ✅ Use service method
         if not user:
             flash('User not found.', 'error')
             return redirect(url_for('users.list_users'))
@@ -95,7 +56,7 @@ def remove_user(user_id):
     """Delete user (super admin only)"""
     db = SessionLocal()
     try:
-        result = delete_user(db, user_id)
+        result = user_service.delete_user(db, user_id)  # ✅ Use service method
         
         if result['success']:
             flash(result['message'], 'success')
@@ -112,7 +73,7 @@ def toggle_status(user_id):
     """Toggle user active status (super admin only)"""
     db = SessionLocal()
     try:
-        result = toggle_user_status(db, user_id)
+        result = user_service.toggle_user_status(db, user_id)  # ✅ Use service method
         return jsonify(result)
     except Exception as e:
         print(f"Error toggling user status: {e}")
@@ -126,7 +87,7 @@ def user_stats():
     """API endpoint for user statistics"""
     db = SessionLocal()
     try:
-        users = get_all_users(db)
+        users = user_service.get_all_users(db)  # ✅ Use service method
         
         stats = {
             "total_users": len(users),
@@ -147,7 +108,7 @@ def search_users():
     try:
         search_term = request.args.get('q', '').lower()
         
-        users = get_all_users(db)
+        users = user_service.get_all_users(db)  # ✅ Use service method
         
         # Filter users based on search term
         filtered_users = [
@@ -226,13 +187,13 @@ def promote_to_admin(user_id):
     """Promote user to admin (super admin only)"""
     db = SessionLocal()
     try:
-        user = get_user_by_id(db, user_id)
+        user = user_service.get_user_by_id(db, user_id)  # ✅ Use service method
         if not user:
             return jsonify({'success': False, 'message': 'User not found'})
         
         # Get admin data from request
         data = request.get_json()
-        role = data.get('role', 'admin')  # Get role from request
+        role = data.get('role', 'admin')
         division = data.get('division', 'Support')
         
         # Validate role
@@ -242,11 +203,11 @@ def promote_to_admin(user_id):
         # Get current admin ID from session
         current_admin_id = session.get('admin_info', {}).get('id')
         
-        # Promote user
+        # Promote user using service method
         from ...database.models import AdminRole
         admin_role = AdminRole.super_admin if role == 'super_admin' else AdminRole.admin
         
-        admin = promote_user_to_admin(
+        result = user_service.promote_user_to_admin(  # ✅ Use service method
             db=db,
             telegram_id=user.telegram_id,
             promoted_by_admin_id=current_admin_id,
@@ -255,6 +216,10 @@ def promote_to_admin(user_id):
             is_available=True if role == 'admin' else None
         )
         
+        if not result['success']:
+            return jsonify(result)
+        
+        admin = result['admin']
         role_name = 'Super Administrator' if role == 'super_admin' else 'Admin/Agent'
         
         return jsonify({

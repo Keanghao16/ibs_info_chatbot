@@ -2,10 +2,12 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
 from ...database.connection import SessionLocal
 from ...database.models import ChatMessage, SessionStatus, ChatSession
-from ...services.user_service import get_user_or_admin_by_telegram_id, create_user_if_not_admin
-from ...services.faq_service import FAQService
+from ...services import UserService, FAQService
 from ...web.websocket_manager import broadcast_new_message
 from datetime import datetime
+
+user_service = UserService()
+faq_service = FAQService()
 
 async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
@@ -25,10 +27,10 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         except Exception as e:
             print(f"Error fetching user photo: {e}")
         
-        # Check if user is admin
-        record, user_type = get_user_or_admin_by_telegram_id(db, str(telegram_user.id))
+        # ✅ Use UserService method instead of standalone function
+        result = user_service.get_user_or_admin_by_telegram_id(db, str(telegram_user.id))
         
-        if user_type == "admin":
+        if result and result['type'] == "admin":
             # Admin shouldn't use regular chat - redirect them
             await update.message.reply_text(
                 "⚠️ You're logged in as an admin.\n"
@@ -37,8 +39,8 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             )
             return
         
-        # Create user if not exists (and not admin)
-        user = create_user_if_not_admin(
+        # ✅ Use UserService method to create user
+        create_result = user_service.create_user_if_not_admin(
             db=db,
             telegram_id=str(telegram_user.id),
             username=telegram_user.username,
@@ -48,8 +50,17 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             photo_url=photo_url
         )
         
-        if not user:
+        if not create_result['success'] and 'admin' not in create_result['message'].lower():
             # Shouldn't happen but handle gracefully
+            await update.message.reply_text(
+                "⚠️ Please use /start first to initialize your account."
+            )
+            return
+        
+        # Get the user object
+        user = create_result.get('user') or user_service.get_user_by_telegram_id(db, str(telegram_user.id))
+        
+        if not user:
             await update.message.reply_text(
                 "⚠️ Please use /start first to initialize your account."
             )
@@ -90,8 +101,7 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             if context.user_data.get('searching_faq'):
                 context.user_data['searching_faq'] = False
             
-                # Search FAQs
-                faq_service = FAQService()
+                # ✅ Use FAQService method to search
                 search_results = faq_service.search_faqs(db, message_text)
                 
                 if not search_results:

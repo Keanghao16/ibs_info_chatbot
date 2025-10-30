@@ -1,9 +1,11 @@
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
 from ...database.connection import SessionLocal
-from ...database.models import ChatSession, Admin, AdminRole
-from ...services.user_service import get_user_or_admin_by_telegram_id, create_user_if_not_admin
-from ...services.faq_service import FAQService
+from ...database.models import ChatSession, Admin, AdminRole, SessionStatus
+from ...services import UserService, FAQService
+
+user_service = UserService()
+faq_service = FAQService()
 
 async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
@@ -24,18 +26,18 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         except Exception as e:
             print(f"Error fetching user photo: {e}")
         
-        # Check if user is admin
-        record, user_type = get_user_or_admin_by_telegram_id(db, str(telegram_user.id))
+        # ✅ Use UserService method instead of standalone function
+        result = user_service.get_user_or_admin_by_telegram_id(db, str(telegram_user.id))
         
-        if user_type == "admin":
+        if result and result['type'] == "admin":
             await query.edit_message_text(
                 "⚠️ Admin accounts cannot use regular user features.\n"
                 "Please use the admin panel."
             )
             return
         
-        # Create user if not exists
-        user = create_user_if_not_admin(
+        # ✅ Use UserService method to create user
+        create_result = user_service.create_user_if_not_admin(
             db=db,
             telegram_id=str(telegram_user.id),
             username=telegram_user.username,
@@ -45,9 +47,12 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             photo_url=photo_url
         )
         
-        if not user:
+        if not create_result['success'] and 'admin' not in create_result['message'].lower():
             await query.edit_message_text("⚠️ Please use /start first.")
             return
+        
+        # Get the user object
+        user = create_result.get('user') or user_service.get_user_by_telegram_id(db, str(telegram_user.id))
 
         if query.data == "start_chat":
             if user:
@@ -58,7 +63,6 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 ).first()
                 
                 if available_admin:
-                    from ...database.models import SessionStatus
                     new_session = ChatSession(
                         user_id=user.id,
                         admin_id=available_admin.id,
@@ -79,8 +83,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 await query.edit_message_text("❌ Please use /start first to register.")
             
         elif query.data == "faq":
-            # Get FAQ categories dynamically
-            faq_service = FAQService()
+            # ✅ Use FAQService method
             categories = faq_service.get_active_faq_categories(db)
             
             if not categories:
@@ -97,7 +100,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             # Create category buttons dynamically
             keyboard = []
             for category in categories:
-                # Count FAQs in this category
+                # ✅ Use FAQService method
                 faqs_count = faq_service.get_category_faq_count(db, category.id)
                 keyboard.append([
                     InlineKeyboardButton(
@@ -122,9 +125,8 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         elif query.data.startswith("faq_cat_"):
             # Show FAQs for selected category
             category_id = int(query.data.replace("faq_cat_", ""))
-            faq_service = FAQService()
             
-            # Get category
+            # ✅ Use FAQService methods
             category = faq_service.get_category_by_id(db, category_id)
             if not category:
                 await query.edit_message_text(
@@ -175,7 +177,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         elif query.data.startswith("faq_view_"):
             # Show specific FAQ answer
             faq_id = int(query.data.replace("faq_view_", ""))
-            faq_service = FAQService()
+            # ✅ Use FAQService method
             faq = faq_service.get_faq_by_id(db, faq_id)
             
             if not faq or not faq.faq_category:

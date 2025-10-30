@@ -1,10 +1,12 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session, jsonify
 from ...database.connection import SessionLocal
-from ...services.admin_service import AdminService
+from ...services import AdminService, UserService  # ✅ Add UserService
 from .auth import super_admin_required, any_admin_required
+from ...database.models import Admin, AdminRole
 
 admin_bp = Blueprint('admin', __name__)
 admin_service = AdminService()
+user_service = UserService()  # ✅ Create UserService instance
 
 @admin_bp.route('/administrators')
 @super_admin_required
@@ -194,5 +196,56 @@ def admin_stats():
     except Exception as e:
         print(f"Error fetching admin stats: {e}")
         return jsonify({"success": False, "message": "Error fetching statistics"})
+    finally:
+        db.close()
+
+@admin_bp.route('/admin/demote-admin/<string:admin_id>', methods=['POST'])
+@super_admin_required
+def demote_admin_route(admin_id):
+    """Demote admin to regular user (super admin only)"""
+    db = SessionLocal()
+    try:
+        # Get admin info first
+        admin = db.query(Admin).filter(Admin.id == admin_id).first()
+        
+        if not admin:
+            return jsonify({'success': False, 'message': 'Admin not found'})
+        
+        # Prevent demoting yourself
+        current_admin_id = session['admin_info']['id']
+        if admin.id == current_admin_id:
+            return jsonify({'success': False, 'message': 'You cannot demote yourself'})
+        
+        # Prevent demoting super admins
+        if admin.role == AdminRole.super_admin:
+            return jsonify({'success': False, 'message': 'Cannot demote super administrators'})
+        
+        # Store telegram_id and name before demotion
+        telegram_id = admin.telegram_id
+        admin_name = admin.full_name
+        
+        # ✅ Use UserService to demote admin to user
+        result = user_service.demote_admin_to_user(db, telegram_id)
+        
+        if not result['success']:
+            return jsonify(result)
+        
+        user = result['user']
+        
+        return jsonify({
+            'success': True,
+            'message': f'{admin_name} has been demoted to regular user successfully',
+            'user': {
+                'id': user.id,
+                'full_name': user.full_name,
+                'telegram_id': user.telegram_id
+            }
+        })
+        
+    except Exception as e:
+        print(f"Error demoting admin: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'message': f'Error demoting admin: {str(e)}'})
     finally:
         db.close()

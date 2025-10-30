@@ -418,6 +418,15 @@
         background: #c3e6cb;
     }
 
+    .btn-demote {
+        background: #fff3cd;
+        color: #856404;
+    }
+
+    .btn-demote:hover {
+        background: #ffe69c;
+    }
+
     .no-admins {
         text-align: center;
         padding: 60px 20px;
@@ -779,13 +788,22 @@
 
                     <td>
                         <div class="action-buttons-cell">
-                            <button class="btn-action btn-view" onclick="viewAdmin('{{ admin.id }}')"
-                                title="View Details">
+                            <button class="btn-action btn-view" onclick="viewAdmin('{{ admin.id }}')" title="View">
                                 <i class="fas fa-eye"></i>
                             </button>
+                            
+                            {% if session.admin_info.role == 'super_admin' %}
                             <button class="btn-action btn-edit" onclick="editAdmin('{{ admin.id }}')" title="Edit">
                                 <i class="fas fa-edit"></i>
                             </button>
+                            
+                            <!-- Add Demote Button (only for regular admins) -->
+                            {% if admin.role.value == 'admin' and admin.id != session.admin_info.id %}
+                            <button class="btn-action btn-demote" onclick="demoteAdmin('{{ admin.id }}', '{{ admin.full_name }}')" title="Demote to User">
+                                <i class="fas fa-arrow-down"></i>
+                            </button>
+                            {% endif %}
+                            
                             {% if admin.is_active %}
                             <button class="btn-action btn-deactivate"
                                 onclick="toggleAdminStatus('{{ admin.id }}', true)" title="Deactivate">
@@ -796,6 +814,7 @@
                                 title="Activate">
                                 <i class="fas fa-user-check"></i>
                             </button>
+                            {% endif %}
                             {% endif %}
                         </div>
                     </td>
@@ -969,6 +988,45 @@
         }
     }
 
+    // Add Demote Function
+    function demoteAdmin(adminId, adminName) {
+        const confirmMsg = `⚠️ Are you sure you want to demote "${adminName}" to a regular user?\n\nThis will:\n- Remove all admin privileges\n- Move their account to the users table\n- Unassign all their active chat sessions\n\nThis action cannot be easily reversed.`;
+        
+        if (!confirm(confirmMsg)) {
+            return;
+        }
+        
+        // Show loading state
+        const btn = event.target.closest('button');
+        const originalHTML = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        btn.disabled = true;
+        
+        fetch(`/portal/admin/admin/demote-admin/${adminId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(`✅ ${data.message}`);
+                location.reload();
+            } else {
+                alert(`❌ ${data.message}`);
+                btn.innerHTML = originalHTML;
+                btn.disabled = false;
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('❌ An error occurred while demoting the admin.');
+            btn.innerHTML = originalHTML;
+            btn.disabled = false;
+        });
+    }
+    
     // Close modal when clicking outside
     window.onclick = function (event) {
         const modal = document.getElementById('addAdminModal');

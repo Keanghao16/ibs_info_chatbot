@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, session, jsonify
 from ...database.connection import SessionLocal
 from ...database.models import Admin
-from ...services.dashboard_service import DashboardService
+from ...services import DashboardService
 from .auth import any_admin_required
 
 dashboard_bp = Blueprint('dashboard', __name__)

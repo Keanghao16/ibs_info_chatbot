@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session, jsonify
 from ...database.connection import SessionLocal
 from ...database.models import ChatSession, User, Admin
-from ...services.chat_service import ChatService
+from ...services import ChatService
 from .auth import any_admin_required
 
 chats_bp = Blueprint('chats', __name__)

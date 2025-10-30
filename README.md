@@ -50,12 +50,16 @@ telegram-chatbot-admin
 4. Set up environment variables by copying `.env.example` to `.env` and filling in the required values.
 
 ## Migration the database
-python .\src\database\migrations\init_db.py
+python -m src.database.migrations.init_db
 
 ## recreate the table
-python .\src\database\migrations\recreate_tables.py
+python -m src.database.migrations.recreate_tables
 ## create super admin
-python .\src\database\migrations\create_super_admin.py
+python -m src.database.migrations.seed_super_admin
+## create categories
+python -m src.database.migrations.seed_categories
+## create faqs
+python -m src.database.migrations.seed_faqs
 
 
 
