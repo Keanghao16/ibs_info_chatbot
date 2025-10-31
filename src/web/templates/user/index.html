@@ -666,7 +666,7 @@
                                 <i class="fas fa-user-shield"></i>
                             </button>
                             <button class="btn-action btn-ban"
-                                onclick="toggleUserStatus({{ user.id }}, {{ user.is_active|lower }})"
+                                onclick="toggleUserStatus('{{ user.id }}', {{ 'true' if user.is_active else 'false' }})"
                                 title="{{ 'Deactivate' if user.is_active else 'Activate' }}">
                                 <i class="fas fa-{{ 'user-slash' if user.is_active else 'user-check' }}"></i>
                             </button>
@@ -946,29 +946,48 @@
     }
 
     // Update the toggleUserStatus function to use the new endpoint
-
     function toggleUserStatus(userId, currentStatus) {
         const action = currentStatus ? 'deactivate' : 'activate';
-        if (confirm(`Are you sure you want to ${action} this user?`)) {
-            fetch(`/portal/admin/users/toggle-status/${userId}`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    location.reload();
-                } else {
-                    alert(data.message || 'Failed to update user status');
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('Failed to update user status. Please try again.');
-            });
+        const confirmMsg = `Are you sure you want to ${action} this user?`;
+        
+        if (!confirm(confirmMsg)) {
+            return;
         }
+        
+        // Show loading state
+        const btn = event.target.closest('button');
+        const originalHTML = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        btn.disabled = true;
+        
+        fetch(`/portal/admin/users/toggle-status/${userId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                alert(`✅ User ${action}d successfully!`);
+                location.reload();
+            } else {
+                alert('❌ Failed to update user status: ' + (data.message || 'Unknown error'));
+                btn.innerHTML = originalHTML;
+                btn.disabled = false;
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('❌ Failed to update user status. Please try again.\n\nError: ' + error.message);
+            btn.innerHTML = originalHTML;
+            btn.disabled = false;
+        });
     }
 
     function exportUsers() {
