@@ -417,6 +417,23 @@
         font-size: 1.5em;
     }
 
+    /* Modal Base Styles */
+    .modal {
+        display: none;
+        position: fixed;
+        z-index: 9999;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        overflow: auto;
+        background-color: rgba(0, 0, 0, 0.5);
+    }
+
+    .modal.show {
+        display: block !important;
+    }
+
     /* Mobile Responsiveness */
     @media (max-width: 768px) {
         .search-filters {
@@ -722,8 +739,8 @@
     </div>
 </div>
 
-<!-- Add Promote Modal (Add this before the closing </div> of users-container) -->
-<div id="promoteModalFromTable" class="modal" style="display: none;">
+<!-- Add Promote Modal -->
+<div id="promoteModalFromTable" class="modal">
     <div class="modal-content" style="max-width: 600px; margin: 100px auto; background: white; padding: 30px; border-radius: 15px; box-shadow: 0 10px 40px rgba(0,0,0,0.2);">
         <div class="modal-header" style="margin-bottom: 20px; position: relative;">
             <h2 style="margin: 0; color: #333;">
@@ -964,17 +981,25 @@
 
     // Promote Modal Functions
     function showPromoteModalFromTable(userId, userName) {
+        console.log('Opening promote modal for user:', userId, userName); // Debug log
+        
         currentPromoteUserId = userId;
         document.getElementById('promoteUserName').textContent = userName || 'Unknown User';
         document.getElementById('promoteUserId').textContent = userId;
         document.getElementById('promoteRoleTable').value = 'admin';
         document.getElementById('promoteDivisionTable').value = '';
         togglePromoteDivisionFieldTable();
-        document.getElementById('promoteModalFromTable').style.display = 'block';
+        
+        // Show the modal using class
+        const modal = document.getElementById('promoteModalFromTable');
+        modal.classList.add('show');
+        
+        console.log('Modal should be visible now'); // Debug log
     }
 
     function closePromoteModalFromTable() {
-        document.getElementById('promoteModalFromTable').style.display = 'none';
+        const modal = document.getElementById('promoteModalFromTable');
+        modal.classList.remove('show');
         currentPromoteUserId = null;
     }
 
@@ -990,7 +1015,10 @@
     }
 
     function promoteUserFromTable() {
-        if (!currentPromoteUserId) return;
+        if (!currentPromoteUserId) {
+            alert('⚠️ No user selected for promotion');
+            return;
+        }
         
         const role = document.getElementById('promoteRoleTable').value;
         const division = document.getElementById('promoteDivisionTable').value.trim();
@@ -1018,10 +1046,16 @@
                 division: division || null
             })
         })
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
         .then(data => {
             if (data.success) {
                 alert(`✅ User promoted to ${roleName} successfully!\n\nThe user can now access the admin panel.`);
+                closePromoteModalFromTable();
                 location.reload();
             } else {
                 alert('❌ Failed to promote user: ' + (data.message || 'Unknown error'));
@@ -1031,7 +1065,7 @@
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('❌ Failed to promote user. Please try again.');
+            alert('❌ Failed to promote user. Please try again.\n\nError: ' + error.message);
             btn.innerHTML = originalHTML;
             btn.disabled = false;
         });
