@@ -1,5 +1,6 @@
 from sqlalchemy.orm import Session, joinedload
 from ..database.models import FAQ, FAQCategory
+from ..utils import Helpers
 from typing import List, Optional
 
 class FAQService:
@@ -215,3 +216,84 @@ class FAQService:
             FAQ.category_id == category_id,
             FAQ.is_active == True
         ).count()
+
+    def get_all_faqs(self, db: Session, page: int = 1, per_page: int = 20):
+        """Get all FAQs with pagination"""
+        faqs = db.query(FAQ).order_by(FAQ.order_index, FAQ.id).all()
+        
+        # Apply pagination
+        paginated_faqs = Helpers.paginate(faqs, page, per_page)
+        
+        return {
+            'success': True,
+            'faqs': paginated_faqs,
+            'pagination': {
+                'page': page,
+                'per_page': per_page,
+                'total': len(faqs),
+                'total_pages': (len(faqs) + per_page - 1) // per_page
+            }
+        }
+    
+    def get_faqs_by_category(self, db: Session, category_id: int, page: int = 1, per_page: int = 20):
+        """Get FAQs by category with pagination"""
+        faqs = db.query(FAQ).filter(
+            FAQ.category_id == category_id,
+            FAQ.is_active == True
+        ).order_by(FAQ.order_index, FAQ.id).all()
+        
+        # Apply pagination
+        paginated_faqs = Helpers.paginate(faqs, page, per_page)
+        
+        return {
+            'success': True,
+            'faqs': [{
+                'id': faq.id,
+                'question': faq.question,
+                'answer': faq.answer,
+                'category_id': faq.category_id,
+                'is_active': faq.is_active,
+                'order_index': faq.order_index,
+                'created_at': Helpers.format_timestamp(faq.created_at) if faq.created_at else None
+            } for faq in paginated_faqs],
+            'pagination': {
+                'page': page,
+                'per_page': per_page,
+                'total': len(faqs),
+                'total_pages': (len(faqs) + per_page - 1) // per_page
+            }
+        }
+    
+    def search_faqs(self, db: Session, search_term: str, page: int = 1, per_page: int = 20):
+        """Search FAQs with pagination"""
+        search_term = Helpers.sanitize_input(search_term.lower())
+        
+        faqs = db.query(FAQ).filter(
+            FAQ.is_active == True
+        ).all()
+        
+        # Filter by search term
+        filtered_faqs = [
+            faq for faq in faqs
+            if search_term in faq.question.lower() or search_term in faq.answer.lower()
+        ]
+        
+        # Apply pagination
+        paginated_faqs = Helpers.paginate(filtered_faqs, page, per_page)
+        
+        return {
+            'success': True,
+            'faqs': [{
+                'id': faq.id,
+                'question': faq.question,
+                'answer': faq.answer,
+                'category_id': faq.category_id,
+                'category_name': faq.category.name if faq.category else None
+            } for faq in paginated_faqs],
+            'pagination': {
+                'page': page,
+                'per_page': per_page,
+                'total': len(filtered_faqs),
+                'total_pages': (len(filtered_faqs) + per_page - 1) // per_page
+            }
+        }

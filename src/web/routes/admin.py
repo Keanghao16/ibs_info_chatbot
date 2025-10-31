@@ -3,6 +3,7 @@ from ...database.connection import SessionLocal
 from ...services import AdminService, UserService  # ✅ Add UserService
 from .auth import super_admin_required, any_admin_required
 from ...database.models import Admin, AdminRole
+from ...utils import Helpers
 
 admin_bp = Blueprint('admin', __name__)
 admin_service = AdminService()
@@ -11,11 +12,28 @@ user_service = UserService()  # ✅ Create UserService instance
 @admin_bp.route('/administrators')
 @super_admin_required
 def manage_admins():
-    """List all administrators"""
+    """List all administrators with pagination"""
     db = SessionLocal()
     try:
+        # Get pagination parameters
+        page = request.args.get('page', 1, type=int)
+        per_page = request.args.get('per_page', 10, type=int)
+        
         admins = admin_service.get_all_admins(db)
-        return render_template('admin/index.html', admins=admins)
+        
+        # Apply pagination
+        paginated_admins = Helpers.paginate(admins, page, per_page)
+        
+        # Calculate total pages
+        total_admins = len(admins)
+        total_pages = (total_admins + per_page - 1) // per_page
+        
+        return render_template('admin/index.html', 
+                             admins=paginated_admins,
+                             page=page,
+                             per_page=per_page,
+                             total_admins=total_admins,
+                             total_pages=total_pages)
     finally:
         db.close()
 
@@ -247,5 +265,85 @@ def demote_admin_route(admin_id):
         import traceback
         traceback.print_exc()
         return jsonify({'success': False, 'message': f'Error demoting admin: {str(e)}'})
+    finally:
+        db.close()
+
+@admin_bp.route('/api/admins')
+@super_admin_required
+def get_admins_paginated():
+    """Get all admins with formatted timestamps and pagination"""
+    db = SessionLocal()
+    try:
+        page = request.args.get('page', 1, type=int)
+        per_page = request.args.get('per_page', 10, type=int)
+        
+        admins = admin_service.get_all_admins(db)
+        
+        # Apply pagination
+        paginated_admins = Helpers.paginate(admins, page, per_page)
+        
+        formatted_admins = []
+        for admin in paginated_admins:
+            formatted_admins.append({
+                'id': admin.id,
+                'telegram_id': admin.telegram_id,
+                'full_name': admin.full_name,
+                'role': admin.role.value,
+                'division': admin.division,
+                'is_active': admin.is_active,
+                'is_available': admin.is_available,
+                'created_at': Helpers.format_timestamp(admin.created_at),
+                'last_login': Helpers.format_timestamp(admin.last_login) if admin.last_login else 'Never'
+            })
+        
+        return jsonify({
+            'success': True,
+            'admins': formatted_admins,
+            'pagination': {
+                'page': page,
+                'per_page': per_page,
+                'total': len(admins),
+                'total_pages': (len(admins) + per_page - 1) // per_page
+            }
+        })
+    finally:
+        db.close()
+
+@admin_bp.route('/api/admin-logs')
+@super_admin_required
+def get_admin_logs():
+    """Get admin activity audit logs with pagination"""
+    db = SessionLocal()
+    try:
+        page = request.args.get('page', 1, type=int)
+        per_page = request.args.get('per_page', 20, type=int)
+        
+        logs = admin_service.get_audit_logs(db)
+        
+        # Apply pagination
+        paginated_logs = Helpers.paginate(logs, page, per_page)
+        
+        formatted_logs = []
+        for log in paginated_logs:
+            formatted_logs.append({
+                'id': log.id,
+                'admin_id': log.admin_id,
+                'admin_username': log.admin.username if log.admin else 'Unknown',
+                'action': log.action,
+                'description': log.description,
+                'ip_address': log.ip_address,
+                'timestamp': Helpers.format_timestamp(log.created_at)
+            })
+        
+        return jsonify({
+            'success': True,
+            'logs': formatted_logs,
+            'pagination': {
+                'page': page,
+                'per_page': per_page,
+                'total': len(logs),
+                'total_pages': (len(logs) + per_page - 1) // per_page
+            }
+        })
     finally:
         db.close()

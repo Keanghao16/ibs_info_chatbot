@@ -134,6 +134,11 @@ python -m src.database.migrations.recreate_tables
    python -m src.database.migrations.seed_faqs
    ```
 
+4. Create users:
+   ```bash
+   python -m src.database.migrations.seed_users
+   ```
+
 ## Running the Bot
 
 To run the Telegram bot, execute the following command:

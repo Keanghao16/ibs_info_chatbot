@@ -1,23 +1,41 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, session
 from ...database.connection import SessionLocal
 from ...database.models import User
-from ...services import UserService  # ✅ Import UserService class
+from ...services import UserService
 from .auth import any_admin_required, super_admin_required
 import asyncio
 from telegram import Bot
 import os
+from ...utils import Helpers
 
 users_bp = Blueprint('users', __name__)
-user_service = UserService()  # ✅ Create service instance
+user_service = UserService()
 
 @users_bp.route('/users')
 @any_admin_required
 def list_users():
-    """List all users with management interface"""
+    """List all users with management interface and pagination"""
     db = SessionLocal()
     try:
-        users = user_service.get_all_users(db)  # ✅ Use service method
-        return render_template('user/index.html', users=users)
+        # Get pagination parameters
+        page = request.args.get('page', 1, type=int)
+        per_page = request.args.get('per_page', 10, type=int)
+        
+        users = user_service.get_all_users(db)
+        
+        # Apply pagination
+        paginated_users = Helpers.paginate(users, page, per_page)
+        
+        # Calculate total pages
+        total_users = len(users)
+        total_pages = (total_users + per_page - 1) // per_page
+        
+        return render_template('user/index.html', 
+                             users=paginated_users,
+                             page=page,
+                             per_page=per_page,
+                             total_users=total_users,
+                             total_pages=total_pages)
     finally:
         db.close()
 
@@ -237,5 +255,91 @@ def promote_to_admin(user_id):
         import traceback
         traceback.print_exc()
         return jsonify({'success': False, 'message': str(e)})
+    finally:
+        db.close()
+
+@users_bp.route('/api/users')
+def get_users():
+    """Get all users with formatted timestamps"""
+    user_service = UserService()
+    users = user_service.get_all_users()
+    
+    formatted_users = []
+    for user in users:
+        formatted_users.append({
+            'id': user.id,
+            'telegram_id': user.telegram_id,
+            'username': user.username,
+            'first_name': user.first_name,
+            'last_name': user.last_name,
+            'is_active': user.is_active,
+            'created_at': Helpers.format_timestamp(user.created_at),
+            'last_login': Helpers.format_timestamp(user.last_login) if user.last_login else 'Never'
+        })
+    
+    return jsonify(formatted_users)
+
+@users_bp.route('/api/users/<int:user_id>')
+def get_user(user_id):
+    """Get specific user details"""
+    user_service = UserService()
+    user = user_service.get_user_by_id(user_id)
+    
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+    
+    user_data = {
+        'id': user.id,
+        'telegram_id': user.telegram_id,
+        'username': user.username,
+        'first_name': user.first_name,
+        'last_name': user.last_name,
+        'is_active': user.is_active,
+        'created_at': Helpers.format_timestamp(user.created_at),
+        'last_login': Helpers.format_timestamp(user.last_login) if user.last_login else 'Never'
+    }
+    
+    return jsonify(user_data)
+
+@users_bp.route('/users/api/list')
+@any_admin_required
+def api_list_users():
+    """API endpoint for paginated user list"""
+    db = SessionLocal()
+    try:
+        page = request.args.get('page', 1, type=int)
+        per_page = request.args.get('per_page', 10, type=int)
+        search = request.args.get('search', '').lower()
+        
+        users = user_service.get_all_users(db)
+        
+        # Filter by search if provided
+        if search:
+            users = [u for u in users 
+                    if search in (u.full_name or '').lower() 
+                    or search in (u.username or '').lower()
+                    or search in str(u.telegram_id)]
+        
+        # Apply pagination
+        paginated_users = Helpers.paginate(users, page, per_page)
+        
+        return jsonify({
+            'success': True,
+            'users': [{
+                'id': u.id,
+                'telegram_id': u.telegram_id,
+                'full_name': u.full_name,
+                'username': u.username,
+                'is_active': u.is_active,
+                'created_at': Helpers.format_timestamp(u.created_at),
+                'last_login': Helpers.format_timestamp(u.last_login) if u.last_login else 'Never'
+            } for u in paginated_users],
+            'pagination': {
+                'page': page,
+                'per_page': per_page,
+                'total': len(users),
+                'total_pages': (len(users) + per_page - 1) // per_page
+            }
+        })
     finally:
         db.close()

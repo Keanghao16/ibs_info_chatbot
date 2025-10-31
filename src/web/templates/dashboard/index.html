@@ -543,6 +543,13 @@
             <!-- Add more activity items as needed -->
         </ul>
     </div>
+
+    <div class="recent-activities">
+        <h3>Recent Activities</h3>
+        <ul id="activity-list">
+            <!-- Activities will be populated here -->
+        </ul>
+    </div>
 </div>
 
 <script>
@@ -621,5 +628,30 @@
             })
             .catch(error => console.log('Stats refresh failed:', error));
     }, 30000);
+
+    function loadRecentActivities() {
+        fetch('/api/dashboard/activities')
+            .then(response => response.json())
+            .then(data => {
+                const activityList = document.getElementById('activity-list');
+                activityList.innerHTML = '';
+                
+                data.forEach(activity => {
+                    const li = document.createElement('li');
+                    li.innerHTML = `
+                        <span class="activity-type">${activity.type}</span>
+                        <span class="activity-description">${activity.description}</span>
+                        <span class="activity-time">${activity.timestamp}</span>
+                    `;
+                    activityList.appendChild(li);
+                });
+            });
+    }
+
+    // Initial load of recent activities
+    loadRecentActivities();
+
+    // Optional: Refresh recent activities every minute
+    setInterval(loadRecentActivities, 60000);
 </script>
 {% endblock %}

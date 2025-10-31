@@ -226,6 +226,12 @@
         letter-spacing: 0.5px;
     }
 
+    /* Specific width for Actions column */
+    .admins-table th:last-child {
+        width: 180px;
+        min-width: 180px;
+    }
+
     .admins-table td {
         padding: 20px;
         border-bottom: 1px solid #f1f3f4;
@@ -367,6 +373,8 @@
     .action-buttons-cell {
         display: flex;
         gap: 8px;
+        flex-wrap: wrap;
+        justify-content: flex-start;
     }
 
     .btn-action {
@@ -380,6 +388,7 @@
         display: flex;
         align-items: center;
         gap: 5px;
+        white-space: nowrap;
     }
 
     .btn-view {
@@ -572,6 +581,11 @@
             padding: 10px;
         }
 
+        .admins-table th:last-child {
+            width: auto;
+            min-width: auto;
+        }
+
         .admin-info {
             flex-direction: column;
             align-items: flex-start;
@@ -580,6 +594,12 @@
 
         .action-buttons-cell {
             flex-direction: column;
+            width: 100%;
+        }
+
+        .btn-action {
+            width: 100%;
+            justify-content: center;
         }
 
         .table-header {
@@ -680,7 +700,6 @@
                     <th><i class="fas fa-user"></i> Administrator</th>
                     <th><i class="fas fa-id-badge"></i> Telegram ID</th>
                     <th><i class="fas fa-shield-alt"></i> Role</th>
-                    <!-- <th><i class="fas fa-building"></i> Division</th> -->
                     <th><i class="fas fa-signal"></i> Availability</th>
                     <th><i class="fas fa-toggle-on"></i> Status</th>
                     <th><i class="fas fa-clock"></i> Last Login</th>
@@ -735,14 +754,6 @@
                             {% endif %}
                         </span>
                     </td>
-
-                    <!-- <td>
-                                {% if admin.division %}
-                                    <span style="color: #6c757d;">{{ admin.division }}</span>
-                                {% else %}
-                                    <span style="color: #adb5bd; font-style: italic;">Not assigned</span>
-                                {% endif %}
-                            </td> -->
 
                     <td>
                         {% if admin.role.value == 'admin' %}
@@ -822,6 +833,10 @@
                 {% endfor %}
             </tbody>
         </table>
+
+        <!-- ✅ ADD PAGINATION HERE - Right after the table -->
+        {% include '_pagination.html' %}
+        
         {% else %}
         <div class="no-admins">
             <i class="fas fa-user-shield"></i>
@@ -830,7 +845,9 @@
         </div>
         {% endif %}
     </div>
+    <!-- End of admins-table-container -->
 </div>
+<!-- End of admins-container -->
 
 <!-- Add Admin Modal -->
 <div id="addAdminModal" class="modal">
@@ -1040,4 +1057,5 @@
         toggleDivisionField();
     });
 </script>
+
 {% endblock %}
