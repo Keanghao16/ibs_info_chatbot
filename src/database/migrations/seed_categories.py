@@ -1,5 +1,11 @@
-from src.database.connection import SessionLocal
-from src.services.faq_service import FAQService
+import sys
+import os
+
+# Add the src directory to the Python path
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
+
+from ..connection import SessionLocal
+from ...services import FAQService
 
 def seed_categories():
     """Seed initial FAQ categories"""

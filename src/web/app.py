@@ -1,16 +1,19 @@
 import os
 from flask import Flask, redirect, url_for, session
-from ..utils.config import Config
+from ..utils import Config
 from .websocket_manager import socketio
 
-ADMIN_PREFIX =  '/portal/admin'
+ADMIN_PREFIX = '/portal/admin'
 
-from .routes.auth import auth_bp
-from .routes.admin import admin_bp
-from .routes.users import users_bp
-from .routes.chats import chats_bp
-from .routes.dashboard import dashboard_bp
-from .routes.system_settings import system_settings_bp
+# Import all blueprints from routes package
+from .routes import (
+    auth_bp,
+    admin_bp,
+    users_bp,
+    chats_bp,
+    dashboard_bp,
+    system_settings_bp
+)
 
 def create_app():
     app = Flask(__name__)

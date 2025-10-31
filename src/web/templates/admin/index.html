@@ -226,6 +226,12 @@
         letter-spacing: 0.5px;
     }
 
+    /* Specific width for Actions column */
+    .admins-table th:last-child {
+        width: 180px;
+        min-width: 180px;
+    }
+
     .admins-table td {
         padding: 20px;
         border-bottom: 1px solid #f1f3f4;
@@ -367,6 +373,8 @@
     .action-buttons-cell {
         display: flex;
         gap: 8px;
+        flex-wrap: wrap;
+        justify-content: flex-start;
     }
 
     .btn-action {
@@ -380,6 +388,7 @@
         display: flex;
         align-items: center;
         gap: 5px;
+        white-space: nowrap;
     }
 
     .btn-view {
@@ -416,6 +425,15 @@
 
     .btn-activate:hover {
         background: #c3e6cb;
+    }
+
+    .btn-demote {
+        background: #fff3cd;
+        color: #856404;
+    }
+
+    .btn-demote:hover {
+        background: #ffe69c;
     }
 
     .no-admins {
@@ -563,6 +581,11 @@
             padding: 10px;
         }
 
+        .admins-table th:last-child {
+            width: auto;
+            min-width: auto;
+        }
+
         .admin-info {
             flex-direction: column;
             align-items: flex-start;
@@ -571,6 +594,12 @@
 
         .action-buttons-cell {
             flex-direction: column;
+            width: 100%;
+        }
+
+        .btn-action {
+            width: 100%;
+            justify-content: center;
         }
 
         .table-header {
@@ -671,7 +700,6 @@
                     <th><i class="fas fa-user"></i> Administrator</th>
                     <th><i class="fas fa-id-badge"></i> Telegram ID</th>
                     <th><i class="fas fa-shield-alt"></i> Role</th>
-                    <!-- <th><i class="fas fa-building"></i> Division</th> -->
                     <th><i class="fas fa-signal"></i> Availability</th>
                     <th><i class="fas fa-toggle-on"></i> Status</th>
                     <th><i class="fas fa-clock"></i> Last Login</th>
@@ -727,14 +755,6 @@
                         </span>
                     </td>
 
-                    <!-- <td>
-                                {% if admin.division %}
-                                    <span style="color: #6c757d;">{{ admin.division }}</span>
-                                {% else %}
-                                    <span style="color: #adb5bd; font-style: italic;">Not assigned</span>
-                                {% endif %}
-                            </td> -->
-
                     <td>
                         {% if admin.role.value == 'admin' %}
                         <span
@@ -779,13 +799,22 @@
 
                     <td>
                         <div class="action-buttons-cell">
-                            <button class="btn-action btn-view" onclick="viewAdmin('{{ admin.id }}')"
-                                title="View Details">
+                            <button class="btn-action btn-view" onclick="viewAdmin('{{ admin.id }}')" title="View">
                                 <i class="fas fa-eye"></i>
                             </button>
+                            
+                            {% if session.admin_info.role == 'super_admin' %}
                             <button class="btn-action btn-edit" onclick="editAdmin('{{ admin.id }}')" title="Edit">
                                 <i class="fas fa-edit"></i>
                             </button>
+                            
+                            <!-- Add Demote Button (only for regular admins) -->
+                            {% if admin.role.value == 'admin' and admin.id != session.admin_info.id %}
+                            <button class="btn-action btn-demote" onclick="demoteAdmin('{{ admin.id }}', '{{ admin.full_name }}')" title="Demote to User">
+                                <i class="fas fa-arrow-down"></i>
+                            </button>
+                            {% endif %}
+                            
                             {% if admin.is_active %}
                             <button class="btn-action btn-deactivate"
                                 onclick="toggleAdminStatus('{{ admin.id }}', true)" title="Deactivate">
@@ -797,12 +826,17 @@
                                 <i class="fas fa-user-check"></i>
                             </button>
                             {% endif %}
+                            {% endif %}
                         </div>
                     </td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
+
+        <!-- ✅ ADD PAGINATION HERE - Right after the table -->
+        {% include '_pagination.html' %}
+        
         {% else %}
         <div class="no-admins">
             <i class="fas fa-user-shield"></i>
@@ -811,7 +845,9 @@
         </div>
         {% endif %}
     </div>
+    <!-- End of admins-table-container -->
 </div>
+<!-- End of admins-container -->
 
 <!-- Add Admin Modal -->
 <div id="addAdminModal" class="modal">
@@ -936,19 +972,18 @@
     // Action Functions
     function viewAdmin(adminId) {
         // Redirect to admin profile view page
-        window.location.href = `/portal/admin/admin-profile/${adminId}`;
+        window.location.href = `/portal/admin/administrators/${adminId}`;
     }
 
     function editAdmin(adminId) {
-        // Implement edit admin
-        console.log('Edit admin:', adminId);
-        window.location.href = `/portal/admin/edit-admin/${adminId}`;
+        // FIXED: Use correct URL prefix with /admin/ before /edit-admin/
+        window.location.href = `/portal/admin/administrators/${adminId}/edit`;
     }
 
     function toggleAdminStatus(adminId, isActive) {
         const action = isActive ? 'deactivate' : 'activate';
         if (confirm(`Are you sure you want to ${action} this administrator?`)) {
-            fetch(`/admin/toggle-admin-status/${adminId}`, {
+            fetch(`/portal/admin/admin/toggle-admin-status/${adminId}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -960,16 +995,55 @@
                     if (data.success) {
                         location.reload();
                     } else {
-                        alert('Failed to update status: ' + data.message);
+                        alert('Error: ' + data.message);
                     }
                 })
                 .catch(error => {
                     console.error('Error:', error);
-                    alert('An error occurred while updating admin status.');
+                    alert('Error toggling admin status');
                 });
         }
     }
 
+    // Add Demote Function
+    function demoteAdmin(adminId, adminName) {
+        const confirmMsg = `⚠️ Are you sure you want to demote "${adminName}" to a regular user?\n\nThis will:\n- Remove all admin privileges\n- Move their account to the users table\n- Unassign all their active chat sessions\n\nThis action cannot be easily reversed.`;
+        
+        if (!confirm(confirmMsg)) {
+            return;
+        }
+        
+        // Show loading state
+        const btn = event.target.closest('button');
+        const originalHTML = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        btn.disabled = true;
+        
+        fetch(`/portal/admin/admin/demote-admin/${adminId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(`✅ ${data.message}`);
+                location.reload();
+            } else {
+                alert(`❌ ${data.message}`);
+                btn.innerHTML = originalHTML;
+                btn.disabled = false;
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('❌ An error occurred while demoting the admin.');
+            btn.innerHTML = originalHTML;
+            btn.disabled = false;
+        });
+    }
+    
     // Close modal when clicking outside
     window.onclick = function (event) {
         const modal = document.getElementById('addAdminModal');
@@ -983,4 +1057,5 @@
         toggleDivisionField();
     });
 </script>
+
 {% endblock %}

@@ -1,17 +1,42 @@
 from sqlalchemy.orm import Session
 from ..database.models import ChatSession, User, ChatMessage, Admin, SessionStatus
 from datetime import datetime
+from ..utils  import Helpers
 
 class ChatService:
     """Service for chat-related business logic"""
     
-    def get_chat_history(self, db: Session, user_id: int):
-        """Get chat history for a specific user"""
-        return db.query(ChatSession).filter(ChatSession.user_id == user_id).all()
-
-    def get_all_chats(self, db: Session):
+    def get_chat_history(self, user_id, limit=50):
+        """Get chat history for a user"""
+        messages = self.session.query(ChatMessage)\
+            .filter_by(user_id=user_id)\
+            .order_by(ChatMessage.created_at.desc())\
+            .limit(limit)\
+            .all()
+        
+        return [{
+            'id': msg.id,
+            'message': msg.message,
+            'response': msg.response,
+            'created_at': Helpers.format_timestamp(msg.created_at),
+            'is_resolved': msg.is_resolved
+        } for msg in messages]
+    
+    def get_all_chats(self):
         """Get all chat sessions"""
-        return db.query(ChatSession).all()
+        chats = self.session.query(ChatMessage)\
+            .order_by(ChatMessage.created_at.desc())\
+            .all()
+        
+        return [{
+            'id': chat.id,
+            'user_id': chat.user_id,
+            'username': chat.user.username if chat.user else 'Unknown',
+            'message': chat.message,
+            'response': chat.response,
+            'created_at': Helpers.format_timestamp(chat.created_at),
+            'is_resolved': chat.is_resolved
+        } for chat in chats]
 
     def get_chat_by_id(self, db: Session, chat_id: int):
         """Get chat session by ID"""

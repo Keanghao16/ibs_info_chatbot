@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session
-from ..database.models import User, ChatSession, Admin
+from ..database.models import User, ChatSession, Admin, ChatMessage
 from datetime import datetime
+from ..utils import Helpers
 
 class DashboardService:
     """Service for dashboard-related business logic"""
@@ -56,3 +57,56 @@ class DashboardService:
         ).order_by(ChatSession.start_time.desc()).limit(limit).all()
         
         return recent_sessions
+    
+    def get_recent_activities(self, db: Session, limit: int = 100):
+        """Get recent system activities"""
+        recent_users = db.query(User)\
+            .order_by(User.created_at.desc())\
+            .limit(limit)\
+            .all()
+        
+        recent_chats = db.query(ChatMessage)\
+            .order_by(ChatMessage.created_at.desc())\
+            .limit(limit)\
+            .all()
+        
+        activities = []
+        
+        for user in recent_users:
+            activities.append({
+                'type': 'user_registered',
+                'description': f'New user registered: {user.full_name or user.username or "Unknown"}',
+                'timestamp': Helpers.format_timestamp(user.created_at),
+                'raw_timestamp': user.created_at
+            })
+        
+        for chat in recent_chats:
+            username = 'Unknown'
+            if chat.user:
+                username = chat.user.full_name or chat.user.username or 'Unknown'
+            
+            activities.append({
+                'type': 'chat_message',
+                'description': f'Chat from {username}',
+                'timestamp': Helpers.format_timestamp(chat.created_at),
+                'raw_timestamp': chat.created_at
+            })
+        
+        # Sort by raw timestamp descending
+        activities.sort(key=lambda x: x['raw_timestamp'], reverse=True)
+        
+        # Remove raw_timestamp from response
+        for activity in activities:
+            activity.pop('raw_timestamp', None)
+        
+        return activities[:limit]
+    
+    def get_statistics(self, db: Session):
+        """Get dashboard statistics"""
+        stats = {
+            'total_users': db.query(User).count(),
+            'total_chats': db.query(ChatMessage).count(),
+            'total_admins': db.query(Admin).count(),
+            'recent_activities': self.get_recent_activities(db, 5)
+        }
+        return stats

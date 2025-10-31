@@ -1,11 +1,13 @@
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
 from ...database.connection import SessionLocal
-from ...database.models import ChatMessage, User, SessionStatus, ChatSession  # Add ChatSession
-from ...services.user_service import UserService
-from ...services.faq_service import FAQService
+from ...database.models import ChatMessage, SessionStatus, ChatSession
+from ...services import UserService, FAQService
 from ...web.websocket_manager import broadcast_new_message
-from datetime import datetime, timezone  # Add timezone import
+from datetime import datetime
+
+user_service = UserService()
+faq_service = FAQService()
 
 async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
@@ -14,31 +16,55 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     db = SessionLocal()
     try:
-        # Get user profile photo if not already saved
+        # Get user profile photo
         photo_url = None
         try:
             photos = await context.bot.get_user_profile_photos(telegram_user.id, limit=1)
             if photos.total_count > 0:
-                photo = photos.photos[0][-1]  # Get largest size
+                photo = photos.photos[0][-1]
                 file = await context.bot.get_file(photo.file_id)
                 photo_url = file.file_path
         except Exception as e:
             print(f"Error fetching user photo: {e}")
         
-        # Create user data object with photo
-        class TelegramUserData:
-            def __init__(self, telegram_user, photo_url=None):
-                self.id = telegram_user.id
-                self.username = telegram_user.username
-                self.first_name = telegram_user.first_name
-                self.last_name = telegram_user.last_name
-                self.photo_url = photo_url
+        # ✅ Use UserService method instead of standalone function
+        result = user_service.get_user_or_admin_by_telegram_id(db, str(telegram_user.id))
         
-        user_data = TelegramUserData(telegram_user, photo_url)
+        if result and result['type'] == "admin":
+            # Admin shouldn't use regular chat - redirect them
+            await update.message.reply_text(
+                "⚠️ You're logged in as an admin.\n"
+                "Please use the admin panel to manage chats.\n\n"
+                "Use /start to access admin features."
+            )
+            return
         
-        # Create UserService instance and use it
-        user_service = UserService()
-        user = user_service.find_or_create_user(db, user_data)
+        # ✅ Use UserService method to create user
+        create_result = user_service.create_user_if_not_admin(
+            db=db,
+            telegram_id=str(telegram_user.id),
+            username=telegram_user.username,
+            first_name=telegram_user.first_name,
+            last_name=telegram_user.last_name,
+            full_name=telegram_user.full_name,
+            photo_url=photo_url
+        )
+        
+        if not create_result['success'] and 'admin' not in create_result['message'].lower():
+            # Shouldn't happen but handle gracefully
+            await update.message.reply_text(
+                "⚠️ Please use /start first to initialize your account."
+            )
+            return
+        
+        # Get the user object
+        user = create_result.get('user') or user_service.get_user_by_telegram_id(db, str(telegram_user.id))
+        
+        if not user:
+            await update.message.reply_text(
+                "⚠️ Please use /start first to initialize your account."
+            )
+            return
         
         # Check for active chat session
         active_session = db.query(ChatSession).filter(
@@ -75,8 +101,7 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             if context.user_data.get('searching_faq'):
                 context.user_data['searching_faq'] = False
             
-                # Search FAQs
-                faq_service = FAQService()
+                # ✅ Use FAQService method to search
                 search_results = faq_service.search_faqs(db, message_text)
                 
                 if not search_results:

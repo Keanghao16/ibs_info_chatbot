@@ -693,6 +693,10 @@
                 {% endfor %}
             </tbody>
         </table>
+
+        <!-- ✅ ADD PAGINATION HERE - Right after the table -->
+        {% include '_pagination.html' %}
+        
         {% else %}
         <div class="no-chats">
             <i class="fas fa-comments-slash"></i>
@@ -701,7 +705,9 @@
         </div>
         {% endif %}
     </div>
+    <!-- End of chat-sessions-container -->
 </div>
+<!-- End of chat-container -->
 
 <script>
     // Search and Filter Functionality

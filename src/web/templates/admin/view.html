@@ -270,6 +270,14 @@
         box-shadow: 0 5px 15px rgba(255, 193, 7, 0.3);
     }
 
+    .btn-demote {
+        background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);
+    }
+
+    .btn-demote:hover {
+        box-shadow: 0 5px 15px rgba(255, 193, 7, 0.3);
+    }
+
     @media (max-width: 1024px) {
         .profile-grid {
             grid-template-columns: 1fr;
@@ -470,10 +478,21 @@
             <i class="fas fa-arrow-left"></i>
             Back to Admin Management
         </a>
-        <a href="{{ url_for('admin.manage_admins') }}#edit-{{ admin_info.id }}" class="btn-action btn-warning">
+        
+        {% if session.admin_info.role == 'super_admin' %}
+        <a href="{{ url_for('admin.edit_admin', admin_id=admin_info.id) }}" class="btn-action btn-warning">
             <i class="fas fa-edit"></i>
             Edit Admin
         </a>
+        
+        <!-- Add Demote Button (only for regular admins, not yourself) -->
+        {% if admin_info.role == 'admin' and admin_info.id != session.admin_info.id %}
+        <button onclick="demoteToUser()" class="btn-action btn-demote">
+            <i class="fas fa-arrow-down"></i>
+            Demote to User
+        </button>
+        {% endif %}
+        {% endif %}
     </div>
 </div>
 
@@ -494,5 +513,47 @@
         document.getElementById('monthsActive').textContent = monthsActive;
         {% endif %}
     });
+
+    function demoteToUser() {
+        const adminName = '{{ admin_info.full_name }}';
+        const adminId = '{{ admin_info.id }}';
+        
+        const confirmMsg = `⚠️ Are you sure you want to demote "${adminName}" to a regular user?\n\nThis will:\n- Remove all admin privileges\n- Move their account to the users table\n- Unassign all their active chat sessions\n\nThis action cannot be easily reversed.`;
+        
+        if (!confirm(confirmMsg)) {
+            return;
+        }
+        
+        // Show loading state
+        const btn = event.target;
+        const originalHTML = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Demoting...';
+        btn.disabled = true;
+        
+        fetch(`/portal/admin/admin/demote-admin/${adminId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(`✅ ${data.message}`);
+                // Redirect to users list
+                window.location.href = '/portal/admin/users';
+            } else {
+                alert(`❌ ${data.message}`);
+                btn.innerHTML = originalHTML;
+                btn.disabled = false;
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('❌ An error occurred while demoting the admin.');
+            btn.innerHTML = originalHTML;
+            btn.disabled = false;
+        });
+    }
 </script>
 {% endblock %}

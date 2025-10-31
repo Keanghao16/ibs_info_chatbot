@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, request, redirect, url_for, session, flash, jsonify
 from ...database.connection import SessionLocal
-from ...services.auth_service import AuthService
+from ...services import AuthService
 from ...database.models import AdminRole, Admin
 from functools import wraps
 import os
