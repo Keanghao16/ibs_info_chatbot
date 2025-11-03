@@ -7,550 +7,174 @@
     <title>{% block title %}Telegram Bot Admin Panel{% endblock %}</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Tailwind Config -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#f5f7ff',
+                            100: '#ebf0ff',
+                            500: '#667eea',
+                            600: '#5568d3',
+                            700: '#4451b8',
+                        },
+                        secondary: {
+                            500: '#764ba2',
+                            600: '#6a3f92',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
     <!-- Add Socket.IO and extra scripts HERE in the head -->
     {% block extra_head %}{% endblock %}
     
     <style>
-        /* Modern Base Styling */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-            min-height: 100vh;
-            line-height: 1.6;
-        }
-
-        /* Navigation Header */
-        .navbar {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 0;
-            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
-            position: sticky;
-            top: 0;
-            z-index: 1000;
-        }
-
-        .navbar-container {
-            max-width: 1200px;
-            margin: 0 auto;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0 20px;
-            height: 70px;
-        }
-
-        .navbar-brand {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            text-decoration: none;
-            color: white;
-            font-size: 1.4em;
-            font-weight: 700;
-        }
-
-        .navbar-brand i {
-            font-size: 1.5em;
-        }
-
-        .navbar-nav {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            list-style: none;
-        }
-
-        .nav-item {
-            position: relative;
-        }
-
-        .nav-link {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 12px 16px;
-            color: white;
-            text-decoration: none;
-            border-radius: 8px;
-            transition: all 0.3s ease;
-            font-weight: 500;
-        }
-
-        .nav-link:hover {
-            background: rgba(255, 255, 255, 0.15);
-            transform: translateY(-1px);
-        }
-
-        .nav-link.active {
-            background: rgba(255, 255, 255, 0.2);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-        }
-
-        /* User Profile Dropdown */
-        .user-profile {
-            position: relative;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 8px 16px;
-            border-radius: 25px;
-            background: rgba(255, 255, 255, 0.1);
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .user-profile:hover {
-            background: rgba(255, 255, 255, 0.2);
-        }
-
-        .user-avatar {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            object-fit: cover;
-        }
-
-        /* Navbar specific avatar placeholder */
-        .navbar .user-avatar-placeholder {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.2);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: bold;
-            font-size: 16px;
-            flex-shrink: 0;
-        }
-
-        /* Navbar specific user info */
-        .navbar .user-info {
-            display: flex;
-            flex-direction: column;
-            align-items: flex-start;
-        }
-
-        .user-name {
-            font-weight: 600;
-            font-size: 14px;
-        }
-
-        .user-role {
-            font-size: 11px;
-            opacity: 0.8;
-            text-transform: uppercase;
-        }
-
-        /* Dropdown Menu */
-        .dropdown-menu {
-            position: absolute;
-            top: 100%;
-            right: 0;
-            background: white;
-            border-radius: 10px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
-            min-width: 200px;
-            margin-top: 8px;
-            opacity: 0;
-            visibility: hidden;
-            transform: translateY(-10px);
-            transition: all 0.3s ease;
-            z-index: 1001;
-        }
-
-        .dropdown-menu.show {
-            opacity: 1;
-            visibility: visible;
-            transform: translateY(0);
-        }
-
-        .dropdown-item {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 12px 16px;
-            color: #333;
-            text-decoration: none;
-            transition: background 0.2s ease;
-        }
-
-        .dropdown-item:hover {
-            background: #f8f9fa;
-        }
-
-        .dropdown-item.danger {
-            color: #dc3545;
-        }
-
-        .dropdown-item.danger:hover {
-            background: #fee;
-        }
-
-        /* Main Container */
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 30px 20px;
-        }
-
-        /* Page Header */
-        .page-header {
-            background: white;
-            border-radius: 15px;
-            padding: 30px;
-            margin-bottom: 30px;
-            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
-        }
-
-        .page-title {
-            font-size: 2.2em;
-            font-weight: 700;
-            color: #333;
-            margin-bottom: 10px;
-        }
-
-        .page-subtitle {
-            color: #666;
-            font-size: 1.1em;
-        }
-
-        /* Content Area */
-        .content {
-            background: white;
-            border-radius: 15px;
-            padding: 30px;
-            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
-            margin-bottom: 30px;
-        }
-
-        /* Alerts */
-        .alert {
-            padding: 15px 20px;
-            border-radius: 10px;
-            margin-bottom: 20px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            font-weight: 500;
-        }
-
-        .alert-success {
-            background: #d1f2eb;
-            color: #0c5460;
-            border-left: 4px solid #17a2b8;
-        }
-
-        .alert-error {
-            background: #f8d7da;
-            color: #721c24;
-            border-left: 4px solid #dc3545;
-        }
-
-        .alert-warning {
-            background: #fff3cd;
-            color: #856404;
-            border-left: 4px solid #ffc107;
-        }
-
-        .alert-info {
-            background: #cce7ff;
-            color: #004085;
-            border-left: 4px solid #007bff;
-        }
-
-        /* Buttons */
-        .btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 12px 20px;
-            border: none;
-            border-radius: 8px;
-            text-decoration: none;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            font-size: 14px;
-        }
-
-        .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-        }
-
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
-        }
-
-        .btn-secondary {
-            background: #6c757d;
-            color: white;
-        }
-
-        .btn-success {
-            background: #28a745;
-            color: white;
-        }
-
-        .btn-warning {
-            background: #ffc107;
-            color: #212529;
-        }
-
-        .btn-danger {
-            background: #dc3545;
-            color: white;
-        }
-
-        .btn:hover {
-            transform: translateY(-1px);
-            text-decoration: none;
-            color: white;
-        }
-
-        /* Tables */
-        .table-container {
-            overflow-x: auto;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-        }
-
-        .table {
-            width: 100%;
-            border-collapse: collapse;
-            background: white;
-        }
-
-        .table th {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 15px;
-            text-align: left;
-            font-weight: 600;
-            font-size: 14px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .table td {
-            padding: 15px;
-            border-bottom: 1px solid #eee;
-            vertical-align: middle;
-        }
-
-        .table tbody tr:hover {
-            background: #f8f9fa;
-        }
-
-        /* Status Badges */
-        .status {
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 600;
-            text-transform: uppercase;
-        }
-
-        .status.active {
-            background: #d4edda;
-            color: #155724;
-        }
-
-        .status.inactive {
-            background: #f8d7da;
-            color: #721c24;
-        }
-
-        .status.closed {
-            background: #d1ecf1;
-            color: #0c5460;
-        }
-
-        /* Footer */
-        .footer {
-            text-align: center;
-            padding: 30px 20px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 15px;
-            margin-top: 50px;
-            backdrop-filter: blur(10px);
-        }
-
-        /* Mobile Responsiveness */
-        @media (max-width: 768px) {
-            .navbar-container {
-                padding: 0 15px;
+        /* Custom animations and utilities */
+        @keyframes slideDown {
+            from {
+                transform: translateY(-10px);
+                opacity: 0;
             }
-
-            .navbar-nav {
-                display: none;
-            }
-
-            .container {
-                padding: 20px 15px;
-            }
-
-            .page-header,
-            .content {
-                padding: 20px;
-            }
-
-            .page-title {
-                font-size: 1.8em;
-            }
-
-            .navbar .user-info {
-                display: none;
-            }
-        }
-
-        /* Loading Animation */
-        .loading {
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 3px solid rgba(255, 255, 255, 0.3);
-            border-radius: 50%;
-            border-top-color: white;
-            animation: spin 1s ease-in-out infinite;
-        }
-
-        @keyframes spin {
             to {
-                transform: rotate(360deg);
+                transform: translateY(0);
+                opacity: 1;
             }
         }
-
-        /* Mobile Menu Toggle */
-        .mobile-toggle {
-            display: none;
-            background: none;
-            border: none;
-            color: white;
-            font-size: 1.5em;
-            cursor: pointer;
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
         }
-
-        @media (max-width: 768px) {
-            .mobile-toggle {
-                display: block;
-            }
+        
+        .dropdown-menu {
+            animation: slideDown 0.3s ease;
+        }
+        
+        .gradient-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .gradient-bg {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
         }
     </style>
 </head>
 
-<body>
+<body class="gradient-bg min-h-screen">
     <!-- Navigation Header - Hide on login page -->
     {% if not request.endpoint or request.endpoint != 'auth.login' %}
-    <nav class="navbar">
-        <div class="navbar-container">
-            <a href="{{ url_for('dashboard.dashboard') }}" class="navbar-brand">
-                <i class="fab fa-telegram"></i>
-                <span>IBS Admin Panel</span>
-            </a>
+    <nav class="gradient-primary text-white shadow-lg sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="flex justify-between items-center h-16">
+                <!-- Brand -->
+                <a href="{{ url_for('dashboard.dashboard') }}" class="flex items-center space-x-3 text-white hover:opacity-90 transition">
+                    <i class="fab fa-telegram text-2xl"></i>
+                    <span class="text-xl font-bold">IBS Admin Panel</span>
+                </a>
 
-            <ul class="navbar-nav">
-                <li class="nav-item">
-                    <a href="{{ url_for('dashboard.dashboard') }}"
+                <!-- Desktop Navigation -->
+                <ul class="hidden md:flex items-center space-x-2">
+                    <li>
+                        <a href="{{ url_for('dashboard.dashboard') }}"
+                           class="flex items-center space-x-2 px-4 py-2 rounded-lg hover:bg-white/20 transition {{ 'bg-white/25 border border-white/30' if request.endpoint == 'dashboard.dashboard' else '' }}">
+                            <i class="fas fa-tachometer-alt"></i>
+                            <span>Dashboard</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{{ url_for('users.list_users') }}"
+                           class="flex items-center space-x-2 px-4 py-2 rounded-lg hover:bg-white/20 transition {{ 'bg-white/25 border border-white/30' if request.endpoint and request.endpoint.startswith('users.') else '' }}">
+                            <i class="fas fa-users"></i>
+                            <span>Users</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{{ url_for('chats.chat_management') }}"
+                           class="flex items-center space-x-2 px-4 py-2 rounded-lg hover:bg-white/20 transition {{ 'bg-white/25 border border-white/30' if request.endpoint and request.endpoint.startswith('chats.') else '' }}">
+                            <i class="fas fa-comments"></i>
+                            <span>Chats</span>
+                        </a>
+                    </li>
+                    {% if session.admin_info and session.admin_info.role == 'super_admin' %}
+                    <li>
+                        <a href="{{ url_for('admin.manage_admins') }}"
+                           class="flex items-center space-x-2 px-4 py-2 rounded-lg hover:bg-white/20 transition {{ 'bg-white/25 border border-white/30' if request.endpoint and request.endpoint.startswith('admin.') else '' }}">
+                            <i class="fas fa-user-shield"></i>
+                            <span>Admins</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{{ url_for('system_settings.index') }}"
+                           class="flex items-center space-x-2 px-4 py-2 rounded-lg hover:bg-white/20 transition {{ 'bg-white/25 border border-white/30' if request.endpoint == 'system_settings.index' else '' }}">
+                            <i class="fas fa-cogs"></i>
+                            <span>System Settings</span>
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
 
-                        class="nav-link {{ 'active' if request.endpoint == 'dashboard.dashboard' else '' }}">
-                        <i class="fas fa-tachometer-alt"></i>
-                        <span>Dashboard</span>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a href="{{ url_for('users.list_users') }}"
-                        class="nav-link {{ 'active' if request.endpoint and request.endpoint.startswith('users.') else '' }}">
-                        <i class="fas fa-users"></i>
-                        <span>Users</span>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a href="{{ url_for('chats.chat_management') }}"
-                        class="nav-link {{ 'active' if request.endpoint and request.endpoint.startswith('chats.') else '' }}">
-                        <i class="fas fa-comments"></i>
-                        <span>Chats</span>
-                    </a>
-                </li>
-                {% if session.admin_info and session.admin_info.role == 'super_admin' %}
-                <li class="nav-item">
-                    <a href="{{ url_for('admin.manage_admins') }}"
-                        class="nav-link {{ 'active' if request.endpoint and request.endpoint.startswith('admin.') else '' }}">
-                        <i class="fas fa-user-shield"></i>
-                        <span>Admins</span>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a href="{{ url_for('system_settings.index') }}"
-                        class="nav-link {{ 'active' if request.endpoint == 'system_settings.index' else '' }}">
-                        <i class="fas fa-cogs"></i>
-                        <span>System Settings</span>
-                    </a>
-                </li>
-                {% endif %}
-            </ul>
+                <!-- User Profile Dropdown -->
+                {% if session.admin_info %}
+                <div class="relative">
+                    <button onclick="toggleDropdown()" class="flex items-center space-x-3 px-4 py-2 rounded-full bg-white/10 hover:bg-white/20 transition">
+                        {% if session.admin_info.telegram_photo_url %}
+                        <img src="{{ session.admin_info.telegram_photo_url }}" alt="Profile" class="w-10 h-10 rounded-full border-2 border-white/30 object-cover">
+                        {% else %}
+                        <div class="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center border-2 border-white/30 font-bold">
+                            {{ session.admin_info.telegram_first_name[0] if session.admin_info.telegram_first_name else session.admin_info.full_name[0] if session.admin_info.full_name else '?' }}
+                        </div>
+                        {% endif %}
+                        <div class="hidden md:block text-left">
+                            <div class="font-semibold text-sm">{{ session.admin_info.telegram_first_name or session.admin_info.full_name or 'Admin' }}</div>
+                            <div class="text-xs opacity-80 uppercase">{{ session.admin_info.role.replace('_', ' ').title() if session.admin_info.role else 'Admin' }}</div>
+                        </div>
+                        <i class="fas fa-chevron-down text-sm"></i>
+                    </button>
 
-            {% if session.admin_info %}
-            <div class="user-profile" onclick="toggleDropdown()">
-                {% if session.admin_info.telegram_photo_url %}
-                <img src="{{ session.admin_info.telegram_photo_url }}" alt="Profile" class="user-avatar">
-                {% else %}
-                <div class="user-avatar-placeholder">
-                    {{ session.admin_info.telegram_first_name[0] if session.admin_info.telegram_first_name else
-                    session.admin_info.full_name[0] if session.admin_info.full_name else '?' }}
+                    <div id="userDropdown" class="dropdown-menu absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-xl overflow-hidden opacity-0 invisible transform -translate-y-2 transition-all duration-300">
+                        <a href="{{ url_for('auth.profile') }}" class="flex items-center space-x-3 px-4 py-3 text-gray-700 hover:bg-gray-50 transition">
+                            <i class="fas fa-user text-gray-500"></i>
+                            <span>My Profile</span>
+                        </a>
+                        <div class="border-t border-gray-100"></div>
+                        <a href="{{ url_for('auth.logout') }}" class="flex items-center space-x-3 px-4 py-3 text-red-600 hover:bg-red-50 transition">
+                            <i class="fas fa-sign-out-alt"></i>
+                            <span>Logout</span>
+                        </a>
+                    </div>
                 </div>
                 {% endif %}
-                <div class="user-info">
-                    <div class="user-name">{{ session.admin_info.telegram_first_name or session.admin_info.full_name or
-                        'Admin' }}</div>
-                    <div class="user-role">{{ session.admin_info.role.replace('_', ' ').title() if
-                        session.admin_info.role else 'Admin' }}</div>
-                </div>
-                <i class="fas fa-chevron-down"></i>
 
-                <div class="dropdown-menu" id="userDropdown">
-                    <a href="{{ url_for('auth.profile') }}" class="dropdown-item">
-                        <i class="fas fa-user"></i>
-                        My Profile
-                    </a>
-
-                    <div style="border-top: 1px solid #eee; margin: 8px 0;"></div>
-                    <a href="{{ url_for('auth.logout') }}" class="dropdown-item danger">
-                        <i class="fas fa-sign-out-alt"></i>
-                        Logout
-                    </a>
-                </div>
+                <!-- Mobile Menu Toggle -->
+                <button onclick="toggleMobileMenu()" class="md:hidden text-white text-2xl">
+                    <i class="fas fa-bars"></i>
+                </button>
             </div>
-            {% endif %}
-
-            <button class="mobile-toggle" onclick="toggleMobileMenu()">
-                <i class="fas fa-bars"></i>
-            </button>
         </div>
     </nav>
     {% endif %}
 
     <!-- Main Content -->
-    <div class="container" style="{% if request.endpoint == 'auth.login' %}padding-top: 0;{% endif %}">
+    <div class="max-w-7xl mx-auto px-4 py-6 {{ 'py-0' if request.endpoint == 'auth.login' else '' }}">
         <!-- Flash Messages -->
         {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
         {% for category, message in messages %}
-        <div class="alert alert-{{ category }}">
-            <i
-                class="fas fa-{{ 'check-circle' if category == 'success' else 'exclamation-triangle' if category == 'warning' else 'info-circle' if category == 'info' else 'times-circle' }}"></i>
-            {{ message }}
+        <div class="mb-4 p-4 rounded-xl flex items-center space-x-3 font-medium border-l-4 
+                    {{ 'bg-cyan-50 text-cyan-800 border-cyan-500' if category == 'success' else
+                       'bg-red-50 text-red-800 border-red-500' if category == 'error' else
+                       'bg-yellow-50 text-yellow-800 border-yellow-500' if category == 'warning' else
+                       'bg-blue-50 text-blue-800 border-blue-500' }}">
+            <i class="fas fa-{{ 'check-circle' if category == 'success' else 'exclamation-triangle' if category == 'warning' else 'info-circle' if category == 'info' else 'times-circle' }}"></i>
+            <span>{{ message }}</span>
         </div>
         {% endfor %}
         {% endif %}
@@ -564,9 +188,11 @@
 
     <!-- Footer - Hide on login page -->
     {% if not request.endpoint or (request.endpoint != 'auth.login' and request.endpoint != 'chats.live_chat') %}
-    <footer class="footer">
-        <p>&copy; 2024 Telegram Bot Admin Panel. Made with <i class="fas fa-heart" style="color: #e74c3c;"></i> for
-            better user management.</p>
+    <footer class="text-center py-8 mt-12 bg-white/10 backdrop-blur-sm rounded-2xl mx-4">
+        <p class="text-gray-600">
+            &copy; 2024 Telegram Bot Admin Panel. Made with 
+            <i class="fas fa-heart text-red-500"></i> for better user management.
+        </p>
     </footer>
     {% endif %}
 
@@ -575,50 +201,24 @@
         // Dropdown Toggle
         function toggleDropdown() {
             const dropdown = document.getElementById('userDropdown');
-            dropdown.classList.toggle('show');
+            dropdown.classList.toggle('opacity-0');
+            dropdown.classList.toggle('invisible');
+            dropdown.classList.toggle('-translate-y-2');
         }
 
         // Close dropdown when clicking outside
         document.addEventListener('click', function (event) {
             const dropdown = document.getElementById('userDropdown');
-            const userProfile = document.querySelector('.user-profile');
+            const userProfile = document.querySelector('.relative button');
 
-            if (!userProfile.contains(event.target)) {
-                dropdown.classList.remove('show');
+            if (!event.target.closest('.relative')) {
+                dropdown.classList.add('opacity-0', 'invisible', '-translate-y-2');
             }
         });
 
-        // Toggle Availability Function
-        function toggleAvailability() {
-            const button = event.target.closest('.dropdown-item');
-            const originalIcon = button.querySelector('i').className;
-
-            button.querySelector('i').className = 'fas fa-spinner fa-spin';
-            button.textContent = ' Updating...';
-
-            fetch('{{ url_for("auth.change_availability") }}', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                }
-            })
-                .then(response => {
-                    if (response.ok) {
-                        location.reload();
-                    } else {
-                        throw new Error('Failed to update availability');
-                    }
-                })
-                .catch(error => {
-                    button.querySelector('i').className = originalIcon;
-                    alert('Failed to update availability. Please try again.');
-                    console.error('Error:', error);
-                });
-        }
-
         // Auto-hide alerts after 5 seconds
         document.addEventListener('DOMContentLoaded', function () {
-            const alerts = document.querySelectorAll('.alert');
+            const alerts = document.querySelectorAll('[class*="bg-cyan-50"], [class*="bg-red-50"], [class*="bg-yellow-50"], [class*="bg-blue-50"]');
             alerts.forEach(alert => {
                 setTimeout(() => {
                     alert.style.transition = 'opacity 0.5s ease';
@@ -632,7 +232,6 @@
 
         // Mobile Menu Toggle
         function toggleMobileMenu() {
-            // Implementation for mobile menu if needed
             console.log('Mobile menu toggle');
         }
     </script>
