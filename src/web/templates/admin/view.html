@@ -3,329 +3,32 @@
 {% block title %}Admin Profile - {{ admin_info.full_name or 'Admin' }}{% endblock %}
 
 {% block content %}
-<style>
-    .profile-container {
-        max-width: 1400px;
-        margin: 0 auto;
-        padding: 20px;
-    }
-
-    .page-header {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        padding: 40px;
-        border-radius: 20px;
-        margin-bottom: 30px;
-        text-align: center;
-        box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
-    }
-
-    .page-header h1 {
-        font-size: 2.5em;
-        margin: 0 0 10px 0;
-        font-weight: 700;
-        color: white;
-    }
-
-    .page-header p {
-        font-size: 1.2em;
-        opacity: 0.9;
-        margin: 0;
-        color: white;
-    }
-
-    .profile-grid {
-        display: grid;
-        grid-template-columns: 1fr 2fr;
-        gap: 30px;
-        margin-bottom: 30px;
-    }
-
-    .profile-card {
-        background: white;
-        padding: 30px;
-        border-radius: 15px;
-        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
-        text-align: center;
-    }
-
-    .profile-photo {
-        width: 120px;
-        height: 120px;
-        border-radius: 50%;
-        margin: 0 auto 20px;
-        display: block;
-        border: 4px solid #667eea;
-        object-fit: cover;
-    }
-
-    .profile-photo-placeholder {
-        width: 120px;
-        height: 120px;
-        border-radius: 50%;
-        margin: 0 auto 20px;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: white;
-        font-size: 48px;
-        font-weight: bold;
-        border: 4px solid rgba(255, 255, 255, 0.3);
-    }
-
-    .profile-name {
-        font-size: 1.8em;
-        font-weight: 700;
-        color: #333;
-        margin-bottom: 10px;
-    }
-
-    .role-badge {
-        display: inline-block;
-        padding: 8px 16px;
-        border-radius: 20px;
-        font-size: 13px;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        margin-bottom: 20px;
-    }
-
-    .role-super_admin {
-        background: #ffebee;
-        color: #c62828;
-        border: 1px solid #ef9a9a;
-    }
-
-    .role-admin {
-        background: #e3f2fd;
-        color: #1565c0;
-        border: 1px solid #90caf9;
-    }
-
-    .telegram-id-display {
-        background: linear-gradient(135deg, #37aee2 0%, #1e96c8 100%);
-        color: white;
-        padding: 8px 16px;
-        border-radius: 20px;
-        font-size: 14px;
-        font-weight: 600;
-        display: inline-block;
-        margin-bottom: 15px;
-    }
-
-    .status-badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        padding: 6px 12px;
-        border-radius: 20px;
-        font-size: 13px;
-        font-weight: 600;
-    }
-
-    .status-available {
-        background: #d4edda;
-        color: #155724;
-    }
-
-    .status-unavailable {
-        background: #fff3cd;
-        color: #856404;
-    }
-
-    .status-inactive {
-        background: #f8d7da;
-        color: #721c24;
-    }
-
-    .profile-stats {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 15px;
-        margin-top: 20px;
-        padding-top: 20px;
-        border-top: 2px solid #e9ecef;
-    }
-
-    .stat-item {
-        text-align: center;
-    }
-
-    .stat-value {
-        font-size: 1.5em;
-        font-weight: 700;
-        color: #667eea;
-    }
-
-    .stat-label {
-        font-size: 13px;
-        color: #6c757d;
-        text-transform: uppercase;
-        font-weight: 600;
-        margin-top: 5px;
-    }
-
-    .info-section {
-        background: white;
-        padding: 30px;
-        border-radius: 15px;
-        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
-        margin-bottom: 30px;
-    }
-
-    .section-title {
-        font-size: 1.5em;
-        font-weight: 700;
-        color: #333;
-        margin-bottom: 20px;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-    }
-
-    .info-grid {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 20px;
-    }
-
-    .info-item {
-        padding: 15px;
-        background: #f8f9fa;
-        border-radius: 10px;
-        border-left: 4px solid #667eea;
-    }
-
-    .info-label {
-        font-size: 13px;
-        color: #6c757d;
-        text-transform: uppercase;
-        font-weight: 600;
-        letter-spacing: 0.5px;
-        margin-bottom: 8px;
-    }
-
-    .info-value {
-        font-size: 16px;
-        color: #333;
-        font-weight: 600;
-        word-break: break-word;
-    }
-
-    .info-value a {
-        color: #37aee2;
-        text-decoration: none;
-        transition: color 0.2s ease;
-    }
-
-    .info-value a:hover {
-        color: #1e96c8;
-        text-decoration: underline;
-    }
-
-    .action-buttons {
-        display: flex;
-        gap: 15px;
-        margin-top: 30px;
-    }
-
-    .btn-action {
-        flex: 1;
-        padding: 15px 30px;
-        border: none;
-        border-radius: 10px;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 10px;
-        font-size: 16px;
-        text-decoration: none;
-        color: white;
-    }
-
-    .btn-action:hover {
-        transform: translateY(-2px);
-        text-decoration: none;
-        color: white;
-    }
-
-    .btn-secondary {
-        background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
-    }
-
-    .btn-secondary:hover {
-        box-shadow: 0 5px 15px rgba(108, 117, 125, 0.3);
-    }
-
-    .btn-warning {
-        background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);
-    }
-
-    .btn-warning:hover {
-        box-shadow: 0 5px 15px rgba(255, 193, 7, 0.3);
-    }
-
-    .btn-demote {
-        background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);
-    }
-
-    .btn-demote:hover {
-        box-shadow: 0 5px 15px rgba(255, 193, 7, 0.3);
-    }
-
-    @media (max-width: 1024px) {
-        .profile-grid {
-            grid-template-columns: 1fr;
-        }
-
-        .info-grid {
-            grid-template-columns: 1fr;
-        }
-    }
-
-    @media (max-width: 768px) {
-        .page-header {
-            padding: 30px 20px;
-        }
-
-        .action-buttons {
-            flex-direction: column;
-        }
-
-        .btn-action {
-            width: 100%;
-        }
-    }
-</style>
-
-<div class="profile-container">
+<div class="max-w-7xl mx-auto px-4 py-8">
     <!-- Page Header -->
-    <div class="page-header">
-        <h1><i class="fas fa-user-circle"></i> Admin Profile</h1>
-        <p>Viewing {{ admin_info.full_name or 'Admin' }}'s profile</p>
+    <div class="gradient-primary rounded-3xl shadow-2xl p-8 mb-8 text-white text-center">
+        <h1 class="text-4xl font-bold mb-3 flex items-center justify-center gap-3">
+            <i class="fas fa-user-circle"></i> Admin Profile
+        </h1>
+        <p class="text-lg opacity-90">Viewing {{ admin_info.full_name or 'Admin' }}'s profile</p>
     </div>
 
     <!-- Profile Grid -->
-    <div class="profile-grid">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
         <!-- Profile Card -->
-        <div class="profile-card">
+        <div class="bg-white rounded-2xl shadow-lg p-8 text-center">
             {% if admin_info.telegram_photo_url %}
-            <img src="{{ admin_info.telegram_photo_url }}" alt="Profile Photo" class="profile-photo">
+            <img src="{{ admin_info.telegram_photo_url }}" alt="Profile" 
+                 class="w-32 h-32 rounded-full mx-auto border-4 border-primary-500 object-cover mb-4">
             {% else %}
-            <div class="profile-photo-placeholder">
-                {{ admin_info.telegram_first_name[0] if admin_info.telegram_first_name else
-                admin_info.full_name[0] if admin_info.full_name else '?' }}
+            <div class="w-32 h-32 rounded-full bg-gradient-to-br from-primary-500 to-secondary-500 flex items-center justify-center text-white text-5xl font-bold mx-auto mb-4 border-4 border-white/30">
+                {{ admin_info.telegram_first_name[0] if admin_info.telegram_first_name else admin_info.full_name[0] if admin_info.full_name else '?' }}
             </div>
             {% endif %}
 
-            <div class="profile-name">{{ admin_info.full_name or 'Not Set' }}</div>
+            <h2 class="text-2xl font-bold text-gray-900 mb-2">{{ admin_info.full_name or 'Not Set' }}</h2>
 
-            <span class="role-badge role-{{ admin_info.role }}">
+            <span class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold uppercase mb-4
+                        {{ 'bg-red-100 text-red-800 border border-red-200' if admin_info.role == 'super_admin' else 'bg-blue-100 text-blue-800 border border-blue-200' }}">
                 {% if admin_info.role == 'super_admin' %}
                 <i class="fas fa-crown"></i> Super Administrator
                 {% else %}
@@ -333,81 +36,74 @@
                 {% endif %}
             </span>
 
-            <div>
-                <span class="telegram-id-display">
-                    <i class="fab fa-telegram"></i> {{ admin_info.telegram_id }}
+            <div class="mb-4">
+                <span class="inline-flex items-center px-4 py-2 rounded-full text-sm font-semibold bg-gradient-to-r from-blue-400 to-blue-600 text-white">
+                    <i class="fab fa-telegram mr-2"></i> {{ admin_info.telegram_id }}
                 </span>
             </div>
 
             {% if admin_info.role == 'admin' %}
-            <div style="margin-top: 20px;">
-                <span class="status-badge status-{{ 'available' if admin_info.is_available else 'unavailable' }}">
-                    {% if admin_info.is_available %}
-                    <i class="fas fa-circle"></i> Available for Chats
-                    {% else %}
-                    <i class="fas fa-circle"></i> Unavailable
-                    {% endif %}
+            <div class="mb-4">
+                <span class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold
+                            {{ 'bg-green-100 text-green-800' if admin_info.is_available else 'bg-yellow-100 text-yellow-800' }}">
+                    <i class="fas fa-circle"></i>
+                    {{ 'Available for Chats' if admin_info.is_available else 'Unavailable' }}
                 </span>
             </div>
             {% endif %}
 
             {% if not admin_info.is_active %}
-            <div style="margin-top: 10px;">
-                <span class="status-badge status-inactive">
+            <div class="mb-4">
+                <span class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold bg-red-100 text-red-800">
                     <i class="fas fa-ban"></i> Account Inactive
                 </span>
             </div>
             {% endif %}
 
-            <div class="profile-stats">
-                <div class="stat-item">
-                    <div class="stat-value">
-                        {% if admin_info.last_login %}
-                        <span id="daysSinceLogin">0</span>
-                        {% else %}
-                        0
-                        {% endif %}
-                    </div>
-                    <div class="stat-label">Days Since Login</div>
+            <!-- Stats -->
+            <div class="grid grid-cols-2 gap-4 mt-6 pt-6 border-t-2 border-gray-200">
+                <div class="text-center">
+                    <div class="text-3xl font-bold text-primary-500" id="daysSinceLogin">0</div>
+                    <div class="text-xs text-gray-600 uppercase font-semibold mt-1">Days Since Login</div>
                 </div>
-                <div class="stat-item">
-                    <div class="stat-value">
-                        {% if admin_info.created_at %}
-                        <span id="monthsActive">0</span>
-                        {% else %}
-                        0
-                        {% endif %}
-                    </div>
-                    <div class="stat-label">Months Active</div>
+                <div class="text-center">
+                    <div class="text-3xl font-bold text-primary-500" id="monthsActive">0</div>
+                    <div class="text-xs text-gray-600 uppercase font-semibold mt-1">Months Active</div>
                 </div>
             </div>
         </div>
 
         <!-- Account Information -->
-        <div class="info-section">
-            <h3 class="section-title">
-                <i class="fas fa-info-circle"></i>
+        <div class="lg:col-span-2 bg-white rounded-2xl shadow-lg p-8">
+            <h3 class="text-2xl font-bold mb-6 flex items-center gap-3 text-gray-900">
+                <i class="fas fa-info-circle text-primary-500"></i>
                 Account Information
             </h3>
 
-            <div class="info-grid">
-                <div class="info-item">
-                    <div class="info-label"><i class="fas fa-user"></i> Full Name</div>
-                    <div class="info-value">{{ admin_info.full_name or 'Not set' }}</div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="p-4 bg-gray-50 rounded-xl border-l-4 border-primary-500">
+                    <div class="text-xs text-gray-600 uppercase font-semibold mb-2">
+                        <i class="fas fa-user"></i> Full Name
+                    </div>
+                    <div class="text-base font-semibold text-gray-900">{{ admin_info.full_name or 'Not set' }}</div>
                 </div>
 
-                <div class="info-item">
-                    <div class="info-label"><i class="fab fa-telegram"></i> Telegram Name</div>
-                    <div class="info-value">
+                <div class="p-4 bg-gray-50 rounded-xl border-l-4 border-primary-500">
+                    <div class="text-xs text-gray-600 uppercase font-semibold mb-2">
+                        <i class="fab fa-telegram"></i> Telegram Name
+                    </div>
+                    <div class="text-base font-semibold text-gray-900">
                         {{ admin_info.telegram_first_name or '' }} {{ admin_info.telegram_last_name or '' }}
                     </div>
                 </div>
 
-                <div class="info-item">
-                    <div class="info-label"><i class="fas fa-at"></i> Username</div>
-                    <div class="info-value">
+                <div class="p-4 bg-gray-50 rounded-xl border-l-4 border-primary-500">
+                    <div class="text-xs text-gray-600 uppercase font-semibold mb-2">
+                        <i class="fas fa-at"></i> Username
+                    </div>
+                    <div class="text-base font-semibold text-gray-900">
                         {% if admin_info.telegram_username %}
-                        <a href="https://t.me/{{ admin_info.telegram_username }}" target="_blank">
+                        <a href="https://t.me/{{ admin_info.telegram_username }}" target="_blank" class="text-blue-600 hover:text-blue-800">
                             @{{ admin_info.telegram_username }}
                         </a>
                         {% else %}
@@ -417,15 +113,19 @@
                 </div>
 
                 {% if admin_info.role == 'admin' %}
-                <div class="info-item">
-                    <div class="info-label"><i class="fas fa-building"></i> Division</div>
-                    <div class="info-value">{{ admin_info.division or 'Not assigned' }}</div>
+                <div class="p-4 bg-gray-50 rounded-xl border-l-4 border-primary-500">
+                    <div class="text-xs text-gray-600 uppercase font-semibold mb-2">
+                        <i class="fas fa-building"></i> Division
+                    </div>
+                    <div class="text-base font-semibold text-gray-900">{{ admin_info.division or 'Not assigned' }}</div>
                 </div>
                 {% endif %}
 
-                <div class="info-item">
-                    <div class="info-label"><i class="fas fa-clock"></i> Last Login</div>
-                    <div class="info-value">
+                <div class="p-4 bg-gray-50 rounded-xl border-l-4 border-primary-500">
+                    <div class="text-xs text-gray-600 uppercase font-semibold mb-2">
+                        <i class="fas fa-clock"></i> Last Login
+                    </div>
+                    <div class="text-base font-semibold text-gray-900">
                         {% if admin_info.last_login %}
                         {{ admin_info.last_login[:19] }}
                         {% else %}
@@ -434,9 +134,11 @@
                     </div>
                 </div>
 
-                <div class="info-item">
-                    <div class="info-label"><i class="fas fa-calendar-plus"></i> Account Created</div>
-                    <div class="info-value">
+                <div class="p-4 bg-gray-50 rounded-xl border-l-4 border-primary-500">
+                    <div class="text-xs text-gray-600 uppercase font-semibold mb-2">
+                        <i class="fas fa-calendar-plus"></i> Account Created
+                    </div>
+                    <div class="text-base font-semibold text-gray-900">
                         {% if admin_info.created_at %}
                         {{ admin_info.created_at[:19] }}
                         {% else %}
@@ -445,25 +147,29 @@
                     </div>
                 </div>
 
-                <div class="info-item">
-                    <div class="info-label"><i class="fas fa-toggle-on"></i> Account Status</div>
-                    <div class="info-value">
+                <div class="p-4 bg-gray-50 rounded-xl border-l-4 border-primary-500">
+                    <div class="text-xs text-gray-600 uppercase font-semibold mb-2">
+                        <i class="fas fa-toggle-on"></i> Account Status
+                    </div>
+                    <div class="text-base font-semibold">
                         {% if admin_info.is_active %}
-                        <span style="color: #28a745;"><i class="fas fa-check-circle"></i> Active</span>
+                        <span class="text-green-600"><i class="fas fa-check-circle"></i> Active</span>
                         {% else %}
-                        <span style="color: #dc3545;"><i class="fas fa-times-circle"></i> Inactive</span>
+                        <span class="text-red-600"><i class="fas fa-times-circle"></i> Inactive</span>
                         {% endif %}
                     </div>
                 </div>
 
                 {% if admin_info.role == 'admin' %}
-                <div class="info-item">
-                    <div class="info-label"><i class="fas fa-signal"></i> Availability Status</div>
-                    <div class="info-value">
+                <div class="p-4 bg-gray-50 rounded-xl border-l-4 border-primary-500">
+                    <div class="text-xs text-gray-600 uppercase font-semibold mb-2">
+                        <i class="fas fa-signal"></i> Availability Status
+                    </div>
+                    <div class="text-base font-semibold">
                         {% if admin_info.is_available %}
-                        <span style="color: #28a745;"><i class="fas fa-circle"></i> Available</span>
+                        <span class="text-green-600"><i class="fas fa-circle"></i> Available</span>
                         {% else %}
-                        <span style="color: #ffc107;"><i class="fas fa-circle"></i> Unavailable</span>
+                        <span class="text-yellow-600"><i class="fas fa-circle"></i> Unavailable</span>
                         {% endif %}
                     </div>
                 </div>
@@ -472,24 +178,23 @@
         </div>
     </div>
 
-    <!-- Navigation Actions -->
-    <div class="action-buttons">
-        <a href="{{ url_for('admin.manage_admins') }}" class="btn-action btn-secondary">
-            <i class="fas fa-arrow-left"></i>
-            Back to Admin Management
+    <!-- Action Buttons -->
+    <div class="flex flex-wrap gap-4">
+        <a href="{{ url_for('admin.manage_admins') }}" 
+           class="flex-1 min-w-[200px] px-6 py-3 bg-gradient-to-r from-gray-500 to-gray-600 text-white rounded-xl font-semibold hover:from-gray-600 hover:to-gray-700 transition-all duration-300 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transform hover:-translate-y-1">
+            <i class="fas fa-arrow-left"></i> Back to Admin Management
         </a>
         
         {% if session.admin_info.role == 'super_admin' %}
-        <a href="{{ url_for('admin.edit_admin', admin_id=admin_info.id) }}" class="btn-action btn-warning">
-            <i class="fas fa-edit"></i>
-            Edit Admin
+        <a href="{{ url_for('admin.edit_admin', admin_id=admin_info.id) }}" 
+           class="flex-1 min-w-[200px] px-6 py-3 bg-gradient-to-r from-yellow-400 to-yellow-600 text-white rounded-xl font-semibold hover:from-yellow-500 hover:to-yellow-700 transition-all duration-300 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transform hover:-translate-y-1">
+            <i class="fas fa-edit"></i> Edit Admin
         </a>
         
-        <!-- Add Demote Button (only for regular admins, not yourself) -->
         {% if admin_info.role == 'admin' and admin_info.id != session.admin_info.id %}
-        <button onclick="demoteToUser()" class="btn-action btn-demote">
-            <i class="fas fa-arrow-down"></i>
-            Demote to User
+        <button onclick="demoteToUser()" 
+                class="flex-1 min-w-[200px] px-6 py-3 bg-gradient-to-r from-yellow-400 to-yellow-600 text-white rounded-xl font-semibold hover:from-yellow-500 hover:to-yellow-700 transition-all duration-300 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transform hover:-translate-y-1">
+            <i class="fas fa-arrow-down"></i> Demote to User
         </button>
         {% endif %}
         {% endif %}
@@ -498,15 +203,14 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-        // Calculate days since last login
+        const now = new Date();
+        
         {% if admin_info.last_login %}
         const lastLogin = new Date('{{ admin_info.last_login[:19] }}');
-        const now = new Date();
         const daysSinceLogin = Math.floor((now - lastLogin) / (1000 * 60 * 60 * 24));
         document.getElementById('daysSinceLogin').textContent = daysSinceLogin;
         {% endif %}
 
-        // Calculate months active
         {% if admin_info.created_at %}
         const createdAt = new Date('{{ admin_info.created_at[:19] }}');
         const monthsActive = Math.floor((now - createdAt) / (1000 * 60 * 60 * 24 * 30));
@@ -518,13 +222,10 @@
         const adminName = '{{ admin_info.full_name }}';
         const adminId = '{{ admin_info.id }}';
         
-        const confirmMsg = `⚠️ Are you sure you want to demote "${adminName}" to a regular user?\n\nThis will:\n- Remove all admin privileges\n- Move their account to the users table\n- Unassign all their active chat sessions\n\nThis action cannot be easily reversed.`;
-        
-        if (!confirm(confirmMsg)) {
+        if (!confirm(`⚠️ Are you sure you want to demote "${adminName}" to a regular user?\n\nThis will:\n- Remove all admin privileges\n- Move their account to the users table\n- Unassign all their active chat sessions\n\nThis action cannot be easily reversed.`)) {
             return;
         }
         
-        // Show loading state
         const btn = event.target;
         const originalHTML = btn.innerHTML;
         btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Demoting...';
@@ -532,15 +233,12 @@
         
         fetch(`/portal/admin/admin/demote-admin/${adminId}`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            }
+            headers: { 'Content-Type': 'application/json' }
         })
         .then(response => response.json())
         .then(data => {
             if (data.success) {
                 alert(`✅ ${data.message}`);
-                // Redirect to users list
                 window.location.href = '/portal/admin/users';
             } else {
                 alert(`❌ ${data.message}`);

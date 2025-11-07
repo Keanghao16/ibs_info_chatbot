@@ -3,459 +3,117 @@
 {% block title %}Admin Login - IBS Telegram Bot{% endblock %}
 
 {% block content %}
-<style>
-    /* Fallback: Force hide navbar and footer */
-    nav.navbar,
-    footer.footer {
-        display: none !important;
-    }
-
-    /* Remove top padding from container */
-    .container {
-        padding-top: 20px !important;
-    }
-
-    .login-container {
-        max-width: 1400px;
-        margin: 0 auto;
-        padding: 20px;
-    }
-
-    /* Page Header - Consistent with other pages */
-    .page-header {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        padding: 50px 40px;
-        border-radius: 20px;
-        margin-bottom: 30px;
-        text-align: center;
-        box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
-    }
-
-    .page-header h1 {
-        font-size: 2.5em;
-        margin: 0 0 10px 0;
-        font-weight: 700;
-    }
-
-    .page-header p {
-        font-size: 1.2em;
-        opacity: 0.9;
-        margin: 0;
-    }
-
-    /* Logo Section */
-    .logo-section {
-        margin-bottom: 25px;
-    }
-
-    .telegram-logo {
-        width: 80px;
-        height: 80px;
-        margin: 0 auto 20px;
-        background: linear-gradient(135deg, #37aee2 0%, #1e96c8 100%);
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        box-shadow: 0 10px 30px rgba(55, 174, 226, 0.3);
-        animation: pulse 2s infinite;
-    }
-
-    @keyframes pulse {
-        0%, 100% {
-            transform: scale(1);
-            box-shadow: 0 10px 30px rgba(55, 174, 226, 0.3);
-        }
-        50% {
-            transform: scale(1.05);
-            box-shadow: 0 15px 40px rgba(55, 174, 226, 0.4);
-        }
-    }
-
-    .telegram-logo svg {
-        width: 48px;
-        height: 48px;
-    }
-
-    /* Login Card */
-    .login-card {
-        background: white;
-        border-radius: 15px;
-        padding: 40px;
-        margin-bottom: 30px;
-        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
-    }
-
-    .login-header {
-        text-align: center;
-        margin-bottom: 30px;
-    }
-
-    .login-header h2 {
-        font-size: 1.8em;
-        font-weight: 700;
-        color: #333;
-        margin-bottom: 12px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 10px;
-    }
-
-    .login-description {
-        font-size: 15px;
-        color: #6c757d;
-        line-height: 1.6;
-    }
-
-    /* Telegram Login Widget */
-    .telegram-login-wrapper {
-        margin: 30px 0;
-        padding: 30px;
-        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-        border-radius: 15px;
-        border: 2px dashed #dee2e6;
-        transition: all 0.3s ease;
-        text-align: center;
-    }
-
-    .telegram-login-wrapper:hover {
-        border-color: #667eea;
-        background: linear-gradient(135deg, #e3f2fd 0%, #f8f9fa 100%);
-        transform: scale(1.02);
-    }
-
-    .telegram-login-container {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        min-height: 50px;
-    }
-
-    .login-hint {
-        font-size: 13px;
-        color: #6c757d;
-        margin-top: 12px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-    }
-
-    /* Feature List */
-    .feature-list {
-        background: white;
-        border-radius: 15px;
-        padding: 30px;
-        margin-bottom: 30px;
-        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
-    }
-
-    .feature-list h4 {
-        font-size: 1.3em;
-        font-weight: 700;
-        color: #333;
-        margin-bottom: 20px;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-    }
-
-    .feature-list ul {
-        list-style: none;
-        padding: 0;
-        margin: 0;
-    }
-
-    .feature-list li {
-        padding: 15px;
-        color: #495057;
-        font-size: 15px;
-        display: flex;
-        align-items: flex-start;
-        gap: 12px;
-        border-bottom: 1px solid #e9ecef;
-        transition: all 0.2s ease;
-    }
-
-    .feature-list li:last-child {
-        border-bottom: none;
-    }
-
-    .feature-list li:hover {
-        background: #f8f9fa;
-        padding-left: 20px;
-        border-radius: 8px;
-    }
-
-    .feature-list li i {
-        font-size: 18px;
-        min-width: 20px;
-        margin-top: 2px;
-    }
-
-    .feature-list li.check {
-        color: #28a745;
-    }
-
-    .feature-list li.check:hover {
-        background: #d4edda;
-    }
-
-    .feature-list li.times {
-        color: #dc3545;
-    }
-
-    .feature-list li.times:hover {
-        background: #f8d7da;
-    }
-
-    /* Security Badge */
-    .security-section {
-        text-align: center;
-        margin: 30px 0;
-    }
-
-    .security-badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        padding: 12px 20px;
-        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
-        color: white;
-        border-radius: 25px;
-        font-size: 14px;
-        font-weight: 600;
-        box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
-    }
-
-    .security-badge i {
-        font-size: 16px;
-    }
-
-    /* Footer */
-    .login-footer {
-        background: white;
-        border-radius: 15px;
-        padding: 25px;
-        text-align: center;
-        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
-        font-size: 13px;
-        color: #6c757d;
-    }
-
-    .login-footer p {
-        margin: 0 0 10px 0;
-        line-height: 1.6;
-    }
-
-    .login-footer p:last-child {
-        margin: 0;
-    }
-
-    .login-footer a {
-        color: #667eea;
-        text-decoration: none;
-        font-weight: 600;
-        transition: color 0.2s ease;
-    }
-
-    .login-footer a:hover {
-        color: #764ba2;
-        text-decoration: underline;
-    }
-
-    /* Mobile Responsiveness */
-    @media (max-width: 768px) {
-        .login-container {
-            padding: 15px;
-        }
-
-        .page-header {
-            padding: 40px 25px;
-        }
-
-        .page-header h1 {
-            font-size: 2em;
-        }
-
-        .page-header p {
-            font-size: 1em;
-        }
-
-        .telegram-logo {
-            width: 70px;
-            height: 70px;
-        }
-
-        .telegram-logo svg {
-            width: 40px;
-            height: 40px;
-        }
-
-        .login-card {
-            padding: 30px 25px;
-        }
-
-        .login-header h2 {
-            font-size: 1.5em;
-        }
-
-        .telegram-login-wrapper {
-            padding: 25px 20px;
-        }
-
-        .feature-list {
-            padding: 25px 20px;
-        }
-
-        .feature-list h4 {
-            font-size: 1.2em;
-        }
-
-        .feature-list li {
-            font-size: 14px;
-        }
-    }
-
-    @media (max-height: 800px) {
-        .page-header {
-            padding: 35px 30px;
-        }
-
-        .telegram-logo {
-            width: 65px;
-            height: 65px;
-            margin-bottom: 15px;
-        }
-
-        .telegram-logo svg {
-            width: 38px;
-            height: 38px;
-        }
-    }
-</style>
-
-<div class="login-container">
-    <!-- Page Header with Logo -->
-    <div class="page-header">
-        <div class="logo-section">
-            <div class="telegram-logo">
-                <svg viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg">
-                    <path d="m98 175c-3.888 0-3.227-1.468-4.568-5.17L82 132.207 170 80" fill="#c8daea"/>
-                    <path d="m98 175c3 0 4.325-1.372 6-3l16-15.558-19.958-12.035" fill="#a9c6d8"/>
-                    <path d="m100.04 144.41 48.36 35.729c5.519 3.045 9.501 1.468 10.876-5.123l19.685-92.763c2.015-8.08-3.08-11.746-8.36-9.349l-115.59 44.571c-7.89 3.165-7.843 7.567-1.438 9.528l29.663 9.259 68.673-43.325c3.242-1.966 6.218-.91 3.776 1.258" fill="#fff"/>
+<div class="min-h-screen flex items-center justify-center px-4 py-12">
+    <div class="max-w-md w-full space-y-8">
+        <!-- Logo Section -->
+        <div class="text-center">
+            <div class="mx-auto w-20 h-20 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center shadow-lg animate-pulse">
+                <svg class="w-12 h-12 text-white" viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg">
+                    <path d="m98 175c-3.888 0-3.227-1.468-4.568-5.17L82 132.207 170 80" fill="currentColor" opacity="0.6"/>
+                    <path d="m98 175c3 0 4.325-1.372 6-3l16-15.558-19.958-12.035" fill="currentColor" opacity="0.8"/>
+                    <path d="m100.04 144.41 48.36 35.729c5.519 3.045 9.501 1.468 10.876-5.123l19.685-92.763c2.015-8.08-3.08-11.746-8.36-9.349l-115.59 44.571c-7.89 3.165-7.843 7.567-1.438 9.528l29.663 9.259 68.673-43.325c3.242-1.966 6.218-.91 3.776 1.258" fill="currentColor"/>
                 </svg>
             </div>
-        </div>
-        <h1><i class="fab fa-telegram"></i> IBS Admin Panel</h1>
-        <p>Telegram Bot Management System</p>
-    </div>
-
-    <!-- Login Card -->
-    <div class="login-card">
-        <!-- Login Header -->
-        <div class="login-header">
-            <h2>
-                <i class="fas fa-sign-in-alt"></i> 
-                Administrator Login
+            <h2 class="mt-6 text-3xl font-extrabold text-gray-900">
+                IBS Admin Panel
             </h2>
-            <p class="login-description">
-                Securely sign in with your Telegram account to access the admin dashboard
+            <p class="mt-2 text-sm text-gray-600">
+                Telegram Bot Management System
             </p>
         </div>
 
-        <!-- Telegram Login Widget -->
-        <div class="telegram-login-wrapper">
-            <div class="telegram-login-container">
-                <script async src="https://telegram.org/js/telegram-widget.js?22"
-                    data-telegram-login="{{ bot_username }}"
-                    data-size="large"
-                    data-auth-url="{{ url_for('auth.telegram_auth', _external=True) }}"
-                    data-request-access="write">
-                </script>
+        <!-- Login Card -->
+        <div class="bg-white rounded-2xl shadow-xl p-8 space-y-6">
+            <div class="text-center">
+                <h3 class="text-xl font-bold text-gray-900 flex items-center justify-center gap-2">
+                    <i class="fas fa-sign-in-alt text-primary-500"></i>
+                    Administrator Login
+                </h3>
+                <p class="mt-2 text-sm text-gray-600">
+                    Securely sign in with your Telegram account
+                </p>
             </div>
-            <p class="login-hint">
-                <i class="fas fa-info-circle"></i>
-                Click the button above to authenticate via Telegram
+
+            <!-- Telegram Login Widget -->
+            <div class="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-8 border-2 border-dashed border-gray-300 hover:border-primary-500 transition-all duration-300">
+                <div class="flex justify-center">
+                    <script async src="https://telegram.org/js/telegram-widget.js?22"
+                        data-telegram-login="{{ bot_username }}"
+                        data-size="large"
+                        data-auth-url="{{ url_for('auth.telegram_auth', _external=True) }}"
+                        data-request-access="write">
+                    </script>
+                </div>
+                <p class="mt-4 text-center text-xs text-gray-500 flex items-center justify-center gap-2">
+                    <i class="fas fa-info-circle"></i>
+                    Click the button above to authenticate via Telegram
+                </p>
+            </div>
+        </div>
+
+        <!-- Access Levels -->
+        <div class="bg-white rounded-2xl shadow-lg p-6">
+            <h4 class="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                <i class="fas fa-shield-alt text-primary-500"></i>
+                Access Levels
+            </h4>
+            <ul class="space-y-3">
+                <li class="flex items-start gap-3 p-3 rounded-lg hover:bg-green-50 transition-colors">
+                    <i class="fas fa-check-circle text-green-500 mt-1"></i>
+                    <div>
+                        <span class="font-semibold text-gray-900">Super Admins:</span>
+                        <span class="text-gray-600"> Full system control & settings management</span>
+                    </div>
+                </li>
+                <li class="flex items-start gap-3 p-3 rounded-lg hover:bg-green-50 transition-colors">
+                    <i class="fas fa-check-circle text-green-500 mt-1"></i>
+                    <div>
+                        <span class="font-semibold text-gray-900">Admins/Agents:</span>
+                        <span class="text-gray-600"> Chat & user management access</span>
+                    </div>
+                </li>
+                <li class="flex items-start gap-3 p-3 rounded-lg hover:bg-red-50 transition-colors">
+                    <i class="fas fa-times-circle text-red-500 mt-1"></i>
+                    <div>
+                        <span class="font-semibold text-gray-900">Regular Users:</span>
+                        <span class="text-gray-600"> No admin panel access</span>
+                    </div>
+                </li>
+            </ul>
+        </div>
+
+        <!-- Security Badge -->
+        <div class="text-center">
+            <span class="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-green-400 to-green-600 text-white rounded-full text-sm font-semibold shadow-lg">
+                <i class="fas fa-lock"></i>
+                Secured by Telegram OAuth 2.0
+            </span>
+        </div>
+
+        <!-- Footer -->
+        <div class="text-center space-y-2">
+            <p class="text-sm text-gray-600">
+                <i class="fas fa-question-circle"></i>
+                Need help? Contact your system administrator
+            </p>
+            <p class="text-xs text-gray-500">
+                &copy; 2024 IBS Telegram Bot. All rights reserved.
             </p>
         </div>
-    </div>
-
-    <!-- Feature List -->
-    <div class="feature-list">
-        <h4>
-            <i class="fas fa-shield-alt"></i>
-            Access Levels
-        </h4>
-        <ul>
-            <li class="check">
-                <i class="fas fa-check-circle"></i>
-                <span><strong>Super Admins:</strong> Full system control & settings management</span>
-            </li>
-            <li class="check">
-                <i class="fas fa-check-circle"></i>
-                <span><strong>Admins/Agents:</strong> Chat & user management access</span>
-            </li>
-            <li class="times">
-                <i class="fas fa-times-circle"></i>
-                <span><strong>Regular Users:</strong> No admin panel access</span>
-            </li>
-        </ul>
-    </div>
-
-    <!-- Security Badge -->
-    <div class="security-section">
-        <span class="security-badge">
-            <i class="fas fa-lock"></i>
-            Secured by Telegram OAuth 2.0
-        </span>
-    </div>
-
-    <!-- Footer -->
-    <div class="login-footer">
-        <p>
-            <i class="fas fa-question-circle"></i>
-            Need help? Contact your system administrator
-        </p>
-        <p style="margin-top: 10px; font-size: 12px;">
-            &copy; 2024 IBS Telegram Bot. All rights reserved.
-        </p>
     </div>
 </div>
 
 <script>
-    // Debug logging
     console.log('🤖 Bot username:', '{{ bot_username }}');
     console.log('🔗 Auth URL:', '{{ url_for("auth.telegram_auth", _external=True) }}');
     
-    // Check widget loading
     setTimeout(function() {
         const iframe = document.querySelector('iframe');
-        const script = document.querySelector('script[data-telegram-login]');
-        
-        console.log('📱 Widget iframe found:', !!iframe);
-        console.log('📝 Widget script found:', !!script);
-        
         if (iframe) {
             console.log('✅ Telegram widget loaded successfully');
-            console.log('🔗 Widget src:', iframe.src);
         } else {
             console.error('❌ Telegram widget failed to load');
-            console.warn('⚠️ Possible issues:');
-            console.warn('   1. Bot domain not set in BotFather');
-            console.warn('   2. Bot username incorrect');
-            console.warn('   3. Network connectivity issues');
-            console.warn('   4. CORS policy restrictions');
         }
     }, 2000);
-
-    // Show loading overlay when authenticating
-    window.addEventListener('message', function(event) {
-        if (event.data && event.data.auth) {
-            console.log('🔄 Authentication in progress...');
-        }
-    });
 </script>
 {% endblock %}
