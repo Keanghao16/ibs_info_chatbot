@@ -153,7 +153,47 @@ To run the admin dashboard, execute the following command:
 python run_web.py
 ```
 
-## Usage
+## 🚀 Running the Application
 
-- Use the Telegram bot to interact with users and manage chat sessions.
-- Access the admin dashboard through a web browser to view user lists and chat history.
+### Option 1: Run All Services Together
+```bash
+python run_all.py
+```
+
+### Option 2: Run Services Individually
+
+**Web Application (Admin Dashboard):**
+```bash
+python run_web.py
+# Runs on http://localhost:5000
+```
+
+**REST API:**
+```bash
+python run_api.py
+# Runs on http://localhost:5001
+```
+
+**Telegram Bot:**
+```bash
+python run_bot.py
+# Connects to Telegram
+```
+
+### Configuration
+
+All ports and settings are configured in the `.env` file:
+
+```env
+# Web Application
+WEB_HOST=0.0.0.0
+WEB_PORT=5000
+WEB_DEBUG=True
+
+# REST API
+API_HOST=0.0.0.0
+API_PORT=5001
+API_DEBUG=True
+```
+
+To change ports, simply update the values in your `.env` file.

@@ -192,3 +192,79 @@ def change_availability():
         db.close()
     
     return redirect(url_for('dashboard.dashboard'))
+
+@auth_bp.route('/api-login-bridge', methods=['POST'])
+def api_login_bridge():
+    """
+    Bridge API login to web session
+    Converts JWT token to Flask session
+    """
+    data = request.get_json()
+    access_token = data.get('access_token')
+    
+    if not access_token:
+        return jsonify({
+            'success': False,
+            'message': 'Access token is required'
+        }), 400
+    
+    db = SessionLocal()
+    try:
+        # Verify JWT token
+        from ...utils.jwt_helper import jwt_helper
+        result = jwt_helper.verify_token(access_token)
+        
+        if not result['success']:
+            return jsonify({
+                'success': False,
+                'message': 'Invalid token'
+            }), 401
+        
+        # Get admin from token
+        payload = result['payload']
+        admin_id = payload.get('admin_id')
+        
+        admin = db.query(Admin).filter(
+            Admin.id == admin_id,
+            Admin.is_active == True
+        ).first()
+        
+        if not admin:
+            return jsonify({
+                'success': False,
+                'message': 'Admin not found'
+            }), 404
+        
+        # Create web session (same as Telegram login)
+        # Generate session token
+        session_token = auth_service.generate_token(admin.id)
+        
+        # Store in session
+        session['admin_token'] = session_token
+        session['admin_info'] = {
+            'id': admin.id,
+            'telegram_id': admin.telegram_id,
+            'telegram_username': admin.telegram_username,
+            'full_name': admin.full_name,
+            'role': admin.role.value,
+            'is_active': admin.is_active,
+            'is_available': admin.is_available,
+            'division': admin.division,
+            'last_login': admin.last_login.strftime('%Y-%m-%d %H:%M:%S') if admin.last_login else None,
+            'created_at': admin.created_at.strftime('%Y-%m-%d %H:%M:%S') if admin.created_at else None
+        }
+        
+        return jsonify({
+            'success': True,
+            'message': 'Session created',
+            'redirect_url': url_for('dashboard.dashboard')
+        }), 200
+    
+    except Exception as e:
+        print(f"Bridge error: {e}")
+        return jsonify({
+            'success': False,
+            'message': 'Authentication failed'
+        }), 500
+    finally:
+        db.close()
