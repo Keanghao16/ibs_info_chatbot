@@ -6,12 +6,14 @@ import jwt
 import os
 import hashlib
 import hmac
+from ..utils.jwt_helper import jwt_helper  # Add this import
 
 class AuthService:
     def __init__(self):
         self.secret_key = os.getenv("SECRET_KEY", "your_secret_key")
         self.bot_token = os.getenv("BOT_TOKEN")
         self.token_expiry = int(os.getenv("TOKEN_EXPIRY_HOURS", 24))
+        self.jwt_helper = jwt_helper  # Add JWT helper
     
     def verify_telegram_auth(self, auth_data):
         """Verify Telegram authentication data"""
@@ -206,6 +208,108 @@ class AuthService:
             "message": f"You are now {status} for new chat assignments",
             "is_available": admin.is_available,
             "admin": self._serialize_admin(admin)
+        }
+    
+    def authenticate_admin_api(self, db: Session, telegram_id: str):
+        """
+        Authenticate admin for API access (returns JWT tokens)
+        
+        Args:
+            db: Database session
+            telegram_id: Admin's Telegram ID
+            
+        Returns:
+            Dictionary with tokens and admin info
+        """
+        admin = db.query(Admin).filter(
+            Admin.telegram_id == telegram_id,
+            Admin.is_active == True
+        ).first()
+        
+        if not admin:
+            return {
+                "success": False,
+                "message": "Admin not found or inactive"
+            }
+        
+        # Update last login
+        admin.last_login = datetime.utcnow()
+        db.commit()
+        
+        # Generate JWT tokens
+        access_token = self.jwt_helper.generate_access_token(
+            admin_id=admin.id,
+            role=admin.role.value
+        )
+        
+        refresh_token = self.jwt_helper.generate_refresh_token(
+            admin_id=admin.id
+        )
+        
+        return {
+            "success": True,
+            "message": "Login successful",
+            "access_token": access_token,
+            "refresh_token": refresh_token,
+            "token_type": "Bearer",
+            "expires_in": self.jwt_helper.access_token_expires,
+            "admin": self._serialize_admin(admin)
+        }
+    
+    def refresh_access_token(self, refresh_token: str, db: Session):
+        """
+        Generate new access token using refresh token
+        
+        Args:
+            refresh_token: Refresh token
+            db: Database session
+            
+        Returns:
+            Dictionary with new access token
+        """
+        # Verify refresh token
+        result = self.jwt_helper.verify_token(refresh_token)
+        
+        if not result['success']:
+            return {
+                "success": False,
+                "message": result['message']
+            }
+        
+        payload = result['payload']
+        
+        # Check token type
+        if payload.get('token_type') != 'refresh':
+            return {
+                "success": False,
+                "message": "Invalid token type"
+            }
+        
+        # Get admin
+        admin_id = payload.get('admin_id')
+        admin = db.query(Admin).filter(
+            Admin.id == admin_id,
+            Admin.is_active == True
+        ).first()
+        
+        if not admin:
+            return {
+                "success": False,
+                "message": "Admin not found or inactive"
+            }
+        
+        # Generate new access token
+        access_token = self.jwt_helper.generate_access_token(
+            admin_id=admin.id,
+            role=admin.role.value
+        )
+        
+        return {
+            "success": True,
+            "message": "Token refreshed",
+            "access_token": access_token,
+            "token_type": "Bearer",
+            "expires_in": self.jwt_helper.access_token_expires
         }
     
     def _serialize_admin(self, admin):

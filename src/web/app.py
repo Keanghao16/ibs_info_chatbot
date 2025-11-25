@@ -52,11 +52,33 @@ def create_app():
         else:
             # User is not logged in, redirect to login
             return redirect(url_for('auth.login'))
-    
+
+    @app.after_request
+    def add_security_headers(response):
+        """Add security headers including CSP for Telegram widget"""
+        # ...existing CSP code...
+        
+        # ✅ Add ngrok bypass header
+        response.headers['ngrok-skip-browser-warning'] = 'true'
+        
+        return response
+
     return app
 
 # Create app instance for imports
 app = create_app()
 
 if __name__ == "__main__":
-    socketio.run(app, host='0.0.0.0', port=5000, debug=True)
+    # Get configuration from environment
+    host = os.getenv('WEB_HOST', '0.0.0.0')
+    port = int(os.getenv('WEB_PORT', 5000))
+    debug = os.getenv('WEB_DEBUG', 'True').lower() == 'true'
+    
+    print(f"\n{'='*60}")
+    print(f"🌐 Starting IBS Info Chatbot Web Application")
+    print(f"{'='*60}")
+    print(f"📍 URL: http://{host}:{port}")
+    print(f"🔧 Debug Mode: {debug}")
+    print(f"{'='*60}\n")
+    
+    socketio.run(app, host=host, port=port, debug=debug)
