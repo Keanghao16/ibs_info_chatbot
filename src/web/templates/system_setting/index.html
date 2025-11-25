@@ -3,688 +3,111 @@
 {% block title %}System Settings - Telegram Bot Admin{% endblock %}
 
 {% block content %}
-<style>
-    .settings-container {
-        max-width: 1400px;
-        margin: 0 auto;
-        padding: 20px;
-    }
-
-    /* Enhanced Page Header - Consistent with other pages */
-    .page-header {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        padding: 40px;
-        border-radius: 20px;
-        margin-bottom: 30px;
-        text-align: center;
-        box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
-    }
-
-    .page-header h1 {
-        font-size: 2.5em;
-        margin: 0 0 10px 0;
-        font-weight: 700;
-        color: white;
-    }
-
-    .page-header p {
-        font-size: 1.2em;
-        opacity: 0.9;
-        margin: 0;
-        color: white;
-    }
-
-    /* Settings Navigation */
-    .settings-nav {
-        background: white;
-        padding: 20px;
-        border-radius: 15px;
-        margin-bottom: 30px;
-        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
-        display: flex;
-        gap: 15px;
-        flex-wrap: wrap;
-    }
-
-    .settings-nav-btn {
-        padding: 12px 24px;
-        border: 2px solid #e9ecef;
-        background: white;
-        border-radius: 10px;
-        cursor: pointer;
-        font-weight: 600;
-        transition: all 0.3s ease;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        color: #6c757d;
-    }
-
-    .settings-nav-btn:hover {
-        border-color: #667eea;
-        color: #667eea;
-        transform: translateY(-2px);
-    }
-
-    .settings-nav-btn.active {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        border-color: transparent;
-    }
-
-    /* Settings Sections */
-    .settings-section {
-        background: white;
-        border-radius: 15px;
-        padding: 30px;
-        margin-bottom: 30px;
-        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
-        display: none;
-    }
-
-    .settings-section.active {
-        display: block;
-    }
-
-    .section-title {
-        font-size: 1.8em;
-        font-weight: 700;
-        margin-bottom: 20px;
-        color: #333;
-        display: flex;
-        align-items: center;
-        gap: 12px;
-    }
-
-    .section-description {
-        color: #6c757d;
-        margin-bottom: 30px;
-        font-size: 1.1em;
-    }
-
-    /* Form Styles */
-    .form-group {
-        margin-bottom: 25px;
-    }
-
-    .form-group label {
-        display: block;
-        margin-bottom: 10px;
-        color: #333;
-        font-weight: 600;
-        font-size: 16px;
-    }
-
-    .form-group input[type="text"],
-    .form-group input[type="email"],
-    .form-group input[type="number"],
-    .form-group textarea,
-    .form-group select {
-        width: 100%;
-        padding: 12px 15px;
-        border: 2px solid #e9ecef;
-        border-radius: 10px;
-        font-size: 16px;
-        transition: all 0.3s ease;
-        box-sizing: border-box;
-    }
-
-    .form-group input:focus,
-    .form-group textarea:focus,
-    .form-group select:focus {
-        outline: none;
-        border-color: #667eea;
-        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-    }
-
-    .form-group textarea {
-        min-height: 120px;
-        resize: vertical;
-    }
-
-    .form-help {
-        font-size: 13px;
-        color: #6c757d;
-        margin-top: 5px;
-        display: block;
-    }
-
-    /* FAQ Items */
-    .faq-items {
-        margin-top: 20px;
-    }
-
-    .faq-item {
-        background: #f8f9fa;
-        padding: 20px;
-        border-radius: 10px;
-        margin-bottom: 15px;
-        border-left: 4px solid #667eea;
-        transition: all 0.2s ease;
-    }
-
-    .faq-item:hover {
-        background: #f1f3f4;
-        transform: translateX(5px);
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-    }
-
-    .faq-item-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 15px;
-    }
-
-    .faq-question {
-        font-weight: 600;
-        color: #333;
-        font-size: 16px;
-        flex: 1;
-    }
-
-    .faq-actions {
-        display: flex;
-        gap: 8px;
-    }
-
-    .btn-icon {
-        padding: 8px 12px;
-        border: none;
-        border-radius: 8px;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        display: flex;
-        align-items: center;
-        gap: 5px;
-        font-size: 14px;
-        font-weight: 600;
-    }
-
-    .btn-edit {
-        background: #fff3cd;
-        color: #856404;
-    }
-
-    .btn-edit:hover {
-        background: #ffe69c;
-    }
-
-    .btn-delete {
-        background: #ffebee;
-        color: #d32f2f;
-    }
-
-    .btn-delete:hover {
-        background: #ffcdd2;
-    }
-
-    .faq-answer {
-        color: #6c757d;
-        line-height: 1.6;
-        white-space: pre-wrap;
-    }
-
-    .btn-add-faq {
-        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
-        color: white;
-        padding: 12px 24px;
-        border: none;
-        border-radius: 10px;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        margin-bottom: 20px;
-    }
-
-    .btn-add-faq:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 5px 15px rgba(40, 167, 69, 0.3);
-    }
-
-    /* Toggle Switch */
-    .toggle-switch {
-        position: relative;
-        display: inline-block;
-        width: 60px;
-        height: 30px;
-    }
-
-    .toggle-switch input {
-        opacity: 0;
-        width: 0;
-        height: 0;
-    }
-
-    .toggle-slider {
-        position: absolute;
-        cursor: pointer;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background-color: #ccc;
-        transition: .4s;
-        border-radius: 30px;
-    }
-
-    .toggle-slider:before {
-        position: absolute;
-        content: "";
-        height: 22px;
-        width: 22px;
-        left: 4px;
-        bottom: 4px;
-        background-color: white;
-        transition: .4s;
-        border-radius: 50%;
-    }
-
-    input:checked+.toggle-slider {
-        background-color: #28a745;
-    }
-
-    input:checked+.toggle-slider:before {
-        transform: translateX(30px);
-    }
-
-    .toggle-label {
-        display: flex;
-        align-items: center;
-        gap: 15px;
-        margin-bottom: 20px;
-    }
-
-    /* Save Button */
-    .btn-save {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        padding: 15px 30px;
-        border: none;
-        border-radius: 10px;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        display: inline-flex;
-        align-items: center;
-        gap: 10px;
-        font-size: 16px;
-    }
-
-    .btn-save:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
-    }
-
-    /* Modal Styles */
-    .modal {
-        display: none;
-        position: fixed;
-        z-index: 2000;
-        left: 0;
-        top: 0;
-        width: 100%;
-        height: 100%;
-        background-color: rgba(0, 0, 0, 0.5);
-        animation: fadeIn 0.3s ease;
-        overflow-y: auto;
-        padding: 20px 0;
-    }
-
-    .modal-content {
-        background-color: white;
-        margin: 20px auto;
-        border-radius: 15px;
-        width: 90%;
-        max-width: 600px;
-        max-height: calc(100vh - 80px);
-        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
-        animation: slideDown 0.3s ease;
-        position: relative;
-        display: flex;
-        flex-direction: column;
-    }
-
-    @keyframes fadeIn {
-        from {
-            opacity: 0;
-        }
-        to {
-            opacity: 1;
-        }
-    }
-
-    @keyframes slideDown {
-        from {
-            transform: translateY(-50px);
-            opacity: 0;
-        }
-        to {
-            transform: translateY(0);
-            opacity: 1;
-        }
-    }
-
-    .modal-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 25px 30px 20px 30px;
-        border-bottom: 2px solid #e9ecef;
-        border-radius: 15px 15px 0 0;
-        background: white;
-        flex-shrink: 0;
-    }
-
-    .modal-header h3 {
-        margin: 0;
-        color: #333;
-        font-size: 1.5em;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-    }
-
-    .close {
-        color: #aaa;
-        font-size: 28px;
-        font-weight: bold;
-        cursor: pointer;
-        transition: color 0.2s ease;
-        line-height: 1;
-        padding: 0;
-        background: none;
-        border: none;
-    }
-
-    .close:hover,
-    .close:focus {
-        color: #000;
-    }
-
-    .modal-body {
-        padding: 30px;
-        overflow-y: auto;
-        flex: 1;
-        max-height: calc(100vh - 280px);
-    }
-
-    .modal-body::-webkit-scrollbar {
-        width: 8px;
-    }
-
-    .modal-body::-webkit-scrollbar-track {
-        background: #f1f1f1;
-        border-radius: 10px;
-    }
-
-    .modal-body::-webkit-scrollbar-thumb {
-        background: #667eea;
-        border-radius: 10px;
-    }
-
-    .modal-body::-webkit-scrollbar-thumb:hover {
-        background: #5568d3;
-    }
-
-    .modal-footer {
-        display: flex;
-        gap: 10px;
-        justify-content: flex-end;
-        padding: 20px 30px 25px 30px;
-        border-top: 1px solid #e9ecef;
-        border-radius: 0 0 15px 15px;
-        background: white;
-        flex-shrink: 0;
-    }
-
-    .btn-secondary {
-        padding: 12px 20px;
-        background: #6c757d;
-        color: white;
-        border: none;
-        border-radius: 8px;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        display: inline-flex;
-        align-items: center;
-        gap: 5px;
-    }
-
-    .btn-secondary:hover {
-        background: #5a6268;
-    }
-
-    /* Mobile Responsiveness */
-    @media (max-width: 768px) {
-        .page-header {
-            padding: 30px 20px;
-        }
-
-        .page-header h1 {
-            font-size: 2em;
-        }
-
-        .page-header p {
-            font-size: 1em;
-        }
-
-        .settings-nav {
-            flex-direction: column;
-            padding: 15px;
-        }
-
-        .settings-nav-btn {
-            width: 100%;
-            justify-content: center;
-        }
-
-        .settings-section {
-            padding: 20px;
-        }
-
-        .section-title {
-            font-size: 1.5em;
-        }
-
-        .modal {
-            padding: 10px 0;
-        }
-
-        .modal-content {
-            width: 95%;
-            max-width: none;
-            margin: 10px auto;
-            max-height: calc(100vh - 40px);
-        }
-
-        .modal-header {
-            padding: 20px;
-        }
-
-        .modal-header h3 {
-            font-size: 1.2em;
-        }
-
-        .modal-body {
-            padding: 20px;
-            max-height: calc(100vh - 220px);
-        }
-
-        .modal-footer {
-            padding: 15px 20px 20px 20px;
-            flex-direction: column;
-        }
-
-        .modal-footer button {
-            width: 100%;
-        }
-
-        .form-group input[type="text"],
-        .form-group input[type="email"],
-        .form-group input[type="number"],
-        .form-group textarea,
-        .form-group select {
-            font-size: 16px;
-        }
-
-        .faq-item {
-            padding: 15px;
-        }
-
-        .faq-item-header {
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 10px;
-        }
-
-        .faq-actions {
-            width: 100%;
-            justify-content: flex-end;
-        }
-    }
-
-    /* Prevent body scroll when modal is open */
-    body.modal-open {
-        overflow: hidden;
-    }
-
-    /* Filter Select Styling */
-    .filter-select {
-        padding: 8px 12px;
-        border: 2px solid #e9ecef;
-        border-radius: 8px;
-        font-size: 14px;
-        background: white;
-        min-width: 150px;
-        cursor: pointer;
-        transition: all 0.3s ease;
-    }
-
-    .filter-select:focus {
-        outline: none;
-        border-color: #667eea;
-        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-    }
-
-    /* Status indicators */
-    .status-indicator {
-        display: inline-block;
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-        margin-right: 5px;
-    }
-
-    .status-active {
-        background-color: #28a745;
-    }
-
-    .status-inactive {
-        background-color: #dc3545;
-    }
-</style>
-
-<div class="settings-container">
+<div class="max-w-7xl mx-auto px-4 py-8">
     <!-- Page Header -->
-    <div class="page-header">
-        <h1><i class="fas fa-cog"></i> System Settings</h1>
-        <p>Configure bot behavior, FAQ, and system preferences</p>
+    <div class="gradient-primary rounded-3xl shadow-2xl p-8 mb-8 text-white text-center">
+        <h1 class="text-4xl font-bold mb-3 flex items-center justify-center gap-3">
+            <i class="fas fa-cog"></i> System Settings
+        </h1>
+        <p class="text-lg opacity-90">Configure bot behavior, FAQ, and system preferences</p>
     </div>
 
     <!-- Settings Navigation -->
-    <div class="settings-nav">
-        <button class="settings-nav-btn active" onclick="showSectionWithButton(this, 'general')">
+    <div class="bg-white rounded-2xl shadow-lg p-5 mb-8 flex flex-wrap gap-4">
+        <button class="flex-1 min-w-[180px] px-6 py-3 border-2 border-gray-200 bg-white rounded-xl font-semibold transition-all duration-300 flex items-center justify-center gap-2 hover:border-primary-500 hover:text-primary-500 hover:-translate-y-1 active:gradient-primary active:text-white active:border-transparent settings-nav-btn active"
+                onclick="showSectionWithButton(this, 'general')">
             <i class="fas fa-sliders-h"></i>
             General Settings
         </button>
-        <button class="settings-nav-btn" onclick="showSectionWithButton(this, 'category')">
+        <button class="flex-1 min-w-[180px] px-6 py-3 border-2 border-gray-200 bg-white rounded-xl font-semibold transition-all duration-300 flex items-center justify-center gap-2 hover:border-primary-500 hover:text-primary-500 hover:-translate-y-1 settings-nav-btn"
+                onclick="showSectionWithButton(this, 'category')">
             <i class="fas fa-folder-open"></i>
             Category Management
         </button>
-        <button class="settings-nav-btn" onclick="showSectionWithButton(this, 'faq')">
+        <button class="flex-1 min-w-[180px] px-6 py-3 border-2 border-gray-200 bg-white rounded-xl font-semibold transition-all duration-300 flex items-center justify-center gap-2 hover:border-primary-500 hover:text-primary-500 hover:-translate-y-1 settings-nav-btn"
+                onclick="showSectionWithButton(this, 'faq')">
             <i class="fas fa-question-circle"></i>
             FAQ Management
         </button>
-        <button class="settings-nav-btn" onclick="showSectionWithButton(this, 'bot')">
+        <button class="flex-1 min-w-[180px] px-6 py-3 border-2 border-gray-200 bg-white rounded-xl font-semibold transition-all duration-300 flex items-center justify-center gap-2 hover:border-primary-500 hover:text-primary-500 hover:-translate-y-1 settings-nav-btn"
+                onclick="showSectionWithButton(this, 'bot')">
             <i class="fab fa-telegram"></i>
             Bot Configuration
         </button>
-        <button class="settings-nav-btn" onclick="showSectionWithButton(this, 'notifications')">
+        <button class="flex-1 min-w-[180px] px-6 py-3 border-2 border-gray-200 bg-white rounded-xl font-semibold transition-all duration-300 flex items-center justify-center gap-2 hover:border-primary-500 hover:text-primary-500 hover:-translate-y-1 settings-nav-btn"
+                onclick="showSectionWithButton(this, 'notifications')">
             <i class="fas fa-bell"></i>
             Notifications
         </button>
     </div>
 
     <!-- General Settings Section -->
-    <div class="settings-section active" id="general-section">
-        <h2 class="section-title">
-            <i class="fas fa-sliders-h"></i>
+    <div class="settings-section bg-white rounded-2xl shadow-lg p-8 mb-8 block" id="general-section">
+        <h2 class="text-3xl font-bold mb-5 text-gray-900 flex items-center gap-3">
+            <i class="fas fa-sliders-h text-primary-500"></i>
             General Settings
         </h2>
-        <p class="section-description">Configure general system settings and preferences</p>
+        <p class="text-gray-600 mb-8 text-lg">Configure general system settings and preferences</p>
 
         <form method="POST" action="{{ url_for('system_settings.save_general_settings') }}">
-            <div class="form-group">
-                <label for="system_name">System Name</label>
+            <div class="mb-6">
+                <label for="system_name" class="block text-sm font-bold text-gray-700 mb-2">System Name</label>
                 <input type="text" id="system_name" name="system_name"
-                    value="{{ settings.system_name if settings else 'IBS Info Chatbot' }}" required>
-                <small class="form-help">The name displayed across the system</small>
+                       value="{{ settings.system_name if settings else 'IBS Info Chatbot' }}" required
+                       class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-primary-500 focus:ring-4 focus:ring-primary-100 transition-all">
+                <small class="block text-gray-600 text-sm mt-2">The name displayed across the system</small>
             </div>
 
-            <div class="form-group">
-                <label for="welcome_message">Welcome Message</label>
+            <div class="mb-6">
+                <label for="welcome_message" class="block text-sm font-bold text-gray-700 mb-2">Welcome Message</label>
                 <textarea id="welcome_message" name="welcome_message"
-                    placeholder="Enter welcome message for new users...">{{ settings.welcome_message if settings else 'Welcome to our support bot! How can we help you today?' }}</textarea>
-                <small class="form-help">Message sent to users when they start the bot</small>
+                          placeholder="Enter welcome message for new users..."
+                          class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-primary-500 focus:ring-4 focus:ring-primary-100 transition-all min-h-[120px] resize-y">{{ settings.welcome_message if settings else 'Welcome to our support bot! How can we help you today?' }}</textarea>
+                <small class="block text-gray-600 text-sm mt-2">Message sent to users when they start the bot</small>
             </div>
 
-            <div class="form-group">
-                <label for="support_email">Support Email</label>
+            <div class="mb-6">
+                <label for="support_email" class="block text-sm font-bold text-gray-700 mb-2">Support Email</label>
                 <input type="email" id="support_email" name="support_email"
-                    value="{{ settings.support_email if settings else '' }}" placeholder="support@example.com">
-                <small class="form-help">Email for support inquiries</small>
+                       value="{{ settings.support_email if settings else '' }}" placeholder="support@example.com"
+                       class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-primary-500 focus:ring-4 focus:ring-primary-100 transition-all">
+                <small class="block text-gray-600 text-sm mt-2">Email for support inquiries</small>
             </div>
 
-            <div class="form-group">
-                <label for="max_chat_duration">Maximum Chat Duration (minutes)</label>
+            <div class="mb-6">
+                <label for="max_chat_duration" class="block text-sm font-bold text-gray-700 mb-2">Maximum Chat Duration (minutes)</label>
                 <input type="number" id="max_chat_duration" name="max_chat_duration"
-                    value="{{ settings.max_chat_duration if settings else 60 }}" min="5" max="480">
-                <small class="form-help">Auto-close chats after this duration of inactivity</small>
+                       value="{{ settings.max_chat_duration if settings else 60 }}" min="5" max="480"
+                       class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-primary-500 focus:ring-4 focus:ring-primary-100 transition-all">
+                <small class="block text-gray-600 text-sm mt-2">Auto-close chats after this duration of inactivity</small>
             </div>
 
-            <div class="toggle-label">
-                <label class="toggle-switch">
-                    <input type="checkbox" name="auto_assign_chats" {{ 'checked' if settings and
-                        settings.auto_assign_chats else '' }}>
-                    <span class="toggle-slider"></span>
+            <div class="flex items-center gap-4 mb-5">
+                <label class="relative inline-block w-16 h-8">
+                    <input type="checkbox" name="auto_assign_chats" {{ 'checked' if settings and settings.auto_assign_chats else '' }}
+                           class="opacity-0 w-0 h-0 peer">
+                    <span class="absolute cursor-pointer inset-0 bg-gray-300 rounded-full transition-all duration-400 before:absolute before:content-[''] before:h-6 before:w-6 before:left-1 before:bottom-1 before:bg-white before:rounded-full before:transition-all before:duration-400 peer-checked:bg-green-500 peer-checked:before:translate-x-8"></span>
                 </label>
                 <div>
-                    <strong>Auto-assign Chats</strong>
-                    <p style="margin: 0; color: #6c757d; font-size: 14px;">Automatically assign new chats to available
-                        agents</p>
+                    <strong class="text-gray-900">Auto-assign Chats</strong>
+                    <p class="text-gray-600 text-sm m-0">Automatically assign new chats to available agents</p>
                 </div>
             </div>
 
-            <div class="toggle-label">
-                <label class="toggle-switch">
-                    <input type="checkbox" name="maintenance_mode" {{ 'checked' if settings and
-                        settings.maintenance_mode else '' }}>
-                    <span class="toggle-slider"></span>
+            <div class="flex items-center gap-4 mb-5">
+                <label class="relative inline-block w-16 h-8">
+                    <input type="checkbox" name="maintenance_mode" {{ 'checked' if settings and settings.maintenance_mode else '' }}
+                           class="opacity-0 w-0 h-0 peer">
+                    <span class="absolute cursor-pointer inset-0 bg-gray-300 rounded-full transition-all duration-400 before:absolute before:content-[''] before:h-6 before:w-6 before:left-1 before:bottom-1 before:bg-white before:rounded-full before:transition-all before:duration-400 peer-checked:bg-green-500 peer-checked:before:translate-x-8"></span>
                 </label>
                 <div>
-                    <strong>Maintenance Mode</strong>
-                    <p style="margin: 0; color: #6c757d; font-size: 14px;">Disable bot for regular users during
-                        maintenance</p>
+                    <strong class="text-gray-900">Maintenance Mode</strong>
+                    <p class="text-gray-600 text-sm m-0">Disable bot for regular users during maintenance</p>
                 </div>
             </div>
 
-            <button type="submit" class="btn-save">
+            <button type="submit" 
+                    class="px-6 py-3 bg-gradient-to-r from-primary-500 to-secondary-500 text-white rounded-xl font-semibold hover:from-primary-600 hover:to-secondary-600 transition-all duration-300 flex items-center gap-2 shadow-lg hover:shadow-xl transform hover:-translate-y-1">
                 <i class="fas fa-save"></i>
                 Save General Settings
             </button>
@@ -692,79 +115,83 @@
     </div>
 
     <!-- Category Management Section -->
-    <div class="settings-section" id="category-section">
-        <h2 class="section-title">
-            <i class="fas fa-folder-open"></i>
+    <div class="settings-section bg-white rounded-2xl shadow-lg p-8 mb-8 hidden" id="category-section">
+        <h2 class="text-3xl font-bold mb-5 text-gray-900 flex items-center gap-3">
+            <i class="fas fa-folder-open text-primary-500"></i>
             Category Management
         </h2>
-        <p class="section-description">Manage FAQ categories to organize your questions</p>
+        <p class="text-gray-600 mb-8 text-lg">Manage FAQ categories to organize your questions</p>
 
-        <button class="btn-add-faq" onclick="showAddCategoryModal()">
+        <button class="px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl font-semibold hover:from-green-600 hover:to-green-700 transition-all duration-300 flex items-center gap-2 shadow-lg hover:shadow-xl transform hover:-translate-y-1 mb-5"
+                onclick="showAddCategoryModal()">
             <i class="fas fa-plus-circle"></i>
             Add New Category
         </button>
 
-        <div class="faq-items" id="category-items">
+        <div id="category-items" class="mt-5">
             {% if categories and categories|length > 0 %}
             {% for category in categories %}
-            <div class="faq-item" data-id="{{ category.id }}" data-slug="{{ category.slug }}" {% if not
-                category.is_active %}style="opacity: 0.6;" {% endif %}>
-                <div class="faq-item-header">
-                    <div class="faq-question">
-                        <span class="status-indicator status-{{ 'active' if category.is_active else 'inactive' }}"></span>
-                        <span style="font-size: 1.2em; margin-right: 8px;">{{ category.icon or '📁' }}</span>
-                        {{ category.name }}
-                        <span
-                            style="background: #e9ecef; padding: 2px 8px; border-radius: 10px; font-size: 11px; margin-left: 10px;">
+            <div class="bg-gray-50 p-5 rounded-xl mb-4 border-l-4 border-primary-500 transition-all duration-200 hover:bg-gray-100 hover:translate-x-1 hover:shadow-md" 
+                 data-id="{{ category.id }}" 
+                 data-slug="{{ category.slug }}" 
+                 {% if not category.is_active %}style="opacity: 0.6;"{% endif %}>
+                <div class="flex justify-between items-center mb-4">
+                    <div class="flex-1">
+                        <span class="inline-block w-2 h-2 rounded-full mr-2 {{ 'bg-green-500' if category.is_active else 'bg-red-500' }}"></span>
+                        <span class="text-xl mr-2">{{ category.icon or '📁' }}</span>
+                        <span class="font-semibold text-gray-900 text-base">{{ category.name }}</span>
+                        <span class="bg-gray-200 px-2 py-1 rounded-full text-xs ml-3">
                             {{ category.faq_count }} FAQ(s)
                         </span>
                     </div>
-                    <div class="faq-actions">
-                        <button class="btn-icon btn-edit"
-                            onclick='editCategory({{ category.id }}, {{ category|tojson }})' title="Edit">
+                    <div class="flex gap-2">
+                        <button class="px-3 py-2 bg-yellow-100 text-yellow-700 rounded-lg hover:bg-yellow-200 transition-colors font-semibold text-sm flex items-center gap-1"
+                                onclick='editCategory({{ category.id }}, {{ category|tojson }})' title="Edit">
                             <i class="fas fa-edit"></i>
                         </button>
-                        <button class="btn-icon btn-delete" onclick="deleteCategory('{{ category.id }}')"
-                            title="Delete">
+                        <button class="px-3 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors font-semibold text-sm flex items-center gap-1"
+                                onclick="deleteCategory('{{ category.id }}')" title="Delete">
                             <i class="fas fa-trash"></i>
                         </button>
                     </div>
                 </div>
                 {% if category.description %}
-                <div class="faq-answer">{{ category.description }}</div>
+                <div class="text-gray-600 leading-relaxed whitespace-pre-wrap">{{ category.description }}</div>
                 {% endif %}
-                <div style="margin-top: 10px; color: #6c757d; font-size: 13px;">
+                <div class="mt-3 text-gray-500 text-sm">
                     <strong>Slug:</strong> {{ category.slug }} |
                     <strong>Order:</strong> {{ category.order_index }}
                 </div>
             </div>
             {% endfor %}
             {% else %}
-            <div style="text-align: center; padding: 40px; color: #6c757d;">
-                <i class="fas fa-folder-open" style="font-size: 3em; margin-bottom: 15px; opacity: 0.5;"></i>
-                <h3>No Categories Available</h3>
-                <p>Click "Add New Category" to create your first FAQ category.</p>
+            <div class="text-center py-16 text-gray-400">
+                <i class="fas fa-folder-open text-6xl mb-4 opacity-30"></i>
+                <h3 class="text-2xl font-bold text-gray-600 mb-2">No Categories Available</h3>
+                <p class="text-gray-500">Click "Add New Category" to create your first FAQ category.</p>
             </div>
             {% endif %}
         </div>
     </div>
 
     <!-- FAQ Management Section -->
-    <div class="settings-section" id="faq-section">
-        <h2 class="section-title">
-            <i class="fas fa-question-circle"></i>
+    <div class="settings-section bg-white rounded-2xl shadow-lg p-8 mb-8 hidden" id="faq-section">
+        <h2 class="text-3xl font-bold mb-5 text-gray-900 flex items-center gap-3">
+            <i class="fas fa-question-circle text-primary-500"></i>
             FAQ Management
         </h2>
-        <p class="section-description">Manage frequently asked questions for your users</p>
+        <p class="text-gray-600 mb-8 text-lg">Manage frequently asked questions for your users</p>
 
-        <button class="btn-add-faq" onclick="showAddFAQModal()">
+        <button class="px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl font-semibold hover:from-green-600 hover:to-green-700 transition-all duration-300 flex items-center gap-2 shadow-lg hover:shadow-xl transform hover:-translate-y-1 mb-5"
+                onclick="showAddFAQModal()">
             <i class="fas fa-plus-circle"></i>
             Add New FAQ
         </button>
 
         <!-- Category Filter -->
-        <div style="margin-bottom: 20px;">
-            <select class="filter-select" id="categoryFilter" onchange="filterFAQsByCategory()">
+        <div class="mb-5">
+            <select class="px-4 py-2 border-2 border-gray-200 rounded-lg text-sm bg-white min-w-[150px] cursor-pointer transition-all focus:outline-none focus:border-primary-500 focus:ring-4 focus:ring-primary-100" 
+                    id="categoryFilter" onchange="filterFAQsByCategory()">
                 <option value="">All Categories</option>
                 {% for category in categories %}
                 <option value="{{ category.id }}">
@@ -772,107 +199,113 @@
                 </option>
                 {% endfor %}
             </select>
-            <span style="margin-left: 15px; color: #6c757d;">
+            <span class="ml-4 text-gray-600">
                 Total: <strong id="faqCount">{{ faqs|length }}</strong> FAQs
             </span>
         </div>
 
-        <div class="faq-items" id="faq-items">
+        <div id="faq-items" class="mt-5">
             {% if faqs and faqs|length > 0 %}
             {% for faq in faqs %}
-            <div class="faq-item" data-id="{{ faq.id }}" data-category="{{ faq.category_id }}"
-                data-question="{{ faq.question|replace('"', '&quot;') }}" 
-                data-answer="{{ faq.answer|replace('"', '&quot;')|replace('\n', '&#10;') }}" 
-                data-order="{{ faq.order_index }}"
-                data-active="{{ 'true' if faq.is_active else 'false' }}" 
-                {% if not faq.is_active %}style="opacity: 0.6;" {% endif %}>
-                <div class="faq-item-header">
-                    <div class="faq-question">
-                        <span class="status-indicator status-{{ 'active' if faq.is_active else 'inactive' }}"></span>
-                        {{ faq.question }}
-                        <span
-                            style="background: #e9ecef; padding: 2px 8px; border-radius: 10px; font-size: 11px; margin-left: 10px;">
+            <div class="bg-gray-50 p-5 rounded-xl mb-4 border-l-4 border-primary-500 transition-all duration-200 hover:bg-gray-100 hover:translate-x-1 hover:shadow-md" 
+                 data-id="{{ faq.id }}" 
+                 data-category="{{ faq.category_id }}"
+                 data-question="{{ faq.question|replace('"', '&quot;') }}" 
+                 data-answer="{{ faq.answer|replace('"', '&quot;')|replace('\n', '&#10;') }}" 
+                 data-order="{{ faq.order_index }}"
+                 data-active="{{ 'true' if faq.is_active else 'false' }}" 
+                 {% if not faq.is_active %}style="opacity: 0.6;"{% endif %}>
+                <div class="flex justify-between items-center mb-4">
+                    <div class="flex-1">
+                        <span class="inline-block w-2 h-2 rounded-full mr-2 {{ 'bg-green-500' if faq.is_active else 'bg-red-500' }}"></span>
+                        <span class="font-semibold text-gray-900 text-base">{{ faq.question }}</span>
+                        <span class="bg-gray-200 px-2 py-1 rounded-full text-xs ml-3">
                             {{ faq.category_icon }} {{ faq.category_name }}
                         </span>
                     </div>
-                    <div class="faq-actions">
-                        <button class="btn-icon btn-edit" onclick='editFAQById({{ faq.id }})' title="Edit">
+                    <div class="flex gap-2">
+                        <button class="px-3 py-2 bg-yellow-100 text-yellow-700 rounded-lg hover:bg-yellow-200 transition-colors font-semibold text-sm flex items-center gap-1"
+                                onclick='editFAQById({{ faq.id }})' title="Edit">
                             <i class="fas fa-edit"></i>
                         </button>
-                        <button class="btn-icon btn-delete" onclick="deleteFAQ({{ faq.id }})" title="Delete">
+                        <button class="px-3 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors font-semibold text-sm flex items-center gap-1"
+                                onclick="deleteFAQ({{ faq.id }})" title="Delete">
                             <i class="fas fa-trash"></i>
                         </button>
                     </div>
                 </div>
-                <div class="faq-answer">{{ faq.answer }}</div>
+                <div class="text-gray-600 leading-relaxed whitespace-pre-wrap">{{ faq.answer }}</div>
             </div>
             {% endfor %}
             {% else %}
-            <div style="text-align: center; padding: 40px; color: #6c757d;">
-                <i class="fas fa-question-circle" style="font-size: 3em; margin-bottom: 15px; opacity: 0.5;"></i>
-                <h3>No FAQs Available</h3>
-                <p>Click "Add New FAQ" to create your first FAQ entry.</p>
+            <div class="text-center py-16 text-gray-400">
+                <i class="fas fa-question-circle text-6xl mb-4 opacity-30"></i>
+                <h3 class="text-2xl font-bold text-gray-600 mb-2">No FAQs Available</h3>
+                <p class="text-gray-500">Click "Add New FAQ" to create your first FAQ entry.</p>
             </div>
             {% endif %}
         </div>
     </div>
 
     <!-- Bot Configuration Section -->
-    <div class="settings-section" id="bot-section">
-        <h2 class="section-title">
-            <i class="fab fa-telegram"></i>
+    <div class="settings-section bg-white rounded-2xl shadow-lg p-8 mb-8 hidden" id="bot-section">
+        <h2 class="text-3xl font-bold mb-5 text-gray-900 flex items-center gap-3">
+            <i class="fab fa-telegram text-primary-500"></i>
             Bot Configuration
         </h2>
-        <p class="section-description">Configure Telegram bot behavior and responses</p>
+        <p class="text-gray-600 mb-8 text-lg">Configure Telegram bot behavior and responses</p>
 
         <form method="POST" action="{{ url_for('system_settings.save_bot_settings') }}">
-            <div class="form-group">
-                <label for="bot_username">Bot Username</label>
+            <div class="mb-6">
+                <label for="bot_username" class="block text-sm font-bold text-gray-700 mb-2">Bot Username</label>
                 <input type="text" id="bot_username" name="bot_username"
-                    value="{{ settings.bot_username if settings else '@YourBotUsername' }}" readonly>
-                <small class="form-help">Your Telegram bot username (read-only)</small>
+                       value="{{ settings.bot_username if settings else '@YourBotUsername' }}" readonly
+                       class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl bg-gray-50 text-gray-600 cursor-not-allowed">
+                <small class="block text-gray-600 text-sm mt-2">Your Telegram bot username (read-only)</small>
             </div>
 
-            <div class="form-group">
-                <label for="response_timeout">Response Timeout (seconds)</label>
+            <div class="mb-6">
+                <label for="response_timeout" class="block text-sm font-bold text-gray-700 mb-2">Response Timeout (seconds)</label>
                 <input type="number" id="response_timeout" name="response_timeout"
-                    value="{{ settings.response_timeout if settings else 30 }}" min="10" max="300">
-                <small class="form-help">Time to wait for agent response before showing warning</small>
+                       value="{{ settings.response_timeout if settings else 30 }}" min="10" max="300"
+                       class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-primary-500 focus:ring-4 focus:ring-primary-100 transition-all">
+                <small class="block text-gray-600 text-sm mt-2">Time to wait for agent response before showing warning</small>
             </div>
 
-            <div class="form-group">
-                <label for="offline_message">Offline Message</label>
+            <div class="mb-6">
+                <label for="offline_message" class="block text-sm font-bold text-gray-700 mb-2">Offline Message</label>
                 <textarea id="offline_message" name="offline_message"
-                    placeholder="Message when no agents are available...">{{ settings.offline_message if settings else 'All our agents are currently busy. Please try again later or leave a message.' }}</textarea>
-                <small class="form-help">Message shown when no agents are available</small>
+                          placeholder="Message when no agents are available..."
+                          class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-primary-500 focus:ring-4 focus:ring-primary-100 transition-all min-h-[120px] resize-y">{{ settings.offline_message if settings else 'All our agents are currently busy. Please try again later or leave a message.' }}</textarea>
+                <small class="block text-gray-600 text-sm mt-2">Message shown when no agents are available</small>
             </div>
 
-            <div class="toggle-label">
-                <label class="toggle-switch">
-                    <input type="checkbox" name="enable_file_uploads" {{ 'checked' if settings and
-                        settings.enable_file_uploads else 'checked' }}>
-                    <span class="toggle-slider"></span>
+            <div class="flex items-center gap-4 mb-5">
+                <label class="relative inline-block w-16 h-8">
+                    <input type="checkbox" name="enable_file_uploads" {{ 'checked' if settings and settings.enable_file_uploads else 'checked' }}
+                           class="opacity-0 w-0 h-0 peer">
+                    <span class="absolute cursor-pointer inset-0 bg-gray-300 rounded-full transition-all duration-400 before:absolute before:content-[''] before:h-6 before:w-6 before:left-1 before:bottom-1 before:bg-white before:rounded-full before:transition-all before:duration-400 peer-checked:bg-green-500 peer-checked:before:translate-x-8"></span>
                 </label>
                 <div>
-                    <strong>Enable File Uploads</strong>
-                    <p style="margin: 0; color: #6c757d; font-size: 14px;">Allow users to send files and images</p>
+                    <strong class="text-gray-900">Enable File Uploads</strong>
+                    <p class="text-gray-600 text-sm m-0">Allow users to send files and images</p>
                 </div>
             </div>
 
-            <div class="toggle-label">
-                <label class="toggle-switch">
-                    <input type="checkbox" name="enable_typing_indicator" {{ 'checked' if settings and
-                        settings.enable_typing_indicator else 'checked' }}>
-                    <span class="toggle-slider"></span>
+            <div class="flex items-center gap-4 mb-5">
+                <label class="relative inline-block w-16 h-8">
+                    <input type="checkbox" name="enable_typing_indicator" {{ 'checked' if settings and settings.enable_typing_indicator else 'checked' }}
+                           class="opacity-0 w-0 h-0 peer">
+                    <span class="absolute cursor-pointer inset-0 bg-gray-300 rounded-full transition-all duration-400 before:absolute before:content-[''] before:h-6 before:w-6 before:left-1 before:bottom-1 before:bg-white before:rounded-full before:transition-all before:duration-400 peer-checked:bg-green-500 peer-checked:before:translate-x-8"></span>
                 </label>
                 <div>
-                    <strong>Typing Indicator</strong>
-                    <p style="margin: 0; color: #6c757d; font-size: 14px;">Show typing indicator when agent is
-                        responding</p>
+                    <strong class="text-gray-900">Typing Indicator</strong>
+                    <p class="text-gray-600 text-sm m-0">Show typing indicator when agent is responding</p>
                 </div>
             </div>
 
-            <button type="submit" class="btn-save">
+            <button type="submit" 
+                    class="px-6 py-3 bg-gradient-to-r from-primary-500 to-secondary-500 text-white rounded-xl font-semibold hover:from-primary-600 hover:to-secondary-600 transition-all duration-300 flex items-center gap-2 shadow-lg hover:shadow-xl transform hover:-translate-y-1">
                 <i class="fas fa-save"></i>
                 Save Bot Settings
             </button>
@@ -880,73 +313,72 @@
     </div>
 
     <!-- Notifications Section -->
-    <div class="settings-section" id="notifications-section">
-        <h2 class="section-title">
-            <i class="fas fa-bell"></i>
+    <div class="settings-section bg-white rounded-2xl shadow-lg p-8 mb-8 hidden" id="notifications-section">
+        <h2 class="text-3xl font-bold mb-5 text-gray-900 flex items-center gap-3">
+            <i class="fas fa-bell text-primary-500"></i>
             Notification Settings
         </h2>
-        <p class="section-description">Configure email and push notifications</p>
+        <p class="text-gray-600 mb-8 text-lg">Configure email and push notifications</p>
 
         <form method="POST" action="{{ url_for('system_settings.save_notification_settings') }}">
-            <div class="toggle-label">
-                <label class="toggle-switch">
-                    <input type="checkbox" name="email_notifications" {{ 'checked' if settings and
-                        settings.email_notifications else '' }}>
-                    <span class="toggle-slider"></span>
+            <div class="flex items-center gap-4 mb-5">
+                <label class="relative inline-block w-16 h-8">
+                    <input type="checkbox" name="email_notifications" {{ 'checked' if settings and settings.email_notifications else '' }}
+                           class="opacity-0 w-0 h-0 peer">
+                    <span class="absolute cursor-pointer inset-0 bg-gray-300 rounded-full transition-all duration-400 before:absolute before:content-[''] before:h-6 before:w-6 before:left-1 before:bottom-1 before:bg-white before:rounded-full before:transition-all before:duration-400 peer-checked:bg-green-500 peer-checked:before:translate-x-8"></span>
                 </label>
                 <div>
-                    <strong>Email Notifications</strong>
-                    <p style="margin: 0; color: #6c757d; font-size: 14px;">Send email notifications for important events
-                    </p>
+                    <strong class="text-gray-900">Email Notifications</strong>
+                    <p class="text-gray-600 text-sm m-0">Send email notifications for important events</p>
                 </div>
             </div>
 
-            <div class="toggle-label">
-                <label class="toggle-switch">
-                    <input type="checkbox" name="notify_new_user" {{ 'checked' if settings and settings.notify_new_user
-                        else 'checked' }}>
-                    <span class="toggle-slider"></span>
+            <div class="flex items-center gap-4 mb-5">
+                <label class="relative inline-block w-16 h-8">
+                    <input type="checkbox" name="notify_new_user" {{ 'checked' if settings and settings.notify_new_user else 'checked' }}
+                           class="opacity-0 w-0 h-0 peer">
+                    <span class="absolute cursor-pointer inset-0 bg-gray-300 rounded-full transition-all duration-400 before:absolute before:content-[''] before:h-6 before:w-6 before:left-1 before:bottom-1 before:bg-white before:rounded-full before:transition-all before:duration-400 peer-checked:bg-green-500 peer-checked:before:translate-x-8"></span>
                 </label>
                 <div>
-                    <strong>New User Registration</strong>
-                    <p style="margin: 0; color: #6c757d; font-size: 14px;">Notify admins when new users register</p>
+                    <strong class="text-gray-900">New User Registration</strong>
+                    <p class="text-gray-600 text-sm m-0">Notify admins when new users register</p>
                 </div>
             </div>
 
-            <div class="toggle-label">
-                <label class="toggle-switch">
-                    <input type="checkbox" name="notify_new_chat" {{ 'checked' if settings and settings.notify_new_chat
-                        else 'checked' }}>
-                    <span class="toggle-slider"></span>
+            <div class="flex items-center gap-4 mb-5">
+                <label class="relative inline-block w-16 h-8">
+                    <input type="checkbox" name="notify_new_chat" {{ 'checked' if settings and settings.notify_new_chat else 'checked' }}
+                           class="opacity-0 w-0 h-0 peer">
+                    <span class="absolute cursor-pointer inset-0 bg-gray-300 rounded-full transition-all duration-400 before:absolute before:content-[''] before:h-6 before:w-6 before:left-1 before:bottom-1 before:bg-white before:rounded-full before:transition-all before:duration-400 peer-checked:bg-green-500 peer-checked:before:translate-x-8"></span>
                 </label>
                 <div>
-                    <strong>New Chat Session</strong>
-                    <p style="margin: 0; color: #6c757d; font-size: 14px;">Notify agents when new chat sessions start
-                    </p>
+                    <strong class="text-gray-900">New Chat Session</strong>
+                    <p class="text-gray-600 text-sm m-0">Notify agents when new chat sessions start</p>
                 </div>
             </div>
 
-            <div class="toggle-label">
-                <label class="toggle-switch">
-                    <input type="checkbox" name="notify_unassigned_chat" {{ 'checked' if settings and
-                        settings.notify_unassigned_chat else 'checked' }}>
-                    <span class="toggle-slider"></span>
+            <div class="flex items-center gap-4 mb-5">
+                <label class="relative inline-block w-16 h-8">
+                    <input type="checkbox" name="notify_unassigned_chat" {{ 'checked' if settings and settings.notify_unassigned_chat else 'checked' }}
+                           class="opacity-0 w-0 h-0 peer">
+                    <span class="absolute cursor-pointer inset-0 bg-gray-300 rounded-full transition-all duration-400 before:absolute before:content-[''] before:h-6 before:w-6 before:left-1 before:bottom-1 before:bg-white before:rounded-full before:transition-all before:duration-400 peer-checked:bg-green-500 peer-checked:before:translate-x-8"></span>
                 </label>
                 <div>
-                    <strong>Unassigned Chats</strong>
-                    <p style="margin: 0; color: #6c757d; font-size: 14px;">Alert admins about unassigned chat sessions
-                    </p>
+                    <strong class="text-gray-900">Unassigned Chats</strong>
+                    <p class="text-gray-600 text-sm m-0">Alert admins about unassigned chat sessions</p>
                 </div>
             </div>
 
-            <div class="form-group">
-                <label for="notification_email">Notification Email Address</label>
+            <div class="mb-6">
+                <label for="notification_email" class="block text-sm font-bold text-gray-700 mb-2">Notification Email Address</label>
                 <input type="email" id="notification_email" name="notification_email"
-                    value="{{ settings.notification_email if settings else '' }}" placeholder="admin@example.com">
-                <small class="form-help">Primary email for system notifications</small>
+                       value="{{ settings.notification_email if settings else '' }}" placeholder="admin@example.com"
+                       class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-primary-500 focus:ring-4 focus:ring-primary-100 transition-all">
+                <small class="block text-gray-600 text-sm mt-2">Primary email for system notifications</small>
             </div>
 
-            <button type="submit" class="btn-save">
+            <button type="submit" 
+                    class="px-6 py-3 bg-gradient-to-r from-primary-500 to-secondary-500 text-white rounded-xl font-semibold hover:from-primary-600 hover:to-secondary-600 transition-all duration-300 flex items-center gap-2 shadow-lg hover:shadow-xl transform hover:-translate-y-1">
                 <i class="fas fa-save"></i>
                 Save Notification Settings
             </button>
@@ -955,34 +387,39 @@
 </div>
 
 <!-- Add/Edit FAQ Modal -->
-<div id="faqModal" class="modal">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h3 id="modalTitle">
-                <i class="fas fa-plus-circle"></i> Add New FAQ
+<div id="faqModal" class="hidden fixed inset-0 bg-black/50 z-50 overflow-y-auto p-5 animate-fadeIn">
+    <div class="bg-white my-5 mx-auto rounded-2xl w-[90%] max-w-2xl max-h-[calc(100vh-80px)] shadow-2xl flex flex-col animate-slideDown">
+        <div class="flex justify-between items-center px-8 py-6 border-b-2 border-gray-200 rounded-t-2xl bg-white">
+            <h3 id="modalTitle" class="m-0 text-gray-900 text-2xl flex items-center gap-3">
+                <i class="fas fa-plus-circle text-primary-500"></i> Add New FAQ
             </h3>
-            <span class="close" onclick="closeFAQModal()">&times;</span>
+            <button onclick="closeFAQModal()" class="text-gray-400 text-3xl font-bold cursor-pointer hover:text-gray-900 transition-colors">
+                &times;
+            </button>
         </div>
 
-        <div class="modal-body">
+        <div class="px-8 py-6 overflow-y-auto flex-1 max-h-[calc(100vh-280px)] scrollbar-thin scrollbar-thumb-primary-500 scrollbar-track-gray-100">
             <form id="faqForm" method="POST" action="{{ url_for('system_settings.save_faq') }}">
                 <input type="hidden" id="faq_id" name="faq_id">
 
-                <div class="form-group">
-                    <label for="faq_question">Question *</label>
+                <div class="mb-6">
+                    <label for="faq_question" class="block text-sm font-bold text-gray-700 mb-2">Question *</label>
                     <input type="text" id="faq_question" name="question" required
-                        placeholder="Enter the FAQ question...">
+                           placeholder="Enter the FAQ question..."
+                           class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-primary-500 focus:ring-4 focus:ring-primary-100 transition-all">
                 </div>
 
-                <div class="form-group">
-                    <label for="faq_answer">Answer *</label>
+                <div class="mb-6">
+                    <label for="faq_answer" class="block text-sm font-bold text-gray-700 mb-2">Answer *</label>
                     <textarea id="faq_answer" name="answer" required
-                        placeholder="Enter the detailed answer..."></textarea>
+                              placeholder="Enter the detailed answer..."
+                              class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-primary-500 focus:ring-4 focus:ring-primary-100 transition-all min-h-[120px] resize-y"></textarea>
                 </div>
 
-                <div class="form-group">
-                    <label for="faq_category">Category</label>
-                    <select id="faq_category" name="category_id">
+                <div class="mb-6">
+                    <label for="faq_category" class="block text-sm font-bold text-gray-700 mb-2">Category</label>
+                    <select id="faq_category" name="category_id"
+                            class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-primary-500 focus:ring-4 focus:ring-primary-100 transition-all">
                         {% for category in categories %}
                         {% if category.is_active %}
                         <option value="{{ category.id }}">
@@ -993,30 +430,34 @@
                     </select>
                 </div>
 
-                <div class="form-group">
-                    <label for="order_index">Display Order</label>
-                    <input type="number" id="order_index" name="order_index" value="0" min="0">
-                    <small class="form-help">Lower numbers appear first (0 = highest priority)</small>
+                <div class="mb-6">
+                    <label for="order_index" class="block text-sm font-bold text-gray-700 mb-2">Display Order</label>
+                    <input type="number" id="order_index" name="order_index" value="0" min="0"
+                           class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-primary-500 focus:ring-4 focus:ring-primary-100 transition-all">
+                    <small class="block text-gray-600 text-sm mt-2">Lower numbers appear first (0 = highest priority)</small>
                 </div>
 
-                <div class="toggle-label">
-                    <label class="toggle-switch">
-                        <input type="checkbox" id="faq_active" name="is_active" checked>
-                        <span class="toggle-slider"></span>
+                <div class="flex items-center gap-4">
+                    <label class="relative inline-block w-16 h-8">
+                        <input type="checkbox" id="faq_active" name="is_active" checked
+                               class="opacity-0 w-0 h-0 peer">
+                        <span class="absolute cursor-pointer inset-0 bg-gray-300 rounded-full transition-all duration-400 before:absolute before:content-[''] before:h-6 before:w-6 before:left-1 before:bottom-1 before:bg-white before:rounded-full before:transition-all before:duration-400 peer-checked:bg-green-500 peer-checked:before:translate-x-8"></span>
                     </label>
                     <div>
-                        <strong>Active</strong>
-                        <p style="margin: 0; color: #6c757d; font-size: 14px;">Show this FAQ to users in the bot</p>
+                        <strong class="text-gray-900">Active</strong>
+                        <p class="text-gray-600 text-sm m-0">Show this FAQ to users in the bot</p>
                     </div>
                 </div>
             </form>
         </div>
 
-        <div class="modal-footer">
-            <button type="button" class="btn-secondary" onclick="closeFAQModal()">
+        <div class="flex gap-3 justify-end px-8 py-6 border-t border-gray-200 rounded-b-2xl bg-white">
+            <button type="button" onclick="closeFAQModal()" 
+                    class="px-5 py-3 bg-gray-600 text-white rounded-lg font-semibold hover:bg-gray-700 transition-all flex items-center gap-2">
                 <i class="fas fa-times"></i> Cancel
             </button>
-            <button type="submit" form="faqForm" class="btn-save">
+            <button type="submit" form="faqForm" 
+                    class="px-5 py-3 bg-gradient-to-r from-primary-500 to-secondary-500 text-white rounded-lg font-semibold hover:from-primary-600 hover:to-secondary-600 transition-all flex items-center gap-2 shadow-lg">
                 <i class="fas fa-save"></i> Save FAQ
             </button>
         </div>
@@ -1024,70 +465,80 @@
 </div>
 
 <!-- Add/Edit Category Modal -->
-<div id="categoryModal" class="modal">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h3 id="categoryModalTitle">
-                <i class="fas fa-plus-circle"></i> Add New Category
+<div id="categoryModal" class="hidden fixed inset-0 bg-black/50 z-50 overflow-y-auto p-5 animate-fadeIn">
+    <div class="bg-white my-5 mx-auto rounded-2xl w-[90%] max-w-2xl max-h-[calc(100vh-80px)] shadow-2xl flex flex-col animate-slideDown">
+        <div class="flex justify-between items-center px-8 py-6 border-b-2 border-gray-200 rounded-t-2xl bg-white">
+            <h3 id="categoryModalTitle" class="m-0 text-gray-900 text-2xl flex items-center gap-3">
+                <i class="fas fa-plus-circle text-primary-500"></i> Add New Category
             </h3>
-            <span class="close" onclick="closeCategoryModal()">&times;</span>
+            <button onclick="closeCategoryModal()" class="text-gray-400 text-3xl font-bold cursor-pointer hover:text-gray-900 transition-colors">
+                &times;
+            </button>
         </div>
 
-        <div class="modal-body">
+        <div class="px-8 py-6 overflow-y-auto flex-1 max-h-[calc(100vh-280px)] scrollbar-thin scrollbar-thumb-primary-500 scrollbar-track-gray-100">
             <form id="categoryForm" method="POST" action="{{ url_for('system_settings.save_category') }}">
                 <input type="hidden" id="category_id" name="category_id">
 
-                <div class="form-group">
-                    <label for="category_name">Category Name *</label>
+                <div class="mb-6">
+                    <label for="category_name" class="block text-sm font-bold text-gray-700 mb-2">Category Name *</label>
                     <input type="text" id="category_name" name="name" required
-                        placeholder="e.g., Getting Started, Technical Support">
-                    <small class="form-help">Display name for the category</small>
+                           placeholder="e.g., Getting Started, Technical Support"
+                           class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-primary-500 focus:ring-4 focus:ring-primary-100 transition-all">
+                    <small class="block text-gray-600 text-sm mt-2">Display name for the category</small>
                 </div>
 
-                <div class="form-group">
-                    <label for="category_slug">Slug *</label>
+                <div class="mb-6">
+                    <label for="category_slug" class="block text-sm font-bold text-gray-700 mb-2">Slug *</label>
                     <input type="text" id="category_slug" name="slug" required
-                        placeholder="e.g., getting_started, technical_support" pattern="[a-z0-9_]+"
-                        title="Only lowercase letters, numbers, and underscores">
-                    <small class="form-help">URL-friendly identifier (lowercase, no spaces)</small>
+                           placeholder="e.g., getting_started, technical_support" pattern="[a-z0-9_]+"
+                           title="Only lowercase letters, numbers, and underscores"
+                           class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-primary-500 focus:ring-4 focus:ring-primary-100 transition-all">
+                    <small class="block text-gray-600 text-sm mt-2">URL-friendly identifier (lowercase, no spaces)</small>
                 </div>
 
-                <div class="form-group">
-                    <label for="category_icon">Icon/Emoji</label>
-                    <input type="text" id="category_icon" name="icon" value="📁" placeholder="📁">
-                    <small class="form-help">Emoji or icon to represent this category</small>
+                <div class="mb-6">
+                    <label for="category_icon" class="block text-sm font-bold text-gray-700 mb-2">Icon/Emoji</label>
+                    <input type="text" id="category_icon" name="icon" value="📁" placeholder="📁"
+                           class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-primary-500 focus:ring-4 focus:ring-primary-100 transition-all">
+                    <small class="block text-gray-600 text-sm mt-2">Emoji or icon to represent this category</small>
                 </div>
 
-                <div class="form-group">
-                    <label for="category_description">Description</label>
+                <div class="mb-6">
+                    <label for="category_description" class="block text-sm font-bold text-gray-700 mb-2">Description</label>
                     <textarea id="category_description" name="description"
-                        placeholder="Brief description of this category..."></textarea>
+                              placeholder="Brief description of this category..."
+                              class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-primary-500 focus:ring-4 focus:ring-primary-100 transition-all min-h-[120px] resize-y"></textarea>
                 </div>
 
-                <div class="form-group">
-                    <label for="category_order">Display Order</label>
-                    <input type="number" id="category_order" name="order_index" value="0" min="0">
-                    <small class="form-help">Lower numbers appear first</small>
+                <div class="mb-6">
+                    <label for="category_order" class="block text-sm font-bold text-gray-700 mb-2">Display Order</label>
+                    <input type="number" id="category_order" name="order_index" value="0" min="0"
+                           class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-primary-500 focus:ring-4 focus:ring-primary-100 transition-all">
+                    <small class="block text-gray-600 text-sm mt-2">Lower numbers appear first</small>
                 </div>
 
-                <div class="toggle-label">
-                    <label class="toggle-switch">
-                        <input type="checkbox" id="category_active" name="is_active" checked>
-                        <span class="toggle-slider"></span>
+                <div class="flex items-center gap-4">
+                    <label class="relative inline-block w-16 h-8">
+                        <input type="checkbox" id="category_active" name="is_active" checked
+                               class="opacity-0 w-0 h-0 peer">
+                        <span class="absolute cursor-pointer inset-0 bg-gray-300 rounded-full transition-all duration-400 before:absolute before:content-[''] before:h-6 before:w-6 before:left-1 before:bottom-1 before:bg-white before:rounded-full before:transition-all before:duration-400 peer-checked:bg-green-500 peer-checked:before:translate-x-8"></span>
                     </label>
                     <div>
-                        <strong>Active</strong>
-                        <p style="margin: 0; color: #6c757d; font-size: 14px;">Show this category to users</p>
+                        <strong class="text-gray-900">Active</strong>
+                        <p class="text-gray-600 text-sm m-0">Show this category to users</p>
                     </div>
                 </div>
             </form>
         </div>
 
-        <div class="modal-footer">
-            <button type="button" class="btn-secondary" onclick="closeCategoryModal()">
+        <div class="flex gap-3 justify-end px-8 py-6 border-t border-gray-200 rounded-b-2xl bg-white">
+            <button type="button" onclick="closeCategoryModal()" 
+                    class="px-5 py-3 bg-gray-600 text-white rounded-lg font-semibold hover:bg-gray-700 transition-all flex items-center gap-2">
                 <i class="fas fa-times"></i> Cancel
             </button>
-            <button type="submit" form="categoryForm" class="btn-save">
+            <button type="submit" form="categoryForm" 
+                    class="px-5 py-3 bg-gradient-to-r from-primary-500 to-secondary-500 text-white rounded-lg font-semibold hover:from-primary-600 hover:to-secondary-600 transition-all flex items-center gap-2 shadow-lg">
                 <i class="fas fa-save"></i> Save Category
             </button>
         </div>
@@ -1099,98 +550,93 @@
     function showSectionWithButton(buttonElement, sectionName) {
         // Hide all sections
         document.querySelectorAll('.settings-section').forEach(section => {
-            section.classList.remove('active');
+            section.classList.add('hidden');
+            section.classList.remove('block');
         });
 
         // Remove active class from all buttons
         document.querySelectorAll('.settings-nav-btn').forEach(btn => {
-            btn.classList.remove('active');
+            btn.classList.remove('gradient-primary', 'text-white', 'border-transparent');
+            btn.classList.add('border-gray-200');
         });
 
         // Show selected section
         const selectedSection = document.getElementById(sectionName + '-section');
         if (selectedSection) {
-            selectedSection.classList.add('active');
+            selectedSection.classList.remove('hidden');
+            selectedSection.classList.add('block');
         }
 
         // Add active class to clicked button
         if (buttonElement) {
-            buttonElement.classList.add('active');
+            buttonElement.classList.add('gradient-primary', 'text-white', 'border-transparent');
+            buttonElement.classList.remove('border-gray-200');
         }
     }
 
     // FAQ Modal Functions
     function showAddFAQModal() {
-        document.getElementById('modalTitle').innerHTML = '<i class="fas fa-plus-circle"></i> Add New FAQ';
+        document.getElementById('modalTitle').innerHTML = '<i class="fas fa-plus-circle text-primary-500"></i> Add New FAQ';
         document.getElementById('faq_id').value = '';
         document.getElementById('faq_question').value = '';
         document.getElementById('faq_answer').value = '';
         document.getElementById('faq_category').value = '';
         document.getElementById('order_index').value = 0;
         document.getElementById('faq_active').checked = true;
-        document.getElementById('faqModal').style.display = 'block';
-        document.body.classList.add('modal-open');
+        document.getElementById('faqModal').classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
     }
 
     function editFAQById(faqId) {
         const faqItem = document.querySelector(`.faq-item[data-id="${faqId}"]`);
-
         if (!faqItem) {
             alert('FAQ not found');
             return;
         }
-
-        document.getElementById('modalTitle').innerHTML = '<i class="fas fa-edit"></i> Edit FAQ';
+        document.getElementById('modalTitle').innerHTML = '<i class="fas fa-edit text-primary-500"></i> Edit FAQ';
         document.getElementById('faq_id').value = faqId;
         document.getElementById('faq_question').value = faqItem.dataset.question;
         document.getElementById('faq_answer').value = faqItem.dataset.answer;
         document.getElementById('faq_category').value = faqItem.dataset.category;
         document.getElementById('order_index').value = faqItem.dataset.order || 0;
         document.getElementById('faq_active').checked = faqItem.dataset.active === 'true';
-        document.getElementById('faqModal').style.display = 'block';
-        document.body.classList.add('modal-open');
+        document.getElementById('faqModal').classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
     }
 
     function closeFAQModal() {
-        document.getElementById('faqModal').style.display = 'none';
-        document.body.classList.remove('modal-open');
+        document.getElementById('faqModal').classList.add('hidden');
+        document.body.style.overflow = '';
     }
 
     function deleteFAQ(faqId) {
         if (confirm('Are you sure you want to delete this FAQ?')) {
             fetch(`/admin/system-settings/delete-faq/${faqId}`, {
                 method: 'DELETE',
-                headers: {
-                    'Content-Type': 'application/json',
+                headers: { 'Content-Type': 'application/json' }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const faqItem = document.querySelector(`#faq-items .faq-item[data-id="${faqId}"]`);
+                    if (faqItem) faqItem.remove();
+                    const currentCount = parseInt(document.getElementById('faqCount').textContent);
+                    document.getElementById('faqCount').textContent = currentCount - 1;
+                    alert('FAQ deleted successfully!');
+                } else {
+                    alert('Failed to delete FAQ: ' + data.message);
                 }
             })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        const faqItem = document.querySelector(`#faq-items .faq-item[data-id="${faqId}"]`);
-                        if (faqItem) {
-                            faqItem.remove();
-                        }
-
-                        // Update FAQ count
-                        const currentCount = parseInt(document.getElementById('faqCount').textContent);
-                        document.getElementById('faqCount').textContent = currentCount - 1;
-
-                        alert('FAQ deleted successfully!');
-                    } else {
-                        alert('Failed to delete FAQ: ' + data.message);
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert('An error occurred while deleting the FAQ.');
-                });
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while deleting the FAQ.');
+            });
         }
     }
 
     // Category Modal Functions
     function showAddCategoryModal() {
-        document.getElementById('categoryModalTitle').innerHTML = '<i class="fas fa-plus-circle"></i> Add New Category';
+        document.getElementById('categoryModalTitle').innerHTML = '<i class="fas fa-plus-circle text-primary-500"></i> Add New Category';
         document.getElementById('category_id').value = '';
         document.getElementById('category_name').value = '';
         document.getElementById('category_slug').value = '';
@@ -1198,12 +644,12 @@
         document.getElementById('category_description').value = '';
         document.getElementById('category_order').value = 0;
         document.getElementById('category_active').checked = true;
-        document.getElementById('categoryModal').style.display = 'block';
-        document.body.classList.add('modal-open');
+        document.getElementById('categoryModal').classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
     }
 
     function editCategory(categoryId, categoryData) {
-        document.getElementById('categoryModalTitle').innerHTML = '<i class="fas fa-edit"></i> Edit Category';
+        document.getElementById('categoryModalTitle').innerHTML = '<i class="fas fa-edit text-primary-500"></i> Edit Category';
         document.getElementById('category_id').value = categoryId;
         document.getElementById('category_name').value = categoryData.name;
         document.getElementById('category_slug').value = categoryData.slug;
@@ -1211,55 +657,43 @@
         document.getElementById('category_description').value = categoryData.description || '';
         document.getElementById('category_order').value = categoryData.order_index || 0;
         document.getElementById('category_active').checked = categoryData.is_active;
-        document.getElementById('categoryModal').style.display = 'block';
-        document.body.classList.add('modal-open');
+        document.getElementById('categoryModal').classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
     }
 
     function closeCategoryModal() {
-        document.getElementById('categoryModal').style.display = 'none';
-        document.body.classList.remove('modal-open');
+        document.getElementById('categoryModal').classList.add('hidden');
+        document.body.style.overflow = '';
     }
 
     function deleteCategory(categoryId) {
         if (confirm('Are you sure you want to delete this category?\n\nNote: You cannot delete categories that have FAQs assigned to them.')) {
             fetch(`/admin/system-settings/delete-category/${categoryId}`, {
                 method: 'DELETE',
-                headers: {
-                    'Content-Type': 'application/json',
+                headers: { 'Content-Type': 'application/json' }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const categoryItem = document.querySelector(`#category-items .faq-item[data-id="${categoryId}"]`);
+                    if (categoryItem) categoryItem.remove();
+                    alert('✅ Category deleted successfully!');
+                    setTimeout(() => location.reload(), 500);
+                } else {
+                    alert('❌ Failed to delete category: ' + data.message);
                 }
             })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        const categoryItem = document.querySelector(`#category-items .faq-item[data-id="${categoryId}"]`);
-                        if (categoryItem) {
-                            categoryItem.remove();
-                        }
-
-                        alert('✅ Category deleted successfully!');
-
-                        // Reload page to update category dropdown in FAQ section
-                        setTimeout(() => {
-                            location.reload();
-                        }, 500);
-                    } else {
-                        alert('❌ Failed to delete category: ' + data.message);
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert('❌ An error occurred while deleting the category.');
-                });
+            .catch(error => {
+                console.error('Error:', error);
+                alert('❌ An error occurred while deleting the category.');
+            });
         }
     }
 
     // Auto-generate slug from name
     document.getElementById('category_name')?.addEventListener('input', function (e) {
         if (!document.getElementById('category_id').value) {
-            const slug = e.target.value
-                .toLowerCase()
-                .replace(/[^a-z0-9]+/g, '_')
-                .replace(/^_+|_+$/g, '');
+            const slug = e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
             document.getElementById('category_slug').value = slug;
         }
     });
@@ -1267,61 +701,56 @@
     // Form submission handling
     document.getElementById('faqForm')?.addEventListener('submit', function (e) {
         e.preventDefault();
-
         const formData = new FormData(this);
-
         fetch(this.action, {
             method: 'POST',
             body: formData
         })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    alert('✅ FAQ saved successfully!');
-                    closeFAQModal();
-                    location.reload();
-                } else {
-                    alert('❌ Failed to save FAQ: ' + data.message);
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('❌ An error occurred while saving the FAQ.');
-            });
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('✅ FAQ saved successfully!');
+                closeFAQModal();
+                location.reload();
+            } else {
+                alert('❌ Failed to save FAQ: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('❌ An error occurred while saving the FAQ.');
+        });
     });
 
     // Category form submission
     document.getElementById('categoryForm')?.addEventListener('submit', function (e) {
         e.preventDefault();
-
         const formData = new FormData(this);
-
         fetch(this.action, {
             method: 'POST',
             body: formData
         })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    alert('✅ Category saved successfully!');
-                    closeCategoryModal();
-                    location.reload();
-                } else {
-                    alert('❌ Failed to save category: ' + data.message);
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('❌ An error occurred while saving the category.');
-            });
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('✅ Category saved successfully!');
+                closeCategoryModal();
+                location.reload();
+            } else {
+                alert('❌ Failed to save category: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('❌ An error occurred while saving the category.');
+        });
     });
 
     // Filter FAQs by Category
     function filterFAQsByCategory() {
         const categoryId = document.getElementById('categoryFilter').value;
-        const faqItems = document.querySelectorAll('#faq-items .faq-item');
+        const faqItems = document.querySelectorAll('#faq-items > div');
         let visibleCount = 0;
-
         faqItems.forEach(item => {
             if (!categoryId || item.dataset.category === categoryId) {
                 item.style.display = 'block';
@@ -1330,7 +759,6 @@
                 item.style.display = 'none';
             }
         });
-
         document.getElementById('faqCount').textContent = visibleCount;
     }
 
@@ -1338,35 +766,19 @@
     window.onclick = function (event) {
         const faqModal = document.getElementById('faqModal');
         const categoryModal = document.getElementById('categoryModal');
-
-        if (event.target == faqModal) {
-            closeFAQModal();
-        }
-        if (event.target == categoryModal) {
-            closeCategoryModal();
-        }
+        if (event.target == faqModal) closeFAQModal();
+        if (event.target == categoryModal) closeCategoryModal();
     }
 
     // Close modal on Escape key
     document.addEventListener('keydown', function (event) {
         if (event.key === 'Escape') {
-            if (document.getElementById('faqModal').style.display === 'block') {
+            if (document.getElementById('faqModal').classList.contains('hidden') === false) {
                 closeFAQModal();
             }
-            if (document.getElementById('categoryModal').style.display === 'block') {
+            if (document.getElementById('categoryModal').classList.contains('hidden') === false) {
                 closeCategoryModal();
             }
-        }
-    });
-
-    // Initialize on page load
-    document.addEventListener('DOMContentLoaded', function () {
-        console.log('System Settings page loaded');
-
-        // Show general section by default
-        const generalSection = document.getElementById('general-section');
-        if (generalSection && !generalSection.classList.contains('active')) {
-            generalSection.classList.add('active');
         }
     });
 </script>
