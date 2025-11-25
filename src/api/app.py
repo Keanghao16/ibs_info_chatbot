@@ -4,6 +4,7 @@ Initializes Flask app for REST API with CORS, error handling, and middleware
 """
 
 from flask import Flask, jsonify, request
+from werkzeug.middleware.proxy_fix import ProxyFix
 import os
 from ..utils.config import Config
 
@@ -21,6 +22,15 @@ def create_app():
     
     # Load configuration
     app.config.from_object(Config)
+    
+    # Trust proxy headers for HTTPS (X-Forwarded-Proto, X-Forwarded-Host)
+    app.wsgi_app = ProxyFix(
+        app.wsgi_app,
+        x_for=1,  # Trust X-Forwarded-For
+        x_proto=1,  # Trust X-Forwarded-Proto
+        x_host=1,  # Trust X-Forwarded-Host
+        x_prefix=1  # Trust X-Forwarded-Prefix
+    )
     
     # Configure CORS
     from .v1.middleware.cors import configure_cors
