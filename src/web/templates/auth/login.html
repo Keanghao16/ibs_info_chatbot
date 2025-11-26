@@ -3,38 +3,34 @@
 {% block title %}Admin Login - IBS Telegram Bot{% endblock %}
 
 {% block content %}
-<div class="min-h-screen flex items-center justify-center px-4 py-12">
-    <div class="max-w-md w-full space-y-8">
-        <!-- Logo Section -->
-        <div class="text-center">
-            <div class="mx-auto w-20 h-20 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center shadow-lg animate-pulse">
-                <svg class="w-12 h-12 text-white" viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg">
-                    <path d="m98 175c-3.888 0-3.227-1.468-4.568-5.17L82 132.207 170 80" fill="currentColor" opacity="0.6"/>
-                    <path d="m98 175c3 0 4.325-1.372 6-3l16-15.558-19.958-12.035" fill="currentColor" opacity="0.8"/>
-                    <path d="m100.04 144.41 48.36 35.729c5.519 3.045 9.501 1.468 10.876-5.123l19.685-92.763c2.015-8.08-3.08-11.746-8.36-9.349l-115.59 44.571c-7.89 3.165-7.843 7.567-1.438 9.528l29.663 9.259 68.673-43.325c3.242-1.966 6.218-.91 3.776 1.258" fill="currentColor"/>
-                </svg>
-            </div>
-            <h2 class="mt-6 text-3xl font-extrabold text-gray-900">
-                IBS Admin Panel
-            </h2>
-            <p class="mt-2 text-sm text-gray-600">
-                Telegram Bot Management System
-            </p>
+<div class="max-w-7xl mx-auto px-4 py-8">
+    <!-- Page Header -->
+    <div class="gradient-primary rounded-3xl shadow-2xl p-8 mb-8 text-white text-center">
+        <div class="mx-auto w-20 h-20 bg-white/20 rounded-full flex items-center justify-center shadow-lg mb-4">
+            <svg class="w-12 h-12 text-white" viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg">
+                <path d="m98 175c-3.888 0-3.227-1.468-4.568-5.17L82 132.207 170 80" fill="currentColor" opacity="0.6"/>
+                <path d="m98 175c3 0 4.325-1.372 6-3l16-15.558-19.958-12.035" fill="currentColor" opacity="0.8"/>
+                <path d="m100.04 144.41 48.36 35.729c5.519 3.045 9.501 1.468 10.876-5.123l19.685-92.763c2.015-8.08-3.08-11.746-8.36-9.349l-115.59 44.571c-7.89 3.165-7.843 7.567-1.438 9.528l29.663 9.259 68.673-43.325c3.242-1.966 6.218-.91 3.776 1.258" fill="currentColor"/>
+            </svg>
         </div>
+        <h1 class="text-4xl font-bold mb-3 flex items-center justify-center gap-3">
+            <i class="fas fa-sign-in-alt"></i> IBS Admin Panel
+        </h1>
+        <p class="text-lg opacity-90">Telegram Bot Management System - Administrator Login</p>
+    </div>
 
-        <!-- Login Card -->
-        <div class="bg-white rounded-2xl shadow-xl p-8 space-y-6">
-            <div class="text-center">
-                <h3 class="text-xl font-bold text-gray-900 flex items-center justify-center gap-2">
-                    <i class="fas fa-sign-in-alt text-primary-500"></i>
-                    Administrator Login
-                </h3>
-                <p class="mt-2 text-sm text-gray-600">
-                    Securely sign in with your Telegram account
-                </p>
-            </div>
+    <!-- Login Methods Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+        <!-- Telegram Widget Login -->
+        <div class="bg-white rounded-2xl shadow-lg p-8">
+            <h3 class="text-2xl font-bold mb-4 flex items-center gap-3 text-gray-900">
+                <i class="fab fa-telegram text-primary-500"></i>
+                Telegram OAuth Login
+            </h3>
+            <p class="text-gray-600 mb-6">
+                Securely sign in with your Telegram account
+            </p>
 
-            <!-- Telegram Login Widget -->
             <div class="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-8 border-2 border-dashed border-gray-300 hover:border-primary-500 transition-all duration-300">
                 <div class="flex justify-center">
                     <script async src="https://telegram.org/js/telegram-widget.js?22"
@@ -51,80 +47,112 @@
             </div>
         </div>
 
-        <!-- Alternative: API-Based Login -->
-        <div class="mt-8 p-6 bg-gray-50 rounded-xl">
-            <h3 class="text-lg font-semibold mb-4">Alternative Login Method</h3>
+        <!-- Alternative API Login -->
+        <div class="bg-white rounded-2xl shadow-lg p-8">
+            <h3 class="text-2xl font-bold mb-4 flex items-center gap-3 text-gray-900">
+                <i class="fas fa-key text-primary-500"></i>
+                Alternative Login Method
+            </h3>
+            <p class="text-gray-600 mb-6">
+                Login directly using your Telegram ID
+            </p>
+
             <form id="apiLoginForm" class="space-y-4">
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">
-                        Telegram ID
+                    <label class="block text-sm font-bold text-gray-700 mb-2">
+                        <i class="fab fa-telegram text-primary-500"></i> Telegram ID *
                     </label>
                     <input 
                         type="text" 
                         name="telegram_id" 
-                        placeholder="123456789"
-                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                        placeholder="e.g., 123456789"
+                        class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-primary-500 focus:ring-4 focus:ring-primary-100 transition-all"
                         required
                     />
+                    <small class="block text-gray-600 text-sm mt-2 italic">
+                        Enter your Telegram user ID to login directly
+                    </small>
                 </div>
                 <button 
                     type="submit"
-                    class="w-full px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
-                    Login with Telegram ID
+                    class="w-full px-6 py-3 bg-gradient-to-r from-primary-500 to-secondary-500 text-white rounded-xl font-semibold hover:from-primary-600 hover:to-secondary-600 transition-all duration-300 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transform hover:-translate-y-1">
+                    <i class="fas fa-sign-in-alt"></i> Login with Telegram ID
                 </button>
             </form>
         </div>
     </div>
 
-        <!-- Access Levels -->
-        <div class="bg-white rounded-2xl shadow-lg p-6">
-            <h4 class="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-                <i class="fas fa-shield-alt text-primary-500"></i>
-                Access Levels
-            </h4>
-            <ul class="space-y-3">
-                <li class="flex items-start gap-3 p-3 rounded-lg hover:bg-green-50 transition-colors">
-                    <i class="fas fa-check-circle text-green-500 mt-1"></i>
-                    <div>
-                        <span class="font-semibold text-gray-900">Super Admins:</span>
-                        <span class="text-gray-600"> Full system control & settings management</span>
-                    </div>
-                </li>
-                <li class="flex items-start gap-3 p-3 rounded-lg hover:bg-green-50 transition-colors">
-                    <i class="fas fa-check-circle text-green-500 mt-1"></i>
-                    <div>
-                        <span class="font-semibold text-gray-900">Admins/Agents:</span>
-                        <span class="text-gray-600"> Chat & user management access</span>
-                    </div>
-                </li>
-                <li class="flex items-start gap-3 p-3 rounded-lg hover:bg-red-50 transition-colors">
-                    <i class="fas fa-times-circle text-red-500 mt-1"></i>
-                    <div>
-                        <span class="font-semibold text-gray-900">Regular Users:</span>
-                        <span class="text-gray-600"> No admin panel access</span>
-                    </div>
-                </li>
-            </ul>
-        </div>
+    <!-- Access Levels Info -->
+    <div class="bg-white rounded-2xl shadow-lg p-8 mb-8">
+        <h3 class="text-2xl font-bold mb-6 flex items-center gap-3 text-gray-900">
+            <i class="fas fa-shield-alt text-primary-500"></i>
+            Access Levels
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="p-6 bg-green-50 rounded-xl border-l-4 border-green-500 hover:shadow-md transition-shadow">
+                <div class="flex items-center gap-3 mb-3">
+                    <i class="fas fa-crown text-green-600 text-2xl"></i>
+                    <h4 class="font-bold text-gray-900 text-lg">Super Admins</h4>
+                </div>
+                <p class="text-gray-700">
+                    Full system control with access to all features including user management, system settings, and administrative functions.
+                </p>
+            </div>
 
-        <!-- Security Badge -->
-        <div class="text-center">
-            <span class="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-green-400 to-green-600 text-white rounded-full text-sm font-semibold shadow-lg">
-                <i class="fas fa-lock"></i>
-                Secured by Telegram OAuth 2.0
-            </span>
-        </div>
+            <div class="p-6 bg-blue-50 rounded-xl border-l-4 border-blue-500 hover:shadow-md transition-shadow">
+                <div class="flex items-center gap-3 mb-3">
+                    <i class="fas fa-user-tie text-blue-600 text-2xl"></i>
+                    <h4 class="font-bold text-gray-900 text-lg">Admins/Agents</h4>
+                </div>
+                <p class="text-gray-700">
+                    Chat and user management access with the ability to handle support tickets and manage conversations.
+                </p>
+            </div>
 
-        <!-- Footer -->
-        <div class="text-center space-y-2">
-            <p class="text-sm text-gray-600">
-                <i class="fas fa-question-circle"></i>
-                Need help? Contact your system administrator
-            </p>
-            <p class="text-xs text-gray-500">
-                &copy; 2024 IBS Telegram Bot. All rights reserved.
-            </p>
+            <div class="p-6 bg-gray-50 rounded-xl border-l-4 border-gray-500 hover:shadow-md transition-shadow">
+                <div class="flex items-center gap-3 mb-3">
+                    <i class="fas fa-users text-gray-600 text-2xl"></i>
+                    <h4 class="font-bold text-gray-900 text-lg">Regular Users</h4>
+                </div>
+                <p class="text-gray-700">
+                    No admin panel access. Regular users interact with the bot through Telegram only.
+                </p>
+            </div>
         </div>
+    </div>
+
+    <!-- Security Badge -->
+    <div class="text-center mb-8">
+        <span class="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-green-400 to-green-600 text-white rounded-full text-base font-bold shadow-lg">
+            <i class="fas fa-lock"></i>
+            Secured by Telegram OAuth 2.0
+        </span>
+    </div>
+
+    <!-- Help Section -->
+    <div class="bg-white rounded-2xl shadow-lg p-8">
+        <div class="text-center space-y-4">
+            <h3 class="text-xl font-bold text-gray-900 flex items-center justify-center gap-2">
+                <i class="fas fa-question-circle text-primary-500"></i>
+                Need Help?
+            </h3>
+            <p class="text-gray-600">
+                If you're having trouble logging in or need assistance, please contact your system administrator.
+            </p>
+            <div class="flex flex-col md:flex-row gap-4 justify-center items-center pt-4">
+                <a href="mailto:admin@ibs.com" class="inline-flex items-center gap-2 px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-xl font-semibold transition-colors">
+                    <i class="fas fa-envelope"></i> Email Support
+                </a>
+                <a href="https://t.me/support" target="_blank" class="inline-flex items-center gap-2 px-6 py-3 bg-blue-100 hover:bg-blue-200 text-blue-800 rounded-xl font-semibold transition-colors">
+                    <i class="fab fa-telegram"></i> Telegram Support
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="text-center mt-8 text-gray-500 text-sm">
+        <p>&copy; 2024 IBS Telegram Bot. All rights reserved.</p>
     </div>
 </div>
 
@@ -158,11 +186,11 @@
         
         const telegram_id = e.target.telegram_id.value;
         const button = e.target.querySelector('button[type="submit"]');
-        const originalText = button.textContent;
+        const originalText = button.innerHTML;
         
         // Show loading state
         button.disabled = true;
-        button.textContent = '🔄 Logging in...';
+        button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Logging in...';
         
         try {
             // Step 1: Login via API to get JWT tokens
@@ -220,7 +248,7 @@
             
             // Reset button state
             button.disabled = false;
-            button.textContent = originalText;
+            button.innerHTML = originalText;
             
             // Show error message
             alert('Login failed: ' + error.message);
