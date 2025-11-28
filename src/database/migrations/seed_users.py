@@ -2,7 +2,6 @@ import sys
 import os
 from datetime import datetime, timedelta
 import random
-import uuid
 
 # Add the src directory to the Python path
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
@@ -29,10 +28,7 @@ def generate_random_user(index):
         "Smith", "Johnson", "Williams", "Brown", "Jones", "Garcia", "Miller", "Davis",
         "Rodriguez", "Martinez", "Hernandez", "Lopez", "Gonzalez", "Wilson", "Anderson",
         "Thomas", "Taylor", "Moore", "Jackson", "Martin", "Lee", "Perez", "Thompson",
-        "White", "Harris", "Sanchez", "Clark", "Ramirez", "Lewis", "Robinson", "Walker",
-        "Young", "Allen", "King", "Wright", "Scott", "Torres", "Nguyen", "Hill", "Flores",
-        "Green", "Adams", "Nelson", "Baker", "Hall", "Rivera", "Campbell", "Mitchell",
-        "Carter", "Roberts"
+        "White", "Harris", "Sanchez", "Clark", "Ramirez", "Lewis", "Robinson", "Walker"
     ]
     
     first_name = random.choice(first_names)
@@ -41,33 +37,35 @@ def generate_random_user(index):
     # Use timestamp to make username more unique
     timestamp = int(datetime.utcnow().timestamp() * 1000) % 10000
     username = f"{first_name.lower()}{last_name.lower()}{timestamp}{random.randint(1, 999)}"
-    full_name = f"{first_name} {last_name}"
     
     # Generate more unique telegram_id using timestamp
-    telegram_id = str(1000000000 + index * 1000 + random.randint(100, 999))
+    telegram_id = 1000000000 + index * 1000 + random.randint(100, 999)
     
-    # Random creation date within last 6 months
+    # Random registration date within last 6 months
     days_ago = random.randint(1, 180)
-    created_at = datetime.utcnow() - timedelta(days=days_ago)
+    registration_date = datetime.utcnow() - timedelta(days=days_ago)
     
-    # 90% chance of being active
-    is_active = random.random() < 0.9
+    # Random last activity (within last 30 days for active users)
+    last_activity_days = random.randint(1, 30)
+    last_activity = datetime.utcnow() - timedelta(days=last_activity_days)
     
-    # Optional photo URL (50% chance)
-    photo_url = None
-    if random.random() < 0.5:
-        photo_url = f"https://i.pravatar.cc/150?img={random.randint(1, 70)}"
+    # Random language code
+    languages = ["en", "es", "fr", "de", "it", "pt", "ru", "zh", "ja", "ko"]
+    language_code = random.choice(languages)
+    
+    # 10% chance of being premium
+    is_premium = random.random() < 0.1
     
     return {
-        'id': str(uuid.uuid4()),
         'telegram_id': telegram_id,
         'username': username,
         'first_name': first_name,
         'last_name': last_name,
-        'full_name': full_name,
-        'photo_url': photo_url,
-        'is_active': is_active,
-        'created_at': created_at
+        'language_code': language_code,
+        'is_bot': False,
+        'is_premium': is_premium,
+        'registration_date': registration_date,
+        'last_activity': last_activity
     }
 
 def seed_users(count=100):
@@ -77,6 +75,10 @@ def seed_users(count=100):
     try:
         # Get current count
         existing_count = db.query(User).count()
+        
+        print(f"\n{'='*60}")
+        print(f"🌱 Starting User Seeding Process")
+        print(f"{'='*60}\n")
         
         if existing_count > 0:
             print(f"ℹ️  Database currently has {existing_count} users.")
@@ -89,78 +91,62 @@ def seed_users(count=100):
         
         print(f"🔄 Generating users...")
         
-        for i in range(count * 2):  # Generate more than needed to account for duplicates
+        for i in range(count * 3):  # Generate more to account for duplicates
             if users_added >= count:
                 break
                 
             user_data = generate_random_user(i)
             
-            # Check if telegram_id already exists in database
+            # Check if telegram_id already exists
             existing = db.query(User).filter(
                 User.telegram_id == user_data['telegram_id']
             ).first()
             
-            # Also check if it's already in our batch to add
-            duplicate_in_batch = any(u.telegram_id == user_data['telegram_id'] for u in users_to_add)
+            # Check if it's already in our batch
+            duplicate_in_batch = any(u['telegram_id'] == user_data['telegram_id'] for u in users_to_add)
             
             if not existing and not duplicate_in_batch:
-                new_user = User(**user_data)
-                users_to_add.append(new_user)
+                users_to_add.append(user_data)
                 users_added += 1
                 
                 if users_added % 10 == 0:
-                    print(f"  ✓ Prepared {users_added}/{count} users...")
+                    print(f"   Generated {users_added}/{count} users...")
         
-        if len(users_to_add) == 0:
-            print("\n⚠️  Could not generate any new unique users.")
-            print("   Try clearing the database first with option 3.")
-            return
+        if len(users_to_add) < count:
+            print(f"\n⚠️  Could only generate {len(users_to_add)} unique users")
         
-        # Insert users
+        # Bulk insert
         print(f"\n💾 Inserting {len(users_to_add)} users into database...")
         
-        # Add one by one for better error handling
-        success_count = 0
-        for user in users_to_add:
-            try:
-                db.add(user)
-                db.commit()
-                success_count += 1
-                
-                if success_count % 20 == 0:
-                    print(f"  ✓ Inserted {success_count}/{len(users_to_add)} users...")
-            except Exception as e:
-                print(f"  ⚠️  Skipped duplicate: {user.telegram_id}")
-                db.rollback()
-                continue
+        for user_data in users_to_add:
+            user = User(**user_data)
+            db.add(user)
+        
+        db.commit()
+        
+        # Get final count
+        final_count = db.query(User).count()
         
         print(f"\n{'='*60}")
-        print(f"✅ Successfully added {success_count} users!")
-        print(f"{'='*60}\n")
-        
-        # Display statistics
-        total_users = db.query(User).count()
-        active_users = db.query(User).filter(User.is_active == True).count()
-        inactive_users = total_users - active_users
-        
-        print("📊 Database Statistics:")
-        print(f"   Total Users: {total_users}")
-        print(f"   Active Users: {active_users} ({(active_users/total_users*100):.1f}%)")
-        print(f"   Inactive Users: {inactive_users} ({(inactive_users/total_users*100):.1f}%)")
+        print(f"✅ Seeding Complete!")
+        print(f"{'='*60}")
+        print(f"   Total users in database: {final_count}")
+        print(f"   Users added this run: {len(users_to_add)}")
         print(f"\n{'='*60}\n")
         
         # Show sample users
         print("👥 Sample Users (last 5 added):")
         print(f"{'='*60}")
-        sample_users = db.query(User).order_by(User.created_at.desc()).limit(5).all()
+        sample_users = db.query(User).order_by(User.registration_date.desc()).limit(5).all()
         for user in sample_users:
-            status = "🟢 Active" if user.is_active else "🔴 Inactive"
+            premium = "👑 Premium" if user.is_premium else "🆓 Free"
             
             print(f"\n  Name: {user.full_name}")
             print(f"  Username: @{user.username}")
             print(f"  Telegram ID: {user.telegram_id}")
-            print(f"  Status: {status}")
-            print(f"  Created: {user.created_at.strftime('%Y-%m-%d')}")
+            print(f"  Status: {premium}")
+            print(f"  Registered: {user.registration_date.strftime('%Y-%m-%d')}")
+            print(f"  Language: {user.language_code}")
                 
         print(f"\n{'='*60}")
         
@@ -184,21 +170,17 @@ def clear_all_users():
             return
         
         print(f"\n⚠️  WARNING: This will delete all {count} users!")
-        print(f"⚠️  This action cannot be undone!")
-        confirm = input("\nType 'DELETE' to confirm: ")
+        confirm = input("Type 'DELETE' to confirm: ").strip()
         
         if confirm == "DELETE":
-            print("\n🗑️  Deleting users...")
             db.query(User).delete()
             db.commit()
-            print(f"✅ Successfully deleted {count} users.")
+            print(f"\n✅ Successfully deleted {count} users.")
         else:
-            print("\n❌ Operation cancelled.")
-    
+            print("\n❌ Deletion cancelled.")
+            
     except Exception as e:
         print(f"\n❌ Error clearing users: {e}")
-        import traceback
-        traceback.print_exc()
         db.rollback()
     finally:
         db.close()
@@ -213,29 +195,34 @@ def main():
     db = SessionLocal()
     try:
         current_count = db.query(User).count()
-        print(f"📊 Current database status: {current_count} users\n")
+        premium_count = db.query(User).filter(User.is_premium == True).count()
+        print(f"📊 Current database status:")
+        print(f"   Total users: {current_count}")
+        print(f"   Premium users: {premium_count}")
+        print(f"   Free users: {current_count - premium_count}\n")
     except:
-        print("📊 Database status: Unknown\n")
+        print("📊 Database status: Unable to connect\n")
     finally:
         db.close()
     
     print("Options:")
     print("1. Add 100 users")
-    print("2. Add custom number of users")
-    print("3. Clear all users (⚠️  Dangerous!)")
-    print("4. View database stats")
-    print("5. Exit")
+    print("2. Add 500 users")
+    print("3. Add custom number of users")
+    print("4. Clear all users (⚠️  Dangerous!)")
+    print("5. View database stats")
+    print("6. Exit")
     
-    choice = input("\nEnter your choice (1-5): ").strip()
+    choice = input("\nEnter your choice (1-6): ").strip()
     
     if choice == "1":
-        print("\n" + "=" * 60)
         seed_users(100)
     elif choice == "2":
+        seed_users(500)
+    elif choice == "3":
         try:
             count = int(input("\nEnter number of users to add: "))
             if count > 0 and count <= 1000:
-                print("\n" + "=" * 60)
                 seed_users(count)
             elif count > 1000:
                 print("\n❌ Maximum 1000 users allowed at once.")
@@ -245,28 +232,23 @@ def main():
             print("\n❌ Invalid number. Please enter a valid integer.")
         except KeyboardInterrupt:
             print("\n\n❌ Operation cancelled by user.")
-    elif choice == "3":
-        clear_all_users()
     elif choice == "4":
+        clear_all_users()
+    elif choice == "5":
         db = SessionLocal()
         try:
             total = db.query(User).count()
-            active = db.query(User).filter(User.is_active == True).count()
+            premium = db.query(User).filter(User.is_premium == True).count()
             print(f"\n📊 Database Statistics:")
             print(f"   Total Users: {total}")
-            print(f"   Active: {active}")
-            print(f"   Inactive: {total - active}")
+            print(f"   Premium: {premium}")
+            print(f"   Free: {total - premium}")
         finally:
             db.close()
-    elif choice == "5":
+    elif choice == "6":
         print("\n👋 Goodbye!")
-        return
     else:
-        print("\n❌ Invalid choice. Please select 1-5.")
-    
-    print("\n" + "=" * 60)
-    print("✨ Done!")
-    print("=" * 60 + "\n")
+        print("\n❌ Invalid choice.")
 
 if __name__ == "__main__":
     try:

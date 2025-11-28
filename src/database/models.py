@@ -1,35 +1,48 @@
-from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, DateTime, Enum, func, Text, event, text
+from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, DateTime, Enum, func, Text, event, text, BigInteger
 from sqlalchemy.orm import relationship
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.dialects.mysql import CHAR
 from .connection import Base
 import enum
 import uuid
+from datetime import datetime
 
 class SessionStatus(enum.Enum):
+    waiting = "waiting"
     active = "active"
     closed = "closed"
 
 class AdminRole(enum.Enum):
     super_admin = "super_admin"
-    admin = "admin"  # admin is also an agent
+    admin = "admin"
 
 class User(Base):
-    __tablename__ = "users"
-
+    __tablename__ = 'users'
+    
+    # ✅ FIX: Change from Integer to CHAR(36) for UUID
     id = Column(CHAR(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    telegram_id = Column(String(50), unique=True, nullable=False, index=True)
-    username = Column(String(255), nullable=True)
-    first_name = Column(String(255), nullable=True)
-    last_name = Column(String(255), nullable=True)
-    photo_url = Column(String(500), nullable=True)
-    full_name = Column(String(255), nullable=True)
-    is_active = Column(Boolean, default=True)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-    last_activity = Column(DateTime(timezone=True), nullable=True)
+    telegram_id = Column(BigInteger, unique=True, nullable=False)
+    username = Column(String(100))
+    first_name = Column(String(100))
+    last_name = Column(String(100))
+    
+    # Additional columns
+    language_code = Column(String(10), nullable=True)
+    is_bot = Column(Boolean, default=False)
+    is_premium = Column(Boolean, default=False)
+    registration_date = Column(DateTime, default=datetime.utcnow)
+    last_activity = Column(DateTime, nullable=True)
+    
+    # Computed property
+    @property
+    def full_name(self):
+        if self.first_name and self.last_name:
+            return f"{self.first_name} {self.last_name}"
+        return self.first_name or self.last_name or self.username or f"User {self.telegram_id}"
 
     sessions = relationship("ChatSession", back_populates="user")
     messages = relationship("ChatMessage", back_populates="user")
+
 
 class Admin(Base):
     __tablename__ = "admins"
@@ -53,12 +66,13 @@ class Admin(Base):
     # Relationships
     sessions = relationship("ChatSession", back_populates="admin")
 
+
 class ChatSession(Base):
     __tablename__ = "sessions"
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(CHAR(36), ForeignKey("users.id"))
-    admin_id = Column(CHAR(36), ForeignKey("admins.id"), nullable=True)
+    user_id = Column(CHAR(36), ForeignKey("users.id"))  # ✅ UUID
+    admin_id = Column(CHAR(36), ForeignKey("admins.id"), nullable=True)  # ✅ UUID
     start_time = Column(DateTime(timezone=True), server_default=func.now())
     end_time = Column(DateTime(timezone=True), nullable=True)
     status = Column(Enum(SessionStatus), default=SessionStatus.active)
@@ -66,18 +80,22 @@ class ChatSession(Base):
     user = relationship("User", back_populates="sessions")
     admin = relationship("Admin", back_populates="sessions")
 
+
 class ChatMessage(Base):
     __tablename__ = "chat_messages"
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(CHAR(36), ForeignKey("users.id"))
-    admin_id = Column(CHAR(36), ForeignKey("admins.id"), nullable=True)
+    session_id = Column(Integer, ForeignKey("sessions.id"), nullable=False)  # ✅ ADD THIS
+    user_id = Column(CHAR(36), ForeignKey("users.id"))  # ✅ UUID
+    admin_id = Column(CHAR(36), ForeignKey("admins.id"), nullable=True)  # ✅ UUID
     message = Column(Text, nullable=False)
     timestamp = Column(DateTime(timezone=True), server_default=func.now())
     is_from_admin = Column(Boolean, default=False)
 
     user = relationship("User", back_populates="messages")
     admin = relationship("Admin")
+    session = relationship("ChatSession")  # ✅ ADD THIS
+
 
 class SystemSettings(Base):
     __tablename__ = "system_settings"

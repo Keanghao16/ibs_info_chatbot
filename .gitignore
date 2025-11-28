@@ -6,7 +6,11 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# Test output
+tests/
 
+planning.md
+API_DOCUMENTATION.md
 
 # Virtual environment
 venv/

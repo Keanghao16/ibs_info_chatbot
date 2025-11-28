@@ -86,14 +86,20 @@ def register_blueprints(app):
         app: Flask application instance
     """
     # Import blueprints
-    from .v1.routes.test_auth import test_auth_bp
-    from .v1.routes.test_jwt import test_jwt_bp
-    from .v1.routes.auth import auth_api_bp  # ✅ NEW
+    from .v1.routes.auth import auth_api_bp
+    from .v1.routes.users import users_api_bp
+    from .v1.routes.admins import admins_api_bp
+    from .v1.routes.chats import chats_api_bp
+    from .v1.routes.dashboard import dashboard_api_bp
+    from .v1.routes.system_settings import settings_api_bp
     
     # Register blueprints
-    app.register_blueprint(test_auth_bp, url_prefix=f'{API_PREFIX}')
-    app.register_blueprint(test_jwt_bp, url_prefix=f'{API_PREFIX}')
-    app.register_blueprint(auth_api_bp, url_prefix=f'{API_PREFIX}')  # ✅ NEW
+    app.register_blueprint(auth_api_bp, url_prefix=f'{API_PREFIX}')
+    app.register_blueprint(users_api_bp, url_prefix=f'{API_PREFIX}')
+    app.register_blueprint(admins_api_bp, url_prefix=f'{API_PREFIX}')
+    app.register_blueprint(chats_api_bp, url_prefix=f'{API_PREFIX}')
+    app.register_blueprint(dashboard_api_bp, url_prefix=f'{API_PREFIX}')
+    app.register_blueprint(settings_api_bp, url_prefix=f'{API_PREFIX}')
     
     print("✅ API blueprints registered")
 
