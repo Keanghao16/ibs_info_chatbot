@@ -43,7 +43,7 @@ def create_telegram_super_admin():
         db.refresh(super_admin)
         
         print("=" * 60)
-        print("✅ Super Admin Created Successfully!")
+        print(" Super Admin Created Successfully!")
         print("=" * 60)
         print(f"👤 Name: {super_admin.full_name}")
         print(f"🆔 Telegram ID: {super_admin.telegram_id}")
@@ -172,7 +172,7 @@ def create_custom_admin_agent():
             print(f"📞 Available: {'Yes' if is_available else 'No'}")
         print("=" * 60)
         
-        confirm = input("\n✅ Create this admin/agent? (yes/no): ").strip().lower()
+        confirm = input("\n Create this admin/agent? (yes/no): ").strip().lower()
         
         if confirm != 'yes':
             print("\n❌ Admin/agent creation cancelled.")
@@ -197,7 +197,7 @@ def create_custom_admin_agent():
         db.refresh(new_admin)
         
         print("\n" + "=" * 60)
-        print("✅ Admin/Agent Created Successfully!")
+        print(" Admin/Agent Created Successfully!")
         print("=" * 60)
         print(f"👤 Name: {new_admin.full_name}")
         print(f"🆔 Telegram ID: {new_admin.telegram_id}")
@@ -278,7 +278,7 @@ def create_bulk_test_agents(count=5):
         db.commit()
         
         print(f"\n{'='*60}")
-        print(f"✅ Bulk Creation Complete!")
+        print(f" Bulk Creation Complete!")
         print(f"{'='*60}")
         print(f"   Total agents created: {agents_created}")
         print(f"\n{'='*60}\n")
@@ -340,7 +340,7 @@ def list_all_admins():
             print("-" * 60)
             for admin in agents:
                 status = "🟢" if admin.is_active else "🔴"
-                available = "✅" if admin.is_available else "❌"
+                available = "" if admin.is_available else "❌"
                 
                 print(f"\n{status} {admin.full_name}")
                 print(f"   🆔 Telegram ID: {admin.telegram_id}")
@@ -384,7 +384,7 @@ def delete_admin():
         if confirm == "DELETE":
             db.delete(admin)
             db.commit()
-            print(f"\n✅ Successfully deleted admin: {admin.full_name}")
+            print(f"\n Successfully deleted admin: {admin.full_name}")
         else:
             print("\n❌ Deletion cancelled.")
             
@@ -412,7 +412,7 @@ def clear_all_agents():
         if confirm == "DELETE":
             db.query(Admin).filter(Admin.role == AdminRole.admin).delete()
             db.commit()
-            print(f"\n✅ Successfully deleted {len(agents)} agents.")
+            print(f"\n Successfully deleted {len(agents)} agents.")
         else:
             print("\n❌ Deletion cancelled.")
             

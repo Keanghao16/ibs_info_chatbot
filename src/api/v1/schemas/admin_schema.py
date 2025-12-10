@@ -8,7 +8,7 @@ from marshmallow import Schema, fields, validate, validates, ValidationError
 class AdminResponseSchema(Schema):
     """Serialize admin data for API responses"""
     
-    id = fields.String(dump_only=True)  # ✅ UUID
+    id = fields.String(dump_only=True)  #  UUID
     telegram_id = fields.String(required=True)
     telegram_username = fields.String(allow_none=True)
     full_name = fields.String(allow_none=True)
@@ -26,7 +26,7 @@ class AdminResponseSchema(Schema):
 class AdminListResponseSchema(Schema):
     """Serialize admin list with minimal data"""
     
-    id = fields.String()  # ✅ UUID
+    id = fields.String()  #  UUID
     telegram_id = fields.String()
     telegram_username = fields.String(allow_none=True)
     full_name = fields.String()
@@ -83,4 +83,5 @@ class AdminStatsSchema(Schema):
     active_admins = fields.Integer()
     available_admins = fields.Integer()
     super_admins = fields.Integer()
+    regular_admins = fields.Integer()  # ✅ Added
     online_now = fields.Integer()

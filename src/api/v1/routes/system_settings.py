@@ -27,8 +27,8 @@ from ....services.system_setting_service import SystemSettingService
 from ....database.connection import get_db_session
 from ....database.models import FAQCategory, FAQ
 from marshmallow import ValidationError
-import re  # ✅ ADD THIS LINE
-import traceback  # ✅ ADD THIS LINE
+import re  #  ADD THIS LINE
+import traceback  #  ADD THIS LINE
 
 # Create blueprint
 settings_api_bp = Blueprint('settings_api', __name__)
@@ -130,12 +130,12 @@ def create_category(current_user):
         except ValidationError as err:
             return validation_error_response(err.messages)
         
-        # ✅ Auto-generate slug from name
+        #  Auto-generate slug from name
         name = category_data.get('name', '')
         # Convert to lowercase, replace spaces with hyphens, remove special chars
         slug = re.sub(r'[^a-z0-9-]', '', name.lower().replace(' ', '-'))
         
-        # ✅ Ensure slug is not empty
+        #  Ensure slug is not empty
         if not slug:
             return error_response(
                 "Category name must contain at least one alphanumeric character",
@@ -144,7 +144,7 @@ def create_category(current_user):
         
         category_data['slug'] = slug
         
-        # ✅ Check if slug already exists
+        #  Check if slug already exists
         existing = db.query(FAQCategory).filter(FAQCategory.slug == slug).first()
         if existing:
             return error_response(
@@ -152,7 +152,7 @@ def create_category(current_user):
                 400
             )
         
-        # ✅ Handle emoji encoding issue
+        #  Handle emoji encoding issue
         icon = category_data.get('icon', '')
         if icon:
             try:

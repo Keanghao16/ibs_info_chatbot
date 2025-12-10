@@ -1,64 +1,8 @@
-from flask import Blueprint, render_template, request, redirect, url_for, session, flash, jsonify
-from ...database.connection import SessionLocal
-from ...services import AuthService
-from ...database.models import AdminRole, Admin
-from functools import wraps
+from flask import Blueprint, render_template, request, redirect, url_for, flash, session, jsonify
+from ...utils.apiClient import api_client
 import os
-import hashlib
-import hmac
-import time
 
 auth_bp = Blueprint('auth', __name__)
-auth_service = AuthService()
-
-def login_required(f):
-    """Decorator to require login for protected routes"""
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if 'admin_token' not in session:
-            return redirect(url_for('auth.login'))  # Will automatically use /portal/admin/login
-        
-        # Verify token
-        token_result = auth_service.verify_token(session['admin_token'])
-        if not token_result['success']:
-            session.pop('admin_token', None)
-            flash('Session expired. Please login again.', 'error')
-            return redirect(url_for('auth.login'))
-        
-        return f(*args, **kwargs)
-    return decorated_function
-
-def super_admin_required(f):
-    """Decorator to require super_admin role"""
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if 'admin_info' not in session:
-            flash('Access denied. Please login.', 'error')
-            return redirect(url_for('auth.login'))
-        
-        admin_role = session['admin_info'].get('role')
-        if admin_role != 'super_admin':
-            flash('Access denied. Super Admin privileges required.', 'error')
-            return redirect(url_for('dashboard.dashboard'))
-        
-        return f(*args, **kwargs)
-    return decorated_function
-
-def any_admin_required(f):
-    """Decorator for routes accessible by both super_admin and admin"""
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if 'admin_info' not in session:
-            flash('Access denied. Please login.', 'error')
-            return redirect(url_for('auth.login'))
-        
-        admin_role = session['admin_info'].get('role')
-        if admin_role not in ['super_admin', 'admin']:
-            flash('Access denied. Admin privileges required.', 'error')
-            return redirect(url_for('auth.login'))
-        
-        return f(*args, **kwargs)
-    return decorated_function
 
 @auth_bp.route('/login')
 def login():
@@ -71,200 +15,177 @@ def telegram_auth():
     """Handle Telegram authentication callback"""
     telegram_data = {}
     
-    # Telegram Login Widget sends data via GET parameters, not POST
-    if request.method == 'GET':
+    # Telegram Login Widget sends data via GET parameters
+    if request.method == 'GET' and request.args:
         # Get all Telegram auth data from query parameters
         for key in ['id', 'first_name', 'last_name', 'username', 'photo_url', 'auth_date', 'hash']:
             value = request.args.get(key)
             if value:
                 telegram_data[key] = value
-    else:  # POST fallback
-        # Get all Telegram auth data from form
-        for key in ['id', 'first_name', 'last_name', 'username', 'photo_url', 'auth_date', 'hash']:
-            value = request.form.get(key)
-            if value:
-                telegram_data[key] = value
     
     # Debug logging
     print(f"Telegram auth data received: {telegram_data}")
+    print(f"Request method: {request.method}")
+    print(f"Request args: {dict(request.args)}")
     
     if not telegram_data.get('id'):
-        flash('Invalid authentication data', 'error')
+        flash('Invalid authentication data received', 'error')
         return redirect(url_for('auth.login'))
     
-    db = SessionLocal()
-    try:
-        result = auth_service.authenticate_admin_telegram(db, telegram_data)
+    # 🔄 FIXED: Call correct API endpoint
+    response = api_client.post('/api/v1/auth/telegram-callback', telegram_data)  #  Added /api prefix
+    
+    if response.get('success'):
+        data = response.get('data', {})
         
-        if result['success']:
-            session['admin_token'] = result['token']
-            session['admin_info'] = result['admin']
-            
-            # Format datetime fields for session storage
-            admin_id = result['admin']['id']
-            admin = db.query(Admin).filter(Admin.id == admin_id).first()
-            
-            if admin:
-                # Format last_login
-                if admin.last_login:
-                    session['admin_info']['last_login'] = admin.last_login.strftime('%Y-%m-%d %H:%M:%S')
-                else:
-                    session['admin_info']['last_login'] = None
-                
-                # Format created_at if needed
-                if admin.created_at:
-                    session['admin_info']['created_at'] = admin.created_at.strftime('%Y-%m-%d %H:%M:%S')
-                else:
-                    session['admin_info']['created_at'] = None
-            
-            flash('Login successful!', 'success')
-            return redirect(url_for('dashboard.dashboard'))
-        else:
-            flash(result['message'], 'error')
-            return redirect(url_for('auth.login'))
-    except Exception as e:
-        print(f"Auth error: {e}")
-        flash('Authentication error occurred', 'error')
+        # Store tokens and admin info in session
+        session['access_token'] = data.get('access_token')
+        session['refresh_token'] = data.get('refresh_token')
+        session['admin'] = data.get('admin', {})
+        session['admin_id'] = data.get('admin', {}).get('id')
+        session.permanent = True
+        
+        flash(' Login successful!', 'success')
+        return redirect(url_for('dashboard.index'))
+    else:
+        flash(f"❌ Authentication failed: {response.get('message', 'Unknown error')}", 'error')
         return redirect(url_for('auth.login'))
-    finally:
-        db.close()
-
-@auth_bp.route('/logout')
-def logout():
-    session.pop('admin_token', None)
-    session.pop('admin_info', None)
-    flash('You have been logged out.', 'info')
-    return redirect(url_for('auth.login'))
-
-@auth_bp.route('/profile')
-@login_required
-def profile():
-    return render_template('auth/profile.html')
-
-@auth_bp.route('/update-profile', methods=['POST'])
-@login_required
-def update_profile():
-    """Update admin profile information."""
-    full_name = request.form.get('full_name', '').strip()
-    division = request.form.get('division', '').strip()
-    
-    db = SessionLocal()
-    try:
-        admin_id = session.get('admin_info', {}).get('id')
-        result = auth_service.update_admin_profile(db, admin_id, full_name, division)
-        
-        if result['success']:
-            # Update session info with new data
-            session['admin_info']['full_name'] = result['admin']['full_name']
-            if result['admin']['role'] == 'admin':
-                session['admin_info']['division'] = result['admin']['division']
-            
-            flash(result['message'], 'success')
-        else:
-            flash(result['message'], 'error')
-    except Exception as e:
-        print(f"Error updating profile: {e}")
-        flash('Error updating profile.', 'error')
-    finally:
-        db.close()
-    
-    return redirect(url_for('auth.profile'))
-
-@auth_bp.route('/change-availability', methods=['POST'])
-@any_admin_required
-def change_availability():
-    """Toggle admin availability for chat assignment."""
-    db = SessionLocal()
-    try:
-        admin_id = session.get('admin_info', {}).get('id')
-        result = auth_service.toggle_admin_availability(db, admin_id)
-        
-        if result['success']:
-            # Update session info
-            session['admin_info']['is_available'] = result['is_available']
-            flash(result['message'], 'success')
-        else:
-            flash(result['message'], 'error')
-    except Exception as e:
-        print(f"Error changing availability: {e}")
-        flash("Error updating availability status.", "error")
-    finally:
-        db.close()
-    
-    return redirect(url_for('dashboard.dashboard'))
 
 @auth_bp.route('/api-login-bridge', methods=['POST'])
 def api_login_bridge():
-    """
-    Bridge API login to web session
-    Converts JWT token to Flask session
-    """
+    """Convert JWT token to web session"""
     data = request.get_json()
     access_token = data.get('access_token')
     
     if not access_token:
-        return jsonify({
-            'success': False,
-            'message': 'Access token is required'
-        }), 400
+        return jsonify({'success': False, 'message': 'No access token provided'}), 400
     
-    db = SessionLocal()
-    try:
-        # Verify JWT token
-        from ...utils.jwt_helper import jwt_helper
-        result = jwt_helper.verify_token(access_token)
+    # 🔄 Verify token by calling API
+    # Temporarily set token in session
+    session['access_token'] = access_token
+    
+    # Test token by getting current user
+    response = api_client.get('/api/v1/auth/me')
+    
+    if response.get('success'):
+        admin_data = response.get('data')
         
-        if not result['success']:
-            return jsonify({
-                'success': False,
-                'message': 'Invalid token'
-            }), 401
-        
-        # Get admin from token
-        payload = result['payload']
-        admin_id = payload.get('admin_id')
-        
-        admin = db.query(Admin).filter(
-            Admin.id == admin_id,
-            Admin.is_active == True
-        ).first()
-        
-        if not admin:
-            return jsonify({
-                'success': False,
-                'message': 'Admin not found'
-            }), 404
-        
-        # Create web session (same as Telegram login)
-        # Generate session token
-        session_token = auth_service.generate_token(admin.id)
-        
-        # Store in session
-        session['admin_token'] = session_token
-        session['admin_info'] = {
-            'id': admin.id,
-            'telegram_id': admin.telegram_id,
-            'telegram_username': admin.telegram_username,
-            'full_name': admin.full_name,
-            'role': admin.role.value,
-            'is_active': admin.is_active,
-            'is_available': admin.is_available,
-            'division': admin.division,
-            'last_login': admin.last_login.strftime('%Y-%m-%d %H:%M:%S') if admin.last_login else None,
-            'created_at': admin.created_at.strftime('%Y-%m-%d %H:%M:%S') if admin.created_at else None
-        }
+        # Store in session for web app
+        session['admin_id'] = admin_data.get('id')
+        session['admin'] = admin_data
+        session['access_token'] = access_token
+        session.permanent = True
         
         return jsonify({
             'success': True,
-            'message': 'Session created',
-            'redirect_url': url_for('dashboard.dashboard')
+            'message': 'Login successful',
+            'redirect_url': url_for('dashboard.index')
         }), 200
-    
-    except Exception as e:
-        print(f"Bridge error: {e}")
+    else:
+        session.clear()
         return jsonify({
-            'success': False,
-            'message': 'Authentication failed'
-        }), 500
-    finally:
-        db.close()
+            'success': False, 
+            'message': response.get('message', 'Invalid token')
+        }), 401
+
+@auth_bp.route('/logout')
+def logout():
+    """Logout - clear session and optionally call API"""
+    access_token = session.get('access_token')
+    
+    # Optional: Call API to invalidate token
+    if access_token:
+        api_client.post('/api/v1/auth/logout')
+    
+    session.clear()
+    flash(' You have been logged out successfully', 'success')
+    return redirect(url_for('auth.login'))
+
+@auth_bp.route('/profile')
+def profile():
+    """Show admin profile page"""
+    from ..auth_decorators import any_admin_required
+    
+    @any_admin_required
+    def _profile():
+        admin = session.get('admin', {})
+        return render_template('auth/profile.html', admin=admin)
+    
+    return _profile()
+
+#  ADD THIS MISSING ROUTE
+@auth_bp.route('/update-profile', methods=['POST'])
+def update_profile():
+    """Update admin profile - calls API"""
+    from ..auth_decorators import any_admin_required
+    
+    @any_admin_required
+    def _update_profile():
+        # Get form data
+        full_name = request.form.get('full_name', '').strip()
+        division = request.form.get('division', '').strip()
+        
+        # Validate
+        if not full_name:
+            flash('❌ Full name is required', 'error')
+            return redirect(url_for('auth.profile'))
+        
+        # Prepare update data
+        update_data = {
+            'full_name': full_name
+        }
+        
+        # Only include division for regular admins
+        admin = session.get('admin', {})
+        if admin.get('role') == 'admin':
+            update_data['division'] = division if division else None
+        
+        # 🔄 Call API to update profile
+        response = api_client.put('/api/v1/auth/update-profile', update_data)
+        
+        if response.get('success'):
+            # Update session data with new info
+            updated_admin = response.get('data')
+            if updated_admin:
+                session['admin'].update(updated_admin)
+            
+            flash(' Profile updated successfully!', 'success')
+        else:
+            if response.get('redirect_to_login'):
+                flash('Session expired. Please login again.', 'error')
+                return redirect(url_for('auth.login'))
+            
+            flash(f"❌ Error updating profile: {response.get('message', 'Unknown error')}", 'error')
+        
+        return redirect(url_for('auth.profile'))
+    
+    return _update_profile()
+
+#  ADD THIS MISSING ROUTE
+@auth_bp.route('/change-availability', methods=['POST'])
+def change_availability():
+    """Toggle availability - calls API"""
+    from ..auth_decorators import any_admin_required
+    
+    @any_admin_required
+    def _change_availability():
+        # 🔄 Call API to toggle availability
+        response = api_client.post('/api/v1/auth/toggle-availability')
+        
+        if response.get('success'):
+            # Update session data
+            data = response.get('data', {})
+            if 'admin' in session and 'is_available' in data:
+                session['admin']['is_available'] = data['is_available']
+            
+            flash(' Availability updated successfully!', 'success')
+        else:
+            if response.get('redirect_to_login'):
+                flash('Session expired. Please login again.', 'error')
+                return redirect(url_for('auth.login'))
+            
+            flash(f"❌ Error updating availability: {response.get('message', 'Unknown error')}", 'error')
+        
+        return redirect(url_for('auth.profile'))
+    
+    return _change_availability()

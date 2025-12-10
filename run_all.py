@@ -72,7 +72,7 @@ def main():
     time.sleep(2)  # Wait for bot to initialize
     
     print(f"\n{'='*80}")
-    print("✅ All services started successfully!")
+    print(" All services started successfully!")
     print(f"{'='*80}")
     print("📍 Web App:       http://localhost:5000")
     print("📍 REST API:      http://localhost:5001")

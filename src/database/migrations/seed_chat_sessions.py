@@ -89,7 +89,7 @@ def seed_chat_sessions(count=50):
         ).count()
         
         print(f"\n{'='*60}")
-        print(f"✅ Seeding Complete!")
+        print(f" Seeding Complete!")
         print(f"{'='*60}")
         print(f"   Total sessions: {total_sessions}")
         print(f"   Active sessions: {active_sessions}")
@@ -144,7 +144,7 @@ def clear_all_sessions():
         if confirm == "DELETE":
             db.query(ChatSession).delete()
             db.commit()
-            print(f"\n✅ Successfully deleted {count} chat sessions.")
+            print(f"\n Successfully deleted {count} chat sessions.")
         else:
             print("\n❌ Deletion cancelled.")
             

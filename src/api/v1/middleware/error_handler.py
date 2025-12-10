@@ -250,8 +250,8 @@ def register_error_handlers(app):
         return jsonify(response), 500
     
     # Log successful registration
-    logger.info("✅ Error handlers registered")
-    print("✅ Error handlers registered")
+    logger.info(" Error handlers registered")
+    print(" Error handlers registered")
 
 
 def abort_with_error(message, status_code=400, **kwargs):

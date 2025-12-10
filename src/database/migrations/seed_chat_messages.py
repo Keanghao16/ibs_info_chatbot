@@ -84,9 +84,9 @@ def seed_chat_messages(messages_per_session=5):
                 session_id=session.id,
                 user_id=session.user_id,
                 admin_id=session.admin_id,
-                is_from_admin=True,  # ✅ Changed from sender_type
-                message=random.choice(admin_messages),  # ✅ Changed from message_text
-                timestamp=current_time  # ✅ Changed from sent_at
+                is_from_admin=True,  #  Changed from sender_type
+                message=random.choice(admin_messages),  #  Changed from message_text
+                timestamp=current_time  #  Changed from sent_at
             )
             db.add(message)
             total_messages += 1
@@ -94,7 +94,7 @@ def seed_chat_messages(messages_per_session=5):
             # Add conversation messages
             for i in range(num_messages):
                 # Alternate between user and admin messages
-                is_from_admin = (i % 2) != 0  # ✅ Changed logic
+                is_from_admin = (i % 2) != 0  #  Changed logic
                 
                 # Add 1-5 minutes between messages
                 current_time += timedelta(minutes=random.randint(1, 5))
@@ -111,9 +111,9 @@ def seed_chat_messages(messages_per_session=5):
                     session_id=session.id,
                     user_id=session.user_id,
                     admin_id=session.admin_id,
-                    is_from_admin=is_from_admin,  # ✅ Changed from sender_type
-                    message=message_text,  # ✅ Changed from message_text
-                    timestamp=current_time  # ✅ Changed from sent_at
+                    is_from_admin=is_from_admin,  #  Changed from sender_type
+                    message=message_text,  #  Changed from message_text
+                    timestamp=current_time  #  Changed from sent_at
                 )
                 db.add(message)
                 total_messages += 1
@@ -126,14 +126,14 @@ def seed_chat_messages(messages_per_session=5):
         # Get statistics
         total_in_db = db.query(ChatMessage).count()
         user_msg_count = db.query(ChatMessage).filter(
-            ChatMessage.is_from_admin == False  # ✅ Changed from sender_type
+            ChatMessage.is_from_admin == False  #  Changed from sender_type
         ).count()
         admin_msg_count = db.query(ChatMessage).filter(
-            ChatMessage.is_from_admin == True  # ✅ Changed from sender_type
+            ChatMessage.is_from_admin == True  #  Changed from sender_type
         ).count()
         
         print(f"\n{'='*60}")
-        print(f"✅ Seeding Complete!")
+        print(f" Seeding Complete!")
         print(f"{'='*60}")
         print(f"   Total messages: {total_in_db}")
         print(f"   User messages: {user_msg_count}")
@@ -144,16 +144,16 @@ def seed_chat_messages(messages_per_session=5):
         print("💬 Sample Messages (last 10 created):")
         print(f"{'='*60}")
         sample_messages = db.query(ChatMessage).order_by(
-            ChatMessage.timestamp.desc()  # ✅ Changed from sent_at
+            ChatMessage.timestamp.desc()  #  Changed from sent_at
         ).limit(10).all()
         
         for msg in sample_messages:
-            icon = "👨‍💼" if msg.is_from_admin else "👤"  # ✅ Changed from sender_type
+            icon = "👨‍💼" if msg.is_from_admin else "👤"  #  Changed from sender_type
             sender = msg.admin.full_name if msg.is_from_admin else msg.user.full_name
             
             print(f"\n  {icon} {sender}")
-            print(f"     {msg.message[:60]}...")  # ✅ Changed from message_text
-            print(f"     🕒 {msg.timestamp.strftime('%Y-%m-%d %H:%M')}")  # ✅ Changed from sent_at
+            print(f"     {msg.message[:60]}...")  #  Changed from message_text
+            print(f"     🕒 {msg.timestamp.strftime('%Y-%m-%d %H:%M')}")  #  Changed from sent_at
         
         print(f"\n{'='*60}")
         
@@ -182,7 +182,7 @@ def clear_all_messages():
         if confirm == "DELETE":
             db.query(ChatMessage).delete()
             db.commit()
-            print(f"\n✅ Successfully deleted {count} chat messages.")
+            print(f"\n Successfully deleted {count} chat messages.")
         else:
             print("\n❌ Deletion cancelled.")
             
@@ -203,10 +203,10 @@ def main():
     try:
         total = db.query(ChatMessage).count()
         user_msgs = db.query(ChatMessage).filter(
-            ChatMessage.is_from_admin == False  # ✅ Changed from sender_type
+            ChatMessage.is_from_admin == False  #  Changed from sender_type
         ).count()
         admin_msgs = db.query(ChatMessage).filter(
-            ChatMessage.is_from_admin == True  # ✅ Changed from sender_type
+            ChatMessage.is_from_admin == True  #  Changed from sender_type
         ).count()
         print(f"📊 Current database status:")
         print(f"   Total messages: {total}")

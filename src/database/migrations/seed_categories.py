@@ -89,10 +89,10 @@ def seed_categories():
                 is_active=True,
                 order_index=cat_data["order_index"]
             )
-            print(f"   ✅ Created: {cat_data['icon']} {cat_data['name']}")
+            print(f"    Created: {cat_data['icon']} {cat_data['name']}")
         
         print("\n" + "=" * 60)
-        print(f"✅ Successfully seeded {len(categories_data)} categories!")
+        print(f" Successfully seeded {len(categories_data)} categories!")
         print("=" * 60 + "\n")
         
     except Exception as e:
@@ -122,7 +122,7 @@ def clear_categories():
             from ..models import FAQCategory
             db.query(FAQCategory).delete()
             db.commit()
-            print(f"\n✅ Successfully deleted {len(categories)} categories.")
+            print(f"\n Successfully deleted {len(categories)} categories.")
         else:
             print("\n❌ Deletion cancelled.")
             

@@ -4,9 +4,9 @@
 
 {% block content %}
 <div class="max-w-7xl mx-auto px-4 py-8">
-    <!-- Page Header -->
-    <div class="gradient-primary rounded-3xl shadow-2xl p-8 mb-8 text-white text-center">
-        <div class="mx-auto w-20 h-20 bg-white/20 rounded-full flex items-center justify-center shadow-lg mb-4">
+    <!-- Page Header - Fixed classes -->
+    <div class="bg-gradient-primary rounded-3xl shadow-2xl p-8 mb-8 text-white text-center">
+        <div class="mx-auto w-20 h-20 bg-white bg-opacity-20 rounded-full flex items-center justify-center shadow-lg mb-4">
             <svg class="w-12 h-12 text-white" viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg">
                 <path d="m98 175c-3.888 0-3.227-1.468-4.568-5.17L82 132.207 170 80" fill="currentColor" opacity="0.6"/>
                 <path d="m98 175c3 0 4.325-1.372 6-3l16-15.558-19.958-12.035" fill="currentColor" opacity="0.8"/>
@@ -19,7 +19,7 @@
         <p class="text-lg opacity-90">Telegram Bot Management System - Administrator Login</p>
     </div>
 
-    <!-- Login Methods Grid -->
+    <!-- Login Methods Grid - Fixed responsive classes -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
         <!-- Telegram Widget Login -->
         <div class="bg-white rounded-2xl shadow-lg p-8">
@@ -33,6 +33,7 @@
 
             <div class="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-8 border-2 border-dashed border-gray-300 hover:border-primary-500 transition-all duration-300">
                 <div class="flex justify-center">
+                    <!--  FIXED: Telegram Login Widget -->
                     <script async src="https://telegram.org/js/telegram-widget.js?22"
                         data-telegram-login="{{ bot_username }}"
                         data-size="large"
@@ -70,7 +71,7 @@
                         required
                     />
                     <small class="block text-gray-600 text-sm mt-2 italic">
-                        Enter your Telegram user ID to login directly
+                        Get your Telegram ID from @userinfobot
                     </small>
                 </div>
                 <button 
@@ -89,7 +90,7 @@
             Access Levels
         </h3>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div class="p-6 bg-green-50 rounded-xl border-l-4 border-green-500 hover:shadow-md transition-shadow">
+            <div class="p-6 bg-green-50 rounded-xl border-l-4 border-green-500 hover:shadow-md transition-shadow hover-lift">
                 <div class="flex items-center gap-3 mb-3">
                     <i class="fas fa-crown text-green-600 text-2xl"></i>
                     <h4 class="font-bold text-gray-900 text-lg">Super Admins</h4>
@@ -99,7 +100,7 @@
                 </p>
             </div>
 
-            <div class="p-6 bg-blue-50 rounded-xl border-l-4 border-blue-500 hover:shadow-md transition-shadow">
+            <div class="p-6 bg-blue-50 rounded-xl border-l-4 border-blue-500 hover:shadow-md transition-shadow hover-lift">
                 <div class="flex items-center gap-3 mb-3">
                     <i class="fas fa-user-tie text-blue-600 text-2xl"></i>
                     <h4 class="font-bold text-gray-900 text-lg">Admins/Agents</h4>
@@ -109,7 +110,7 @@
                 </p>
             </div>
 
-            <div class="p-6 bg-gray-50 rounded-xl border-l-4 border-gray-500 hover:shadow-md transition-shadow">
+            <div class="p-6 bg-gray-50 rounded-xl border-l-4 border-gray-500 hover:shadow-md transition-shadow hover-lift">
                 <div class="flex items-center gap-3 mb-3">
                     <i class="fas fa-users text-gray-600 text-2xl"></i>
                     <h4 class="font-bold text-gray-900 text-lg">Regular Users</h4>
@@ -140,10 +141,10 @@
                 If you're having trouble logging in or need assistance, please contact your system administrator.
             </p>
             <div class="flex flex-col md:flex-row gap-4 justify-center items-center pt-4">
-                <a href="mailto:admin@ibs.com" class="inline-flex items-center gap-2 px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-xl font-semibold transition-colors">
+                <a href="mailto:admin@ibs.com" class="inline-flex items-center gap-2 px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-xl font-semibold transition-colors hover-lift">
                     <i class="fas fa-envelope"></i> Email Support
                 </a>
-                <a href="https://t.me/support" target="_blank" class="inline-flex items-center gap-2 px-6 py-3 bg-blue-100 hover:bg-blue-200 text-blue-800 rounded-xl font-semibold transition-colors">
+                <a href="https://t.me/support" target="_blank" class="inline-flex items-center gap-2 px-6 py-3 bg-blue-100 hover:bg-blue-200 text-blue-800 rounded-xl font-semibold transition-colors hover-lift">
                     <i class="fab fa-telegram"></i> Telegram Support
                 </a>
             </div>
@@ -157,30 +158,15 @@
 </div>
 
 <script>
-    // Add this at the top of your script
-    const API_BASE_URL = '{{ config.get("API_BASE_URL", "http://localhost:5001") }}';
+    //  Use your domain instead of localhost
+    const API_BASE_URL = 'https://chatbot.ibs.local';
     
     // Debug logging
     console.log('🤖 Bot username:', '{{ bot_username }}');
     console.log('🔗 Auth URL:', '{{ url_for("auth.telegram_auth", _external=True) }}');
+    console.log('🌐 API Base URL:', API_BASE_URL);
     
-    setTimeout(function() {
-        const iframe = document.querySelector('iframe');
-        if (iframe) {
-            console.log('✅ Telegram widget loaded successfully');
-        } else {
-            console.error('❌ Telegram widget failed to load');
-        }
-    }, 2000);
-
-    // Show loading overlay when authenticating
-    window.addEventListener('message', function(event) {
-        if (event.data && event.data.auth) {
-            console.log('🔄 Authentication in progress...');
-        }
-    });
-
-    // ✅ UPDATED: API-Based Login with Session Bridge
+    //  UPDATED: API-Based Login with your domain
     document.getElementById('apiLoginForm').addEventListener('submit', async (e) => {
         e.preventDefault();
         
@@ -209,11 +195,7 @@
                 throw new Error(apiData.message || 'API login failed');
             }
             
-            console.log('✅ Step 1: API Login successful');
-            console.log('📦 Tokens received:', {
-                access_token: apiData.data.access_token.substring(0, 20) + '...',
-                admin: apiData.data.admin.full_name
-            });
+            console.log(' Step 1: API Login successful');
             
             // Step 2: Convert JWT token to web session
             console.log('🔄 Step 2: Creating web session...');
@@ -233,11 +215,7 @@
                 throw new Error(bridgeData.message || 'Session creation failed');
             }
             
-            console.log('✅ Step 2: Web session created');
-            
-            // Optional: Store tokens in localStorage for future API calls
-            localStorage.setItem('access_token', apiData.data.access_token);
-            localStorage.setItem('refresh_token', apiData.data.refresh_token);
+            console.log(' Step 2: Web session created');
             
             // Step 3: Redirect to dashboard
             console.log('🚀 Redirecting to dashboard...');

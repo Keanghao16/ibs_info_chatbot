@@ -1,27 +1,27 @@
 {% extends "master.html" %}
 
-{% block title %}Admin Dashboard - {{ session.admin_info.full_name }}{% endblock %}
+{% block title %}Admin Dashboard - {{ session.admin.full_name }}{% endblock %}
 
 {% block content %}
 <div class="max-w-7xl mx-auto px-4 py-8">
     <!-- Page Header with Profile -->
     <div class="gradient-primary rounded-3xl shadow-2xl p-8 mb-8 text-white">
         <div class="flex flex-col md:flex-row items-center justify-center gap-6">
-            {% if session.admin_info.telegram_photo_url %}
-            <img src="{{ session.admin_info.telegram_photo_url }}" alt="Profile" 
+            {% if session.admin.telegram_photo_url %}
+            <img src="{{ session.admin.telegram_photo_url }}" alt="Profile" 
                  class="w-20 h-20 rounded-full border-4 border-white/30 object-cover">
             {% else %}
             <div class="w-20 h-20 rounded-full bg-white/20 flex items-center justify-center border-4 border-white/30 text-3xl font-bold">
-                {{ session.admin_info.telegram_first_name[0] if session.admin_info.telegram_first_name else '?' }}
+                {{ session.admin.telegram_first_name[0] if session.admin.telegram_first_name else session.admin.full_name[0] if session.admin.full_name else '?' }}
             </div>
             {% endif %}
 
             <div class="text-center md:text-left">
                 <h1 class="text-3xl font-bold mb-2">
-                    Welcome back, {{ session.admin_info.telegram_first_name or session.admin_info.full_name or 'Admin' }}! 👋
+                    Welcome back, {{ session.admin.telegram_first_name or session.admin.full_name or 'Admin' }}! 👋
                 </h1>
                 <span class="inline-flex items-center gap-2 px-4 py-2 bg-white/20 rounded-full text-sm font-semibold border-2 border-white/30">
-                    {% if session.admin_info.role == 'super_admin' %}
+                    {% if session.admin.role == 'super_admin' %}
                     <i class="fas fa-crown"></i> Super Administrator
                     {% else %}
                     <i class="fas fa-user-tie"></i> Administrator/Agent
@@ -36,28 +36,32 @@
                 <i class="fab fa-telegram text-xl mb-2"></i>
                 <div class="font-semibold">Telegram</div>
                 <div class="text-sm opacity-90">
-                    {% if session.admin_info.telegram_username %}
-                    @{{ session.admin_info.telegram_username }}
+                    {% if session.admin.telegram_username %}
+                    @{{ session.admin.telegram_username }}
                     {% else %}
-                    ID: {{ session.admin_info.telegram_id }}
+                    ID: {{ session.admin.telegram_id }}
                     {% endif %}
                 </div>
             </div>
-            {% if session.admin_info.division %}
+            {% if session.admin.division %}
             <div class="bg-white/10 rounded-xl p-4 border border-white/20 text-center">
                 <i class="fas fa-building text-xl mb-2"></i>
                 <div class="font-semibold">Division</div>
-                <div class="text-sm opacity-90">{{ session.admin_info.division }}</div>
+                <div class="text-sm opacity-90">{{ session.admin.division }}</div>
             </div>
             {% endif %}
             <div class="bg-white/10 rounded-xl p-4 border border-white/20 text-center">
                 <i class="fas fa-clock text-xl mb-2"></i>
                 <div class="font-semibold">Last Login</div>
                 <div class="text-sm opacity-90">
-                    {% if session.admin_info.last_login %}
-                    {{ session.admin_info.last_login }}
+                    {% if session.admin.last_login %}
+                        {% if session.admin.last_login is string %}
+                            {{ session.admin.last_login[:19] }}
+                        {% else %}
+                            {{ session.admin.last_login | safe_datetime }}
+                        {% endif %}
                     {% else %}
-                    First time
+                        First time
                     {% endif %}
                 </div>
             </div>
@@ -65,7 +69,7 @@
     </div>
 
     <!-- Availability Section (for agents) -->
-    {% if session.admin_info.role == 'admin' %}
+    {% if session.admin.role == 'admin' %}
     <div class="bg-white rounded-2xl shadow-lg p-6 mb-8">
         <h3 class="text-2xl font-bold mb-4 flex items-center gap-3">
             <i class="fas fa-user-clock text-primary-500"></i>
@@ -74,16 +78,16 @@
         <div class="flex flex-col md:flex-row items-center justify-between gap-4">
             <div class="flex items-center gap-4">
                 <span class="inline-flex items-center gap-2 px-6 py-3 rounded-full text-lg font-semibold
-                            {{ 'bg-green-100 text-green-800' if session.admin_info.is_available else 'bg-yellow-100 text-yellow-800' }}">
+                            {{ 'bg-green-100 text-green-800' if session.admin.is_available else 'bg-yellow-100 text-yellow-800' }}">
                     <i class="fas fa-circle"></i>
-                    {{ 'Available for new chats' if session.admin_info.is_available else 'Currently unavailable' }}
+                    {{ 'Available for new chats' if session.admin.is_available else 'Currently unavailable' }}
                 </span>
             </div>
             <button id="toggle-availability"
                     class="px-6 py-3 rounded-xl font-semibold transition-all duration-300 flex items-center gap-2
-                           {{ 'bg-gradient-to-r from-yellow-400 to-yellow-600 hover:from-yellow-500 hover:to-yellow-700' if session.admin_info.is_available else 'bg-gradient-to-r from-green-400 to-green-600 hover:from-green-500 hover:to-green-700' }}
+                           {{ 'bg-gradient-to-r from-yellow-400 to-yellow-600 hover:from-yellow-500 hover:to-yellow-700' if session.admin.is_available else 'bg-gradient-to-r from-green-400 to-green-600 hover:from-green-500 hover:to-green-700' }}
                            text-white shadow-lg hover:shadow-xl transform hover:-translate-y-1">
-                {% if session.admin_info.is_available %}
+                {% if session.admin.is_available %}
                 <i class="fas fa-toggle-off"></i> Set Unavailable
                 {% else %}
                 <i class="fas fa-toggle-on"></i> Set Available
@@ -96,31 +100,31 @@
     <!-- Statistics Grid -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <div class="bg-white rounded-2xl shadow-lg p-6 border-l-4 border-primary-500 transform hover:-translate-y-2 transition-transform duration-300">
-            <div class="text-4xl font-bold text-primary-500 mb-2">{{ users|length if users else 0 }}</div>
+            <div class="text-4xl font-bold text-primary-500 mb-2">{{ stats.users.total if stats and stats.users else 0 }}</div>
             <div class="text-gray-600 font-semibold uppercase text-sm tracking-wide">
                 <i class="fas fa-users"></i> Total Users
             </div>
         </div>
 
         <div class="bg-white rounded-2xl shadow-lg p-6 border-l-4 border-green-500 transform hover:-translate-y-2 transition-transform duration-300">
-            <div class="text-4xl font-bold text-green-500 mb-2">{{ chats|length if chats else 0 }}</div>
+            <div class="text-4xl font-bold text-green-500 mb-2">{{ stats.chats.total if stats and stats.chats else 0 }}</div>
             <div class="text-gray-600 font-semibold uppercase text-sm tracking-wide">
                 <i class="fas fa-comments"></i> Total Chat Sessions
             </div>
         </div>
 
-        {% if session.admin_info.role == 'admin' and admin_chats %}
+        {% if session.admin.role == 'admin' %}
         <div class="bg-white rounded-2xl shadow-lg p-6 border-l-4 border-yellow-500 transform hover:-translate-y-2 transition-transform duration-300">
-            <div class="text-4xl font-bold text-yellow-500 mb-2">{{ admin_chats|length }}</div>
+            <div class="text-4xl font-bold text-yellow-500 mb-2">{{ stats.chats.active if stats and stats.chats else 0 }}</div>
             <div class="text-gray-600 font-semibold uppercase text-sm tracking-wide">
-                <i class="fas fa-user-edit"></i> My Assigned Chats
+                <i class="fas fa-user-edit"></i> Active Chats
             </div>
         </div>
         {% endif %}
 
-        {% if session.admin_info.role == 'super_admin' %}
+        {% if session.admin.role == 'super_admin' %}
         <div class="bg-white rounded-2xl shadow-lg p-6 border-l-4 border-red-500 transform hover:-translate-y-2 transition-transform duration-300">
-            <div class="text-4xl font-bold text-red-500 mb-2">{{ admins|length if admins else 0 }}</div>
+            <div class="text-4xl font-bold text-red-500 mb-2">{{ stats.admins.total if stats and stats.admins else 0 }}</div>
             <div class="text-gray-600 font-semibold uppercase text-sm tracking-wide">
                 <i class="fas fa-user-shield"></i> Total Administrators
             </div>
@@ -141,8 +145,8 @@
                     <div class="font-semibold text-gray-900">Logged in to admin panel</div>
                     <div class="text-sm text-gray-600 mt-1">
                         <i class="fas fa-clock"></i>
-                        {% if session.admin_info.last_login %}
-                        {{ session.admin_info.last_login }}
+                        {% if session.admin.last_login %}
+                        {{ session.admin.last_login }}
                         {% else %}
                         Just now
                         {% endif %}

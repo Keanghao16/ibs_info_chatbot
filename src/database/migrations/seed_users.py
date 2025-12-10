@@ -128,7 +128,7 @@ def seed_users(count=100):
         final_count = db.query(User).count()
         
         print(f"\n{'='*60}")
-        print(f"✅ Seeding Complete!")
+        print(f" Seeding Complete!")
         print(f"{'='*60}")
         print(f"   Total users in database: {final_count}")
         print(f"   Users added this run: {len(users_to_add)}")
@@ -175,7 +175,7 @@ def clear_all_users():
         if confirm == "DELETE":
             db.query(User).delete()
             db.commit()
-            print(f"\n✅ Successfully deleted {count} users.")
+            print(f"\n Successfully deleted {count} users.")
         else:
             print("\n❌ Deletion cancelled.")
             

@@ -19,7 +19,7 @@ class AdminRole(enum.Enum):
 class User(Base):
     __tablename__ = 'users'
     
-    # ✅ FIX: Change from Integer to CHAR(36) for UUID
+    #  FIX: Change from Integer to CHAR(36) for UUID
     id = Column(CHAR(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     telegram_id = Column(BigInteger, unique=True, nullable=False)
     username = Column(String(100))
@@ -30,6 +30,7 @@ class User(Base):
     language_code = Column(String(10), nullable=True)
     is_bot = Column(Boolean, default=False)
     is_premium = Column(Boolean, default=False)
+    photo_url = Column(String(500), nullable=True)  # ✅ ADD THIS LINE
     registration_date = Column(DateTime, default=datetime.utcnow)
     last_activity = Column(DateTime, nullable=True)
     
@@ -71,8 +72,8 @@ class ChatSession(Base):
     __tablename__ = "sessions"
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(CHAR(36), ForeignKey("users.id"))  # ✅ UUID
-    admin_id = Column(CHAR(36), ForeignKey("admins.id"), nullable=True)  # ✅ UUID
+    user_id = Column(CHAR(36), ForeignKey("users.id"))  #  UUID
+    admin_id = Column(CHAR(36), ForeignKey("admins.id"), nullable=True)  #  UUID
     start_time = Column(DateTime(timezone=True), server_default=func.now())
     end_time = Column(DateTime(timezone=True), nullable=True)
     status = Column(Enum(SessionStatus), default=SessionStatus.active)
@@ -85,16 +86,16 @@ class ChatMessage(Base):
     __tablename__ = "chat_messages"
 
     id = Column(Integer, primary_key=True, index=True)
-    session_id = Column(Integer, ForeignKey("sessions.id"), nullable=False)  # ✅ ADD THIS
-    user_id = Column(CHAR(36), ForeignKey("users.id"))  # ✅ UUID
-    admin_id = Column(CHAR(36), ForeignKey("admins.id"), nullable=True)  # ✅ UUID
+    session_id = Column(Integer, ForeignKey("sessions.id"), nullable=False)  #  ADD THIS
+    user_id = Column(CHAR(36), ForeignKey("users.id"))  #  UUID
+    admin_id = Column(CHAR(36), ForeignKey("admins.id"), nullable=True)  #  UUID
     message = Column(Text, nullable=False)
     timestamp = Column(DateTime(timezone=True), server_default=func.now())
     is_from_admin = Column(Boolean, default=False)
 
     user = relationship("User", back_populates="messages")
     admin = relationship("Admin")
-    session = relationship("ChatSession")  # ✅ ADD THIS
+    session = relationship("ChatSession")  #  ADD THIS
 
 
 class SystemSettings(Base):

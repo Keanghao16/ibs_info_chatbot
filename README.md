@@ -333,10 +333,10 @@ The application uses a shared service layer that is accessed by both the web app
 ```
 
 ### Key Benefits
-- ✅ **Reusable Logic** - Business logic shared between web and API
-- ✅ **Consistent Data Access** - Same service methods for both interfaces
-- ✅ **Easy Maintenance** - Changes in one place affect both web and API
-- ✅ **Separation of Concerns** - Clear boundaries between layers
+-  **Reusable Logic** - Business logic shared between web and API
+-  **Consistent Data Access** - Same service methods for both interfaces
+-  **Easy Maintenance** - Changes in one place affect both web and API
+-  **Separation of Concerns** - Clear boundaries between layers
 
 ## Development
 

@@ -13,7 +13,7 @@ active_connections = {}
 @socketio.on('connect')
 def handle_connect():
     """Handle WebSocket connection"""
-    admin_id = session.get('admin_info', {}).get('id')
+    admin_id = session.get('admin', {}).get('id')  #  Changed from admin_info
     if admin_id:
         room = f"admin_{admin_id}"
         join_room(room)
@@ -23,7 +23,7 @@ def handle_connect():
 @socketio.on('disconnect')
 def handle_disconnect():
     """Handle WebSocket disconnection"""
-    admin_id = session.get('admin_info', {}).get('id')
+    admin_id = session.get('admin', {}).get('id')  #  Changed from admin_info
     if admin_id and admin_id in active_connections:
         del active_connections[admin_id]
 
@@ -37,7 +37,7 @@ def handle_send_message(data):
         db = SessionLocal()
         session_id = data.get('session_id')
         message_text = data.get('message')
-        admin_id = session.get('admin_info', {}).get('id')
+        admin_id = session.get('admin', {}).get('id')  #  Changed from admin_info
         
         # Get chat session
         chat_session = db.query(ChatSession).filter(
@@ -54,7 +54,7 @@ def handle_send_message(data):
             admin_id=admin_id,
             message=message_text,
             is_from_admin=True,
-            timestamp=datetime.now(timezone.utc)  # ✅ Use UTC with timezone
+            timestamp=datetime.now(timezone.utc)  #  Use UTC with timezone
         )
         db.add(new_message)
         db.commit()
@@ -65,7 +65,7 @@ def handle_send_message(data):
         
         asyncio.run(bot.send_message(
             chat_id=chat_session.user.telegram_id,
-            text=f"💬 *Agent {session.get('admin_info', {}).get('full_name')}:*\n\n{message_text}",
+            text=f"💬 *Agent {session.get('admin', {}).get('full_name')}:*\n\n{message_text}",  #  Changed
             parse_mode='Markdown'
         ))
         
@@ -101,5 +101,5 @@ def broadcast_new_message(user_id, message_text, admin_id=None, session_id=None)
             'user_id': user_id,
             'session_id': session_id,
             'message': message_text,
-            'timestamp': datetime.now(timezone.utc).isoformat()  # ✅ Add timezone.utc
+            'timestamp': datetime.now(timezone.utc).isoformat()  #  Add timezone.utc
         }, room=f"admin_{admin_id}")

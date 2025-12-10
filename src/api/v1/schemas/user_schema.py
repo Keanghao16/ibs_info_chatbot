@@ -10,7 +10,7 @@ import html
 class UserResponseSchema(Schema):
     """Serialize user data for API responses"""
     
-    id = fields.String(dump_only=True)  # ✅ Changed to String (UUID)
+    id = fields.String(dump_only=True)  #  Changed to String (UUID)
     telegram_id = fields.Integer(required=True)
     username = fields.String(allow_none=True)
     first_name = fields.String(allow_none=True)
@@ -30,7 +30,7 @@ class UserResponseSchema(Schema):
 class UserListResponseSchema(Schema):
     """Serialize user list with minimal data"""
     
-    id = fields.String()  # ✅ Changed to String
+    id = fields.String()  #  Changed to String
     telegram_id = fields.Integer()
     username = fields.String(allow_none=True)
     full_name = fields.String()

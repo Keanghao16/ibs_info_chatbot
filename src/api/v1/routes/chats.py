@@ -61,8 +61,8 @@ def list_chat_sessions(current_user):
         page = request.args.get('page', 1, type=int)
         per_page = min(request.args.get('per_page', 10, type=int), 100)
         status = request.args.get('status')
-        admin_id = request.args.get('admin_id')  # ✅ String (UUID)
-        user_id = request.args.get('user_id')  # ✅ String (UUID)
+        admin_id = request.args.get('admin_id')  #  String (UUID)
+        user_id = request.args.get('user_id')  #  String (UUID)
         
         result = ChatService.get_all_sessions(
             db=db,
@@ -73,7 +73,7 @@ def list_chat_sessions(current_user):
             user_id=user_id
         )
         
-        # ✅ Serialize sessions with proper data
+        #  Serialize sessions with proper data
         sessions_data = []
         for session in result['sessions']:
             session_dict = {
@@ -120,10 +120,10 @@ def get_chat_session(current_user, session_id):
             print(f"❌ Session {session_id} not found in database")
             return not_found_response('Chat session')
         
-        # ✅ Get messages for this session
+        #  Get messages for this session
         messages = ChatService.get_session_messages(db, session_id)
         
-        # ✅ Serialize with messages included
+        #  Serialize with messages included
         session_data = {
             'id': session.id,
             'user_id': session.user_id,

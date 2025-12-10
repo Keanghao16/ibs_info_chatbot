@@ -11,5 +11,6 @@ def admin_keyboard():
     keyboard = [
         [InlineKeyboardButton("👤 Manage Users", callback_data='manage_users')],
         [InlineKeyboardButton("📜 View Chat History", callback_data='view_chat_history')],
+        [InlineKeyboardButton("📚 Browse FAQs", callback_data='faq')],  # Added FAQ access for admins
     ]
     return InlineKeyboardMarkup(keyboard)

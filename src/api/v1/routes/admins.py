@@ -59,7 +59,7 @@ def list_admins(current_user):
         search = request.args.get('search', '').strip() or None
         role = request.args.get('role')
         
-        # ✅ Fix boolean parsing
+        #  Fix boolean parsing
         is_active = None
         if request.args.get('is_active'):
             is_active_str = request.args.get('is_active').lower()
@@ -100,7 +100,7 @@ def list_admins(current_user):
         db.close()
 
 
-@admins_api_bp.route('/admins/<string:admin_id>', methods=['GET'])  # ✅ Changed to string
+@admins_api_bp.route('/admins/<string:admin_id>', methods=['GET'])  #  Changed to string
 @token_required
 def get_admin(current_user, admin_id):
     """Get single admin by ID (UUID)"""
@@ -147,7 +147,7 @@ def create_admin(current_user):
         except ValidationError as err:
             return validation_error_response(err.messages)
         
-        # ✅ Check if telegram_id already exists
+        #  Check if telegram_id already exists
         existing_admin = AdminService.get_admin_by_telegram_id(db, admin_data['telegram_id'])
         if existing_admin:
             return error_response(
@@ -155,7 +155,7 @@ def create_admin(current_user):
                 400
             )
         
-        # ✅ Create admin
+        #  Create admin
         new_admin = AdminService.create_admin(db, admin_data)
         admin_response = admin_response_schema.dump(new_admin)
         
@@ -174,7 +174,7 @@ def create_admin(current_user):
         db.close()
 
 
-@admins_api_bp.route('/admins/<string:admin_id>', methods=['PUT'])  # ✅ Changed to string
+@admins_api_bp.route('/admins/<string:admin_id>', methods=['PUT'])  #  Changed to string
 @token_required
 def update_admin(current_user, admin_id):
     """Update admin information"""
@@ -210,7 +210,7 @@ def update_admin(current_user, admin_id):
         db.close()
 
 
-@admins_api_bp.route('/admins/<string:admin_id>', methods=['DELETE'])  # ✅ Changed to string
+@admins_api_bp.route('/admins/<string:admin_id>', methods=['DELETE'])  #  Changed to string
 @token_required
 @super_admin_required
 def delete_admin(current_user, admin_id):
@@ -236,7 +236,7 @@ def delete_admin(current_user, admin_id):
         db.close()
 
 
-@admins_api_bp.route('/admins/<string:admin_id>/toggle-availability', methods=['PUT'])  # ✅ Changed to string
+@admins_api_bp.route('/admins/<string:admin_id>/toggle-availability', methods=['PUT'])  #  Changed to string
 @token_required
 def toggle_admin_availability(current_user, admin_id):
     """Toggle admin availability"""
@@ -280,6 +280,79 @@ def get_admin_stats(current_user):
         return success_response(
             data=stats_data,
             message="Admin statistics retrieved successfully"
+        )
+        
+    except Exception as e:
+        return error_response(str(e), 500)
+    finally:
+        db.close()
+
+
+@admins_api_bp.route('/admins/<string:admin_id>/toggle-status', methods=['PUT'])
+@token_required
+@super_admin_required
+def toggle_admin_status(current_user, admin_id):
+    """Toggle admin active status (Super Admin only)"""
+    db = get_db_session()
+    try:
+        # Prevent self-modification
+        if current_user.id == admin_id:
+            return error_response(
+                "You cannot modify your own account status",
+                400
+            )
+        
+        admin = AdminService.get_admin_by_id(db, admin_id)
+        if not admin:
+            return not_found_response('Admin')
+        
+        # Toggle status
+        admin.is_active = not admin.is_active
+        db.commit()
+        db.refresh(admin)
+        
+        status = "activated" if admin.is_active else "deactivated"
+        admin_response = admin_response_schema.dump(admin)
+        
+        return updated_response(
+            data=admin_response,
+            message=f"Admin {status} successfully"
+        )
+        
+    except Exception as e:
+        db.rollback()
+        return error_response(str(e), 500)
+    finally:
+        db.close()
+
+
+@admins_api_bp.route('/admins/<string:admin_id>/demote', methods=['POST'])
+@token_required
+@super_admin_required
+def demote_admin_to_user(current_user, admin_id):
+    """Demote admin to regular user (Super Admin only)"""
+    db = get_db_session()
+    try:
+        # Prevent self-demotion
+        if current_user.id == admin_id:
+            return error_response(
+                "You cannot demote your own account",
+                400
+            )
+        
+        admin = AdminService.get_admin_by_id(db, admin_id)
+        if not admin:
+            return not_found_response('Admin')
+        
+        # TODO: Implement actual demotion logic
+        # This would involve:
+        # 1. Moving admin data to users table
+        # 2. Removing admin record
+        # 3. Reassigning any active chats
+        
+        return error_response(
+            "Demotion feature not implemented yet. Please contact system administrator.",
+            501  # Not Implemented
         )
         
     except Exception as e:

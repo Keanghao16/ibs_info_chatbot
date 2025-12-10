@@ -12,8 +12,8 @@ class ChatMessageResponseSchema(Schema):
     
     id = fields.Integer(dump_only=True)
     session_id = fields.Integer()
-    user_id = fields.String()  # ✅ Changed to String (UUID)
-    admin_id = fields.String(allow_none=True)  # ✅ Changed to String (UUID)
+    user_id = fields.String()  #  Changed to String (UUID)
+    admin_id = fields.String(allow_none=True)  #  Changed to String (UUID)
     message = fields.String()
     timestamp = fields.DateTime(dump_only=True)
     is_from_admin = fields.Boolean()
@@ -26,8 +26,8 @@ class ChatSessionResponseSchema(Schema):
     """Serialize chat session data for API responses"""
     
     id = fields.Integer(dump_only=True)
-    user_id = fields.String()  # ✅ Changed to String (UUID)
-    admin_id = fields.String(allow_none=True)  # ✅ Changed to String (UUID)
+    user_id = fields.String()  #  Changed to String (UUID)
+    admin_id = fields.String(allow_none=True)  #  Changed to String (UUID)
     status = fields.String()
     start_time = fields.DateTime(dump_only=True)
     end_time = fields.DateTime(allow_none=True)
@@ -47,8 +47,8 @@ class ChatSessionListResponseSchema(Schema):
     """Serialize chat session list with minimal data"""
     
     id = fields.Integer()
-    user_id = fields.String()  # ✅ Changed to String (UUID)
-    admin_id = fields.String(allow_none=True)  # ✅ Changed to String (UUID)
+    user_id = fields.String()  #  Changed to String (UUID)
+    admin_id = fields.String(allow_none=True)  #  Changed to String (UUID)
     status = fields.String()
     start_time = fields.DateTime()
     end_time = fields.DateTime(allow_none=True)
@@ -60,7 +60,7 @@ class ChatSessionListResponseSchema(Schema):
 class ChatSessionCreateSchema(Schema):
     """Validate chat session creation request"""
     
-    user_id = fields.String(  # ✅ Changed to String (UUID)
+    user_id = fields.String(  #  Changed to String (UUID)
         required=True,
         validate=validate.Length(min=1, max=36)  # UUID length
     )
@@ -76,7 +76,7 @@ class ChatSessionUpdateSchema(Schema):
     status = fields.String(
         validate=validate.OneOf(['waiting', 'active', 'closed'])
     )
-    admin_id = fields.String(  # ✅ Changed to String (UUID)
+    admin_id = fields.String(  #  Changed to String (UUID)
         allow_none=True,
         validate=validate.Length(min=1, max=36)
     )
@@ -89,11 +89,11 @@ class MessageCreateSchema(Schema):
         required=True,
         validate=validate.Range(min=1)
     )
-    user_id = fields.String(  # ✅ Changed to String (UUID)
+    user_id = fields.String(  #  Changed to String (UUID)
         required=True,
         validate=validate.Length(min=1, max=36)
     )
-    admin_id = fields.String(  # ✅ Changed to String (UUID)
+    admin_id = fields.String(  #  Changed to String (UUID)
         allow_none=True,
         validate=validate.Length(min=1, max=36)
     )
@@ -115,7 +115,7 @@ class MessageCreateSchema(Schema):
 class ChatAssignSchema(Schema):
     """Validate chat assignment request"""
     
-    admin_id = fields.String(  # ✅ Changed to String (UUID)
+    admin_id = fields.String(  #  Changed to String (UUID)
         required=True,
         validate=validate.Length(min=1, max=36)
     )

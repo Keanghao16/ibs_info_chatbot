@@ -58,7 +58,7 @@ def list_users(current_user):
         )
 
 
-@users_api_bp.route('/users/<string:user_id>', methods=['GET'])  # ✅ Changed to string
+@users_api_bp.route('/users/<string:user_id>', methods=['GET'])  #  Changed to string
 @token_required
 @admin_required
 def get_user(current_user, user_id):
@@ -119,7 +119,7 @@ def create_user(current_user):
         db.close()
 
 
-@users_api_bp.route('/users/<string:user_id>', methods=['PUT'])  # ✅ Changed to string
+@users_api_bp.route('/users/<string:user_id>', methods=['PUT'])  #  Changed to string
 @token_required
 @admin_required
 def update_user(current_user, user_id):
@@ -150,7 +150,7 @@ def update_user(current_user, user_id):
         db.close()
 
 
-@users_api_bp.route('/users/<string:user_id>', methods=['DELETE'])  # ✅ Changed to string
+@users_api_bp.route('/users/<string:user_id>', methods=['DELETE'])  #  Changed to string
 @token_required
 @admin_required
 def delete_user(current_user, user_id):

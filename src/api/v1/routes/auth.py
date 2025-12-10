@@ -127,7 +127,7 @@ def refresh_token():
 
 @auth_api_bp.route('/auth/me', methods=['GET'])
 @token_required
-def get_current_admin(current_user):  # ✅ Add parameter
+def get_current_admin(current_user):  #  Add parameter
     """Get current authenticated admin information"""
     admin = g.current_admin
     
@@ -150,7 +150,7 @@ def get_current_admin(current_user):  # ✅ Add parameter
 
 @auth_api_bp.route('/auth/logout', methods=['POST'])
 @token_required
-def logout(current_user):  # ✅ Add parameter
+def logout(current_user):  #  Add parameter
     """
     Logout (client should discard tokens)
     
@@ -173,7 +173,7 @@ def logout(current_user):  # ✅ Add parameter
 @auth_api_bp.route('/auth/update-profile', methods=['PUT'])
 @token_required
 @validate_request_json(['full_name'])
-def update_profile(current_user):  # ✅ Add parameter
+def update_profile(current_user):  #  Add parameter
     """
     Update admin profile information
     
@@ -232,22 +232,8 @@ def update_profile(current_user):  # ✅ Add parameter
 
 @auth_api_bp.route('/auth/toggle-availability', methods=['POST'])
 @token_required
-def toggle_availability(current_user):  # ✅ Add parameter
-    """
-    Toggle admin availability for chat assignment (admins only)
-    
-    Headers:
-        Authorization: Bearer <access_token>
-    
-    Response:
-        {
-            "success": true,
-            "message": "You are now available for new chat assignments",
-            "data": {
-                "is_available": true
-            }
-        }
-    """
+def toggle_availability(current_user):
+    """Toggle admin availability for chat assignment (admins only)"""
     db = get_db_session()
     try:
         admin = g.current_admin
@@ -263,7 +249,7 @@ def toggle_availability(current_user):  # ✅ Add parameter
                 message=result['message']
             )
         else:
-            return ResponseBuilder.bad_request(result['message'])
+            return ResponseBuilder.bad_request(result['message'])  #  FIXED
     
     except Exception as e:
         return ResponseBuilder.error(
@@ -276,7 +262,7 @@ def toggle_availability(current_user):  # ✅ Add parameter
 
 @auth_api_bp.route('/auth/verify', methods=['GET'])
 @token_required
-def verify_token(current_user):  # ✅ Add parameter
+def verify_token(current_user):  #  Add parameter
     """
     Verify if current token is valid
     
@@ -314,32 +300,12 @@ def verify_token(current_user):  # ✅ Add parameter
 def telegram_callback():
     """
     Handle Telegram Login Widget callback (for web-based login)
-    
-    Request Body:
-        {
-            "id": "123456789",
-            "first_name": "John",
-            "last_name": "Doe",
-            "username": "johndoe",
-            "photo_url": "https://...",
-            "auth_date": "1699699200",
-            "hash": "abc123..."
-        }
-    
-    Response:
-        {
-            "success": true,
-            "message": "Login successful",
-            "data": {
-                "access_token": "...",
-                "refresh_token": "...",
-                "admin": {...}
-            }
-        }
     """
     db = get_db_session()
     try:
         telegram_data = request.get_json()
+        
+        print(f"🔍 Telegram callback received: {telegram_data}")  # Debug
         
         if not telegram_data.get('id'):
             raise APIError("Telegram ID is required", status_code=400)
@@ -347,30 +313,47 @@ def telegram_callback():
         # Use existing Telegram authentication method
         result = auth_service.authenticate_admin_telegram(db, telegram_data)
         
+        print(f"🔍 Auth result: {result}")  # Debug
+        
         if result['success']:
-            # Generate JWT tokens
-            api_result = auth_service.authenticate_admin_api(
-                db, 
-                str(telegram_data['id'])
-            )
-            
+            #  FIXED: Return proper API tokens
             return ResponseBuilder.success(
                 data={
-                    'access_token': api_result['access_token'],
-                    'refresh_token': api_result['refresh_token'],
-                    'token_type': api_result['token_type'],
-                    'expires_in': api_result['expires_in'],
-                    'admin': api_result['admin']
+                    'access_token': result.get('access_token') or result.get('token'),  # Handle both formats
+                    'refresh_token': result.get('refresh_token'),
+                    'token_type': result.get('token_type', 'Bearer'),
+                    'expires_in': result.get('expires_in', 3600),
+                    'admin': result['admin']
                 },
-                message='Telegram login successful'
+                message='Login successful'
             )
         else:
             return ResponseBuilder.unauthorized(result['message'])
     
     except Exception as e:
+        print(f"❌ Telegram login error: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return ResponseBuilder.error(
             message=f"Telegram login failed: {str(e)}",
             status_code=500
         )
     finally:
         db.close()
+
+
+# Add this test route at the end of the file
+@auth_api_bp.route('/auth/test', methods=['GET'])
+def test_auth_route():
+    """Test route to verify auth blueprint is working"""
+    return jsonify({
+        'success': True,
+        'message': 'Auth blueprint is working!',
+        'available_routes': [
+            '/auth/login',
+            '/auth/refresh',
+            '/auth/me',
+            '/auth/telegram-callback',
+            '/auth/test'
+        ]
+    })

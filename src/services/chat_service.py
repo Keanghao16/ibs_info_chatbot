@@ -13,7 +13,7 @@ class ChatService:
         
         # Apply filters
         if status:
-            # ✅ Convert string to enum
+            #  Convert string to enum
             status_map = {
                 'waiting': SessionStatus.waiting,
                 'active': SessionStatus.active,
@@ -23,7 +23,7 @@ class ChatService:
             if enum_status:
                 query = query.filter(ChatSession.status == enum_status)
         
-        # ✅ admin_id and user_id are UUIDs (strings)
+        #  admin_id and user_id are UUIDs (strings)
         if admin_id:
             query = query.filter(ChatSession.admin_id == admin_id)
         if user_id:
@@ -50,7 +50,7 @@ class ChatService:
     @staticmethod
     def create_session(db: Session, session_data: dict):
         """Create new chat session"""
-        # ✅ Convert string status to enum
+        #  Convert string status to enum
         if 'status' in session_data:
             if isinstance(session_data['status'], str):
                 status_map = {
@@ -62,11 +62,11 @@ class ChatService:
         else:
             session_data['status'] = SessionStatus.waiting
         
-        # ✅ Ensure user_id is string (UUID) - KEEP THIS
+        #  Ensure user_id is string (UUID) - KEEP THIS
         if 'user_id' in session_data:
             session_data['user_id'] = str(session_data['user_id'])
         
-        # ✅ DO NOT convert session ID - it's auto-generated as INTEGER
+        #  DO NOT convert session ID - it's auto-generated as INTEGER
         session = ChatSession(**session_data)
         db.add(session)
         db.commit()
@@ -78,7 +78,7 @@ class ChatService:
         """Assign chat to admin"""
         session = db.query(ChatSession).filter(ChatSession.id == session_id).first()
         if session:
-            session.admin_id = admin_id  # ✅ admin_id is UUID string
+            session.admin_id = admin_id  #  admin_id is UUID string
             session.status = SessionStatus.active
             db.commit()
             db.refresh(session)

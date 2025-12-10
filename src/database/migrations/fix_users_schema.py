@@ -25,7 +25,7 @@ def upgrade():
                 ALTER TABLE users 
                 ADD COLUMN language_code VARCHAR(10) NULL AFTER last_name
             """))
-            print("✅ Added language_code column")
+            print(" Added language_code column")
         
         # Add is_bot
         if 'is_bot' not in existing_columns:
@@ -33,7 +33,7 @@ def upgrade():
                 ALTER TABLE users 
                 ADD COLUMN is_bot BOOLEAN DEFAULT FALSE AFTER language_code
             """))
-            print("✅ Added is_bot column")
+            print(" Added is_bot column")
         
         # Add is_premium
         if 'is_premium' not in existing_columns:
@@ -41,7 +41,7 @@ def upgrade():
                 ALTER TABLE users 
                 ADD COLUMN is_premium BOOLEAN DEFAULT FALSE AFTER is_bot
             """))
-            print("✅ Added is_premium column")
+            print(" Added is_premium column")
         
         # Add registration_date
         if 'registration_date' not in existing_columns:
@@ -49,7 +49,7 @@ def upgrade():
                 ALTER TABLE users 
                 ADD COLUMN registration_date DATETIME DEFAULT CURRENT_TIMESTAMP AFTER is_premium
             """))
-            print("✅ Added registration_date column")
+            print(" Added registration_date column")
         
         # Add last_activity
         if 'last_activity' not in existing_columns:
@@ -57,7 +57,7 @@ def upgrade():
                 ALTER TABLE users 
                 ADD COLUMN last_activity DATETIME NULL AFTER registration_date
             """))
-            print("✅ Added last_activity column")
+            print(" Added last_activity column")
         
         conn.commit()
         print("\n🎉 Users table schema updated successfully!")
@@ -71,7 +71,7 @@ def downgrade():
         conn.execute(text("ALTER TABLE users DROP COLUMN is_bot"))
         conn.execute(text("ALTER TABLE users DROP COLUMN language_code"))
         conn.commit()
-        print("✅ Downgrade complete")
+        print(" Downgrade complete")
 
 if __name__ == '__main__':
     print("Running users table schema migration...")

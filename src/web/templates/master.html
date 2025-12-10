@@ -10,7 +10,7 @@
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- Tailwind Config -->
+    <!-- Tailwind Config - Fixed -->
     <script>
         tailwind.config = {
             theme: {
@@ -19,25 +19,41 @@
                         primary: {
                             50: '#f5f7ff',
                             100: '#ebf0ff',
+                            200: '#d0d9ff',
+                            300: '#b4c6ff',
+                            400: '#98b3ff',
                             500: '#667eea',
                             600: '#5568d3',
                             700: '#4451b8',
+                            800: '#333a9d',
+                            900: '#222382'
                         },
                         secondary: {
+                            50: '#f8f4ff',
+                            100: '#f1e9ff',
+                            200: '#e3d3ff',
+                            300: '#d5bdff',
+                            400: '#c7a7ff',
                             500: '#764ba2',
                             600: '#6a3f92',
+                            700: '#5e3382',
+                            800: '#522772',
+                            900: '#461b62'
                         }
+                    },
+                    backgroundImage: {
+                        'gradient-primary': 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                        'gradient-bg': 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
                     }
                 }
             }
         }
     </script>
 
-    <!-- Add Socket.IO and extra scripts HERE in the head -->
     {% block extra_head %}{% endblock %}
     
     <style>
-        /* Custom animations and utilities */
+        /* Enhanced custom styles */
         @keyframes slideDown {
             from {
                 transform: translateY(-10px);
@@ -58,6 +74,7 @@
             animation: slideDown 0.3s ease;
         }
         
+        /* Fallback gradients */
         .gradient-primary {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         }
@@ -65,17 +82,28 @@
         .gradient-bg {
             background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
         }
+
+        /* Fix for backdrop-blur on older browsers */
+        .backdrop-blur-sm {
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+        }
+
+        /* Ensure proper hover effects */
+        .hover-lift:hover {
+            transform: translateY(-2px);
+        }
     </style>
 </head>
 
-<body class="gradient-bg min-h-screen">
+<body class="bg-gradient-bg min-h-screen">
     <!-- Navigation Header - Hide on login page -->
     {% if not request.endpoint or request.endpoint != 'auth.login' %}
     <nav class="gradient-primary text-white shadow-lg sticky top-0 z-50">
         <div class="max-w-7xl mx-auto px-4">
             <div class="flex justify-between items-center h-16">
                 <!-- Brand -->
-                <a href="{{ url_for('dashboard.dashboard') }}" class="flex items-center space-x-3 text-white hover:opacity-90 transition">
+                <a href="{{ url_for('dashboard.index') }}" class="flex items-center space-x-3 text-white hover:opacity-90 transition">
                     <i class="fab fa-telegram text-2xl"></i>
                     <span class="text-xl font-bold">IBS Admin Panel</span>
                 </a>
@@ -83,8 +111,8 @@
                 <!-- Desktop Navigation -->
                 <ul class="hidden md:flex items-center space-x-2">
                     <li>
-                        <a href="{{ url_for('dashboard.dashboard') }}"
-                           class="flex items-center space-x-2 px-4 py-2 rounded-lg hover:bg-white/20 transition {{ 'bg-white/25 border border-white/30' if request.endpoint == 'dashboard.dashboard' else '' }}">
+                        <a href="{{ url_for('dashboard.index') }}"
+                           class="flex items-center space-x-2 px-4 py-2 rounded-lg hover:bg-white/20 transition {{ 'bg-white/25 border border-white/30' if request.endpoint == 'dashboard.index' else '' }}">
                             <i class="fas fa-tachometer-alt"></i>
                             <span>Dashboard</span>
                         </a>
@@ -103,9 +131,9 @@
                             <span>Chats</span>
                         </a>
                     </li>
-                    {% if session.admin_info and session.admin_info.role == 'super_admin' %}
+                    {% if session.admin and session.admin.role == 'super_admin' %}
                     <li>
-                        <a href="{{ url_for('admin.manage_admins') }}"
+                        <a href="{{ url_for('admin.list_admins') }}"
                            class="flex items-center space-x-2 px-4 py-2 rounded-lg hover:bg-white/20 transition {{ 'bg-white/25 border border-white/30' if request.endpoint and request.endpoint.startswith('admin.') else '' }}">
                             <i class="fas fa-user-shield"></i>
                             <span>Admins</span>
@@ -122,26 +150,26 @@
                 </ul>
 
                 <!-- User Profile Dropdown -->
-                {% if session.admin_info %}
+                {% if session.admin %}
                 <div class="relative">
                     <button onclick="toggleDropdown()" class="flex items-center space-x-3 px-4 py-2 rounded-full bg-white/10 hover:bg-white/20 transition">
-                        {% if session.admin_info.telegram_photo_url %}
-                        <img src="{{ session.admin_info.telegram_photo_url }}" alt="Profile" class="w-10 h-10 rounded-full border-2 border-white/30 object-cover">
+                        {% if session.admin.telegram_photo_url %}
+                        <img src="{{ session.admin.telegram_photo_url }}" alt="Profile" class="w-10 h-10 rounded-full border-2 border-white/30 object-cover">
                         {% else %}
                         <div class="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center border-2 border-white/30 font-bold">
-                            {{ session.admin_info.telegram_first_name[0] if session.admin_info.telegram_first_name else session.admin_info.full_name[0] if session.admin_info.full_name else '?' }}
+                            {{ session.admin.full_name[0] if session.admin.full_name else '?' }}
                         </div>
                         {% endif %}
                         <div class="hidden md:block text-left">
-                            <div class="font-semibold text-sm">{{ session.admin_info.telegram_first_name or session.admin_info.full_name or 'Admin' }}</div>
-                            <div class="text-xs opacity-80 uppercase">{{ session.admin_info.role.replace('_', ' ').title() if session.admin_info.role else 'Admin' }}</div>
+                            <div class="font-semibold">{{ session.admin.full_name or 'Admin' }}</div>
+                            <div class="text-xs opacity-80">{{ session.admin.role|title }}</div>
                         </div>
                         <i class="fas fa-chevron-down text-sm"></i>
                     </button>
 
                     <div id="userDropdown" class="dropdown-menu absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-xl overflow-hidden opacity-0 invisible transform -translate-y-2 transition-all duration-300">
                         <a href="{{ url_for('auth.profile') }}" class="flex items-center space-x-3 px-4 py-3 text-gray-700 hover:bg-gray-50 transition">
-                            <i class="fas fa-user text-gray-500"></i>
+                            <i class="fas fa-user"></i>
                             <span>My Profile</span>
                         </a>
                         <div class="border-t border-gray-100"></div>
@@ -188,11 +216,13 @@
 
     <!-- Footer - Hide on login page -->
     {% if not request.endpoint or (request.endpoint != 'auth.login' and request.endpoint != 'chats.live_chat') %}
-    <footer class="text-center py-8 mt-12 bg-white/10 backdrop-blur-sm rounded-2xl mx-4">
-        <p class="text-gray-600">
-            &copy; 2024 Telegram Bot Admin Panel. Made with 
-            <i class="fas fa-heart text-red-500"></i> for better user management.
-        </p>
+    <footer class="mt-12">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="flex justify-between items-center text-gray-600 text-sm py-6">
+                <p>© 2025 IBS Admin Dashboard.</p>
+                <p>Developed by Digital Team.</p>
+            </div>
+        </div>
     </footer>
     {% endif %}
 

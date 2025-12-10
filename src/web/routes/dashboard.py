@@ -1,71 +1,42 @@
-from flask import Blueprint, render_template, session, jsonify, request
-from ...database.connection import SessionLocal
-from ...database.models import Admin
-from ...services.dashboard_service import DashboardService
-from .auth import any_admin_required
-from ...utils import Helpers
+from flask import Blueprint, render_template, request, session, redirect, url_for, flash
+from ..auth_decorators import any_admin_required, super_admin_required
+from ...utils.apiClient import api_client
 
 dashboard_bp = Blueprint('dashboard', __name__)
-dashboard_service = DashboardService()
 
 @dashboard_bp.route('/dashboard')
+@dashboard_bp.route('/')
 @any_admin_required
-def dashboard():
-    """Main dashboard view"""
-    db = SessionLocal()
-    try:
-        current_admin_id = session['admin_info']['id']
-        admin_role = session['admin_info']['role']
+def index():
+    """Dashboard overview - now calls API"""
+    
+    # 🔄 Call API for dashboard stats
+    stats_response = api_client.get('/api/v1/dashboard/stats')
+    trends_response = api_client.get('/api/v1/dashboard/chat-trends', {
+        'period': 'week',
+        'limit': 7
+    })
+    
+    # Handle API responses
+    if not stats_response.get('success') or not trends_response.get('success'):
+        if stats_response.get('redirect_to_login') or trends_response.get('redirect_to_login'):
+            flash('Session expired. Please login again.', 'error')
+            return redirect(url_for('auth.login'))
         
-        # Get dashboard data
-        dashboard_data = dashboard_service.get_dashboard_data(db, current_admin_id, admin_role)
-        
-        return render_template('dashboard/index.html', **dashboard_data)
-    finally:
-        db.close()
-
-@dashboard_bp.route('/dashboard/stats')
-@any_admin_required
-def dashboard_stats():
-    """API endpoint for dashboard statistics"""
-    db = SessionLocal()
-    try:
-        current_admin_id = session['admin_info']['id']
-        admin_role = session['admin_info']['role']
-        
-        stats = dashboard_service.get_dashboard_stats(db, current_admin_id, admin_role)
-        return jsonify(stats)
-    finally:
-        db.close()
-
-@dashboard_bp.route('/dashboard/activity')
-@any_admin_required
-def recent_activity():
-    """API endpoint for recent activity with pagination"""
-    db = SessionLocal()
-    try:
-        current_admin_id = session['admin_info']['id']
-        
-        page = request.args.get('page', 1, type=int)
-        per_page = request.args.get('per_page', 10, type=int)
-        
-        activities = dashboard_service.get_recent_activities(db, limit=100)
-        
-        # Apply pagination
-        paginated_activities = Helpers.paginate(activities, page, per_page)
-        
-        return jsonify({
-            'success': True,
-            'activities': paginated_activities,
-            'pagination': {
-                'page': page,
-                'per_page': per_page,
-                'total': len(activities),
-                'total_pages': (len(activities) + per_page - 1) // per_page
-            }
-        })
-    finally:
-        db.close()
+        flash('Error loading dashboard data', 'error')
+        stats = {}
+        trends = []
+    else:
+        stats = stats_response.get('data', {})
+        trends = trends_response.get('data', [])
+    
+    # Get current admin info from session (set during login)
+    current_admin = session.get('admin', {})
+    
+    return render_template('dashboard/index.html', 
+                         stats=stats,
+                         trends=trends,
+                         current_admin=current_admin)
 
 
 

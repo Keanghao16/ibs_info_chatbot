@@ -36,13 +36,13 @@ def drop_existing_tables(db):
     try:
         # Drop in correct order (child tables first)
         db.execute(text("DROP TABLE IF EXISTS chat_messages"))
-        print("  ✅ Dropped chat_messages table")
+        print("   Dropped chat_messages table")
         
         db.execute(text("DROP TABLE IF EXISTS sessions"))
-        print("  ✅ Dropped sessions table")
+        print("   Dropped sessions table")
         
         db.commit()
-        print("✅ Old tables dropped successfully\n")
+        print(" Old tables dropped successfully\n")
     except Exception as e:
         print(f"❌ Error dropping tables: {e}")
         db.rollback()
@@ -75,7 +75,7 @@ def create_new_tables(db):
                 INDEX idx_sessions_start_time (start_time)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
         """))
-        print("  ✅ Created sessions table")
+        print("   Created sessions table")
         
         # Create chat_messages table
         db.execute(text("""
@@ -99,10 +99,10 @@ def create_new_tables(db):
                 INDEX idx_messages_timestamp (timestamp)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
         """))
-        print("  ✅ Created chat_messages table")
+        print("   Created chat_messages table")
         
         db.commit()
-        print("✅ New tables created successfully\n")
+        print(" New tables created successfully\n")
         
     except Exception as e:
         print(f"❌ Error creating tables: {e}")
@@ -119,20 +119,20 @@ def verify_tables(db):
         # Check sessions table
         result = db.execute(text("DESCRIBE sessions"))
         sessions_columns = [row[0] for row in result]
-        print(f"  ✅ sessions table columns: {', '.join(sessions_columns)}")
+        print(f"   sessions table columns: {', '.join(sessions_columns)}")
         
         # Check chat_messages table
         result = db.execute(text("DESCRIBE chat_messages"))
         messages_columns = [row[0] for row in result]
-        print(f"  ✅ chat_messages table columns: {', '.join(messages_columns)}")
+        print(f"   chat_messages table columns: {', '.join(messages_columns)}")
         
         # Verify session_id exists in chat_messages
         if 'session_id' in messages_columns:
-            print("  ✅ session_id foreign key properly added to chat_messages")
+            print("   session_id foreign key properly added to chat_messages")
         else:
             print("  ❌ session_id NOT found in chat_messages!")
             
-        print("\n✅ Table verification complete\n")
+        print("\n Table verification complete\n")
         
     except Exception as e:
         print(f"❌ Error verifying tables: {e}")
@@ -188,8 +188,8 @@ def create_test_data(db):
                 })
         
         db.commit()
-        print(f"  ✅ Created {sessions_created} test sessions with messages")
-        print("✅ Test data creation complete\n")
+        print(f"   Created {sessions_created} test sessions with messages")
+        print(" Test data creation complete\n")
         
     except Exception as e:
         print(f"❌ Error creating test data: {e}")
@@ -230,7 +230,7 @@ def main():
         print(f"  • Created new chat_messages table (id: INT, session_id: INT FK)")
         print(f"  • Added proper foreign keys and indexes")
         print(f"  • Created {3} test sessions")
-        print("\n✅ You can now test the API endpoints!")
+        print("\n You can now test the API endpoints!")
         print("="*60 + "\n")
         
     except Exception as e:

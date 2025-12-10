@@ -26,6 +26,35 @@ def create_app():
     # Initialize SocketIO
     socketio.init_app(app)
 
+    #  Add hasattr to Jinja2 globals
+    app.jinja_env.globals['hasattr'] = hasattr
+
+    #  Add custom template filters
+    @app.template_filter('safe_datetime')
+    def safe_datetime_filter(value, format='%Y-%m-%d %H:%M'):
+        """Safely format datetime, handling both string and datetime objects"""
+        if not value:
+            return 'Never'
+        
+        try:
+            if isinstance(value, str):
+                # Try to parse ISO format
+                from datetime import datetime
+                dt = datetime.fromisoformat(value.replace('Z', '+00:00'))
+                return dt.strftime(format)
+            elif hasattr(value, 'strftime'):
+                # It's already a datetime object
+                return value.strftime(format)
+            else:
+                return str(value)
+        except:
+            return str(value) if value else 'Never'
+    
+    @app.template_filter('safe_date')
+    def safe_date_filter(value):
+        """Safely format date only"""
+        return safe_datetime_filter(value, '%Y-%m-%d')
+
     # Register blueprints with /portal/admin prefix
     app.register_blueprint(auth_bp, url_prefix=ADMIN_PREFIX)
     app.register_blueprint(admin_bp, url_prefix=ADMIN_PREFIX)
@@ -45,20 +74,21 @@ def create_app():
         Portal admin index route
         Redirects to dashboard if logged in, otherwise to login
         """
-        # Check if user is logged in by checking session
-        if 'admin_token' in session and 'admin_info' in session:
-            # User is logged in, redirect to dashboard
-            return redirect(url_for('dashboard.dashboard'))
+        #  UPDATED: Check for API-based session variables
+        if 'access_token' in session and 'admin' in session:
+            # User is logged in via API, redirect to dashboard
+            return redirect(url_for('dashboard.index'))
         else:
             # User is not logged in, redirect to login
             return redirect(url_for('auth.login'))
 
     @app.after_request
     def add_security_headers(response):
-        """Add security headers including CSP for Telegram widget"""
-        # ...existing CSP code...
+        """Add security headers - CSP temporarily disabled for testing"""
+        # ❌ Temporarily disable CSP
+        # response.headers['Content-Security-Policy'] = csp
         
-        # ✅ Add ngrok bypass header
+        # Bypass ngrok warning
         response.headers['ngrok-skip-browser-warning'] = 'true'
         
         return response
@@ -77,8 +107,9 @@ if __name__ == "__main__":
     print(f"\n{'='*60}")
     print(f"🌐 Starting IBS Info Chatbot Web Application")
     print(f"{'='*60}")
-    print(f"📍 URL: http://{host}:{port}")
+    print(f"📍 URL: https://chatbot.ibs.local")
     print(f"🔧 Debug Mode: {debug}")
+    print(f"📊 Internal Port: {port}")
     print(f"{'='*60}\n")
     
     socketio.run(app, host=host, port=port, debug=debug)
