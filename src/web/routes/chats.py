@@ -1,3 +1,8 @@
+# ============================================================================
+# FILE: src/web/routes/chats.py
+# UPDATED: Show waiting sessions in live chat
+# ============================================================================
+
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session, jsonify
 from ..auth_decorators import any_admin_required, super_admin_required
 from ...utils.apiClient import api_client
@@ -52,8 +57,7 @@ def chat_management():
     
     return render_template('chat/index.html', 
                          sessions=sessions, 
-                         stats=stats,  # ✅ Pass stats to template
-                         # Individual pagination variables
+                         stats=stats,
                          page=pagination_data.get('page', 1),
                          per_page=pagination_data.get('per_page', 20),
                          total=pagination_data.get('total', 0),
@@ -66,10 +70,9 @@ def chat_management():
 @any_admin_required
 def live_chat():
     """Live chat interface for real-time communication - now calls API"""
-    # 🔄 Call API for active sessions
+    # 🔄 UPDATED: Get both waiting AND active sessions
     response = api_client.get('/api/v1/chats', {
-        'status': 'active',
-        'per_page': 50  # Get more sessions for live chat
+        'per_page': 100  # Get more sessions for live chat
     })
     
     if not response.get('success'):
@@ -77,30 +80,37 @@ def live_chat():
             flash('Session expired. Please login again.', 'error')
             return redirect(url_for('auth.login'))
         
-        flash(f"Error loading active chats: {response.get('message', 'Unknown error')}", 'error')
-        active_sessions = []
+        flash(f"Error loading chats: {response.get('message', 'Unknown error')}", 'error')
+        sessions = []
     else:
-        active_sessions = response.get('data', [])
+        all_sessions = response.get('data', [])
+        # 🆕 Filter to only show waiting and active sessions (not closed)
+        sessions = [s for s in all_sessions if s.get('status') in ['waiting', 'active']]
     
     # Get current admin info from session
     current_admin = session.get('admin', {})
     admin_role = current_admin.get('role')
+    admin_id = current_admin.get('id')
     
-    # Filter sessions for regular admins (only their assigned sessions)
+    # Filter sessions for regular admins (only their assigned sessions + unassigned waiting)
     if admin_role == 'admin':
-        admin_id = current_admin.get('id')
-        active_sessions = [s for s in active_sessions if s.get('admin_id') == admin_id]
+        sessions = [
+            s for s in sessions 
+            if s.get('admin_id') == admin_id or  # Their assigned sessions
+               (s.get('status') == 'waiting' and not s.get('admin_id'))  # Unassigned waiting sessions
+        ]
     
     return render_template('chat/live_chat.html', 
-                         sessions=active_sessions,
+                         sessions=sessions,
                          admin=current_admin,
                          admin_role=admin_role)
+
 
 @chats_bp.route('/chat/<int:session_id>')
 @any_admin_required
 def chat_detail(session_id):
-    """View detailed chat session - now calls API"""
-    # 🔄 Call API instead of service
+    """Get detailed chat session - now calls API"""
+    # 🔄 Call API for session details
     response = api_client.get(f'/api/v1/chats/{session_id}')
     
     if not response.get('success'):
@@ -108,119 +118,127 @@ def chat_detail(session_id):
             flash('Session expired. Please login again.', 'error')
             return redirect(url_for('auth.login'))
         
-        flash(f"Error loading chat: {response.get('message', 'Chat not found')}", 'error')
+        flash(f"Chat session not found: {response.get('message', 'Unknown error')}", 'error')
         return redirect(url_for('chats.chat_management'))
     
     chat_session = response.get('data')
-    messages = chat_session.get('messages', [])
     
-    return render_template('chat/live_chat.html',
-                         chat_session=chat_session,
-                         messages=messages)
+    return render_template('chat/detail.html', session=chat_session)
+
 
 @chats_bp.route('/chat/send-message', methods=['POST'])
 @any_admin_required
 def send_message():
-    """Send message to user (for admin communication) - now calls API"""
+    """Send message via API"""
     session_id = request.form.get('session_id')
-    message_text = request.form.get('message')
-    current_admin_id = session['admin']['id']
+    message = request.form.get('message')
     
-    # 🔄 Call API instead of service
+    # 🔄 Call API to send message
     response = api_client.post(f'/api/v1/chats/{session_id}/messages', {
-        'user_id': session['admin']['id'],  # This might need adjustment based on API
-        'admin_id': current_admin_id,
-        'message': message_text,
-        'is_from_admin': True
+        'message': message,
+        'admin_id': session.get('admin', {}).get('id')
     })
     
-    if response.get('success'):
-        return jsonify(response)
-    else:
+    if not response.get('success'):
         if response.get('redirect_to_login'):
-            return jsonify({'success': False, 'message': 'Session expired'})
+            return jsonify({'success': False, 'message': 'Session expired'}), 401
         
-        return jsonify({
-            'success': False, 
-            'message': response.get('message', 'Error sending message')
-        })
+        return jsonify({'success': False, 'message': response.get('message', 'Failed to send message')}), 400
+    
+    return jsonify({'success': True, 'message': 'Message sent successfully'})
+
+
+# 🆕 ADD THIS NEW ROUTE for assigning sessions
+@chats_bp.route('/chat/assign/<int:session_id>', methods=['POST'])
+@any_admin_required
+def assign_session(session_id):
+    """Assign session to current admin"""
+    admin_id = session.get('admin', {}).get('id')
+    
+    # 🔄 Call API to assign session
+    response = api_client.put(f'/api/v1/chats/{session_id}/assign', {
+        'admin_id': admin_id
+    })
+    
+    if not response.get('success'):
+        if response.get('redirect_to_login'):
+            return jsonify({'success': False, 'message': 'Session expired'}), 401
+        
+        return jsonify({'success': False, 'message': response.get('message', 'Failed to assign session')}), 400
+    
+    return jsonify({'success': True, 'message': 'Session assigned successfully', 'data': response.get('data')})
+
 
 @chats_bp.route('/chat/close/<int:session_id>', methods=['POST'])
 @any_admin_required
 def close_chat(session_id):
-    """Close a chat session - now calls API"""
-    # 🔄 Call API instead of service
-    response = api_client.post(f'/api/v1/chats/{session_id}/close')
+    """Close chat session via API"""
+    # 🔄 Call API to close session
+    response = api_client.post(f'/api/v1/chats/{session_id}/close', {})
     
-    if response.get('success'):
-        return jsonify(response)
-    else:
+    if not response.get('success'):
         if response.get('redirect_to_login'):
-            return jsonify({'success': False, 'message': 'Session expired'})
+            flash('Session expired. Please login again.', 'error')
+            return redirect(url_for('auth.login'))
         
-        return jsonify({
-            'success': False, 
-            'message': response.get('message', 'Error closing chat')
-        })
+        flash(f"Failed to close session: {response.get('message', 'Unknown error')}", 'error')
+    else:
+        flash('Chat session closed successfully', 'success')
+    
+    return redirect(url_for('chats.chat_management'))
+
 
 @chats_bp.route('/chat/stats')
 @any_admin_required
 def chat_stats():
-    """API endpoint for chat statistics - now calls API"""
-    # 🔄 Call API instead of service
+    """Get chat statistics via API"""
+    # 🔄 Call API for stats
     response = api_client.get('/api/v1/chats/stats')
     
-    if response.get('success'):
-        return jsonify(response)
-    else:
+    if not response.get('success'):
         if response.get('redirect_to_login'):
-            return jsonify({'success': False, 'message': 'Session expired'})
+            return jsonify({'success': False, 'message': 'Session expired'}), 401
         
-        return jsonify({
-            'success': False,
-            'message': response.get('message', 'Error fetching statistics')
-        })
+        return jsonify({'success': False, 'message': response.get('message', 'Failed to get stats')}), 400
+    
+    return jsonify({'success': True, 'data': response.get('data')})
+
 
 @chats_bp.route('/chat/history/<user_id>')
 @any_admin_required
 def user_chat_history(user_id):
-    """Get chat history for a specific user with pagination - now calls API"""
-    page = request.args.get('page', 1, type=int)
-    per_page = request.args.get('per_page', 20, type=int)
-    
-    # 🔄 Call API instead of service
+    """Get user's chat history via API"""
+    # 🔄 Call API for user's sessions
     response = api_client.get('/api/v1/chats', {
         'user_id': user_id,
-        'page': page,
-        'per_page': per_page
+        'per_page': 50
     })
     
-    if response.get('success'):
-        return jsonify(response)
-    else:
+    if not response.get('success'):
         if response.get('redirect_to_login'):
-            return jsonify({'success': False, 'message': 'Session expired'})
+            flash('Session expired. Please login again.', 'error')
+            return redirect(url_for('auth.login'))
         
-        return jsonify({
-            'success': False,
-            'message': response.get('message', 'Error fetching chat history')
-        })
+        flash(f"Failed to load chat history: {response.get('message', 'Unknown error')}", 'error')
+        sessions = []
+    else:
+        sessions = response.get('data', [])
+    
+    return render_template('chat/history.html', sessions=sessions, user_id=user_id)
+
 
 @chats_bp.route('/chat/<int:session_id>/messages')
 @any_admin_required
 def get_chat_messages_route(session_id):
-    """Get messages for a specific chat session with pagination - now calls API"""
-    # 🔄 Call API instead of service
+    """Get messages for a specific session via API"""
+    # 🔄 Call API for session messages
     response = api_client.get(f'/api/v1/chats/{session_id}/messages')
     
-    if response.get('success'):
-        return jsonify(response)
-    else:
+    if not response.get('success'):
         if response.get('redirect_to_login'):
-            return jsonify({'success': False, 'message': 'Session expired'})
+            return jsonify({'success': False, 'message': 'Session expired'}), 401
         
-        return jsonify({
-            'success': False,
-            'message': response.get('message', 'Error fetching messages')
-        })
+        return jsonify({'success': False, 'message': response.get('message', 'Failed to load messages')}), 400
+    
+    return jsonify({'success': True, 'data': response.get('data', [])})
 

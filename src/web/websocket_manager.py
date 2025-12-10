@@ -3,7 +3,7 @@ from flask import request, session
 import asyncio
 from telegram import Bot
 import os
-from datetime import datetime, timezone  # Add timezone import
+from datetime import datetime
 
 socketio = SocketIO(cors_allowed_origins="*")
 
@@ -13,7 +13,7 @@ active_connections = {}
 @socketio.on('connect')
 def handle_connect():
     """Handle WebSocket connection"""
-    admin_id = session.get('admin', {}).get('id')  #  Changed from admin_info
+    admin_id = session.get('admin', {}).get('id')
     if admin_id:
         room = f"admin_{admin_id}"
         join_room(room)
@@ -23,7 +23,7 @@ def handle_connect():
 @socketio.on('disconnect')
 def handle_disconnect():
     """Handle WebSocket disconnection"""
-    admin_id = session.get('admin', {}).get('id')  #  Changed from admin_info
+    admin_id = session.get('admin', {}).get('id')
     if admin_id and admin_id in active_connections:
         del active_connections[admin_id]
 
@@ -37,7 +37,12 @@ def handle_send_message(data):
         db = SessionLocal()
         session_id = data.get('session_id')
         message_text = data.get('message')
-        admin_id = session.get('admin', {}).get('id')  #  Changed from admin_info
+        admin_id = session.get('admin', {}).get('id')
+        
+        if not session_id:
+            emit('error', {'message': 'Session ID is required'})
+            db.close()
+            return
         
         # Get chat session
         chat_session = db.query(ChatSession).filter(
@@ -46,15 +51,17 @@ def handle_send_message(data):
         
         if not chat_session:
             emit('error', {'message': 'Session not found'})
+            db.close()
             return
         
-        # Save message to database with timezone-aware timestamp
+        # Save message to database with session_id
         new_message = ChatMessage(
+            session_id=session_id,  # ✅ ADD THIS LINE
             user_id=chat_session.user_id,
             admin_id=admin_id,
             message=message_text,
             is_from_admin=True,
-            timestamp=datetime.now(timezone.utc)  #  Use UTC with timezone
+            timestamp=datetime.now()
         )
         db.add(new_message)
         db.commit()
@@ -65,7 +72,7 @@ def handle_send_message(data):
         
         asyncio.run(bot.send_message(
             chat_id=chat_session.user.telegram_id,
-            text=f"💬 *Agent {session.get('admin', {}).get('full_name')}:*\n\n{message_text}",  #  Changed
+            text=f"💬 *Agent {session.get('admin', {}).get('full_name')}:*\n\n{message_text}",
             parse_mode='Markdown'
         ))
         
@@ -80,26 +87,25 @@ def handle_send_message(data):
         db.close()
         
     except Exception as e:
-        print(f"Error sending message: {e}")
+        print(f"❌ Error sending message: {e}")
         emit('error', {'message': str(e)})
 
 @socketio.on('error')
 def handle_error(error):
     """Handle WebSocket errors"""
     print(f"WebSocket error: {error}")
-    emit('error', {'message': 'Connection error occurred'})
 
 @socketio.on_error_default
 def default_error_handler(e):
-    """Default error handler"""
-    print(f"WebSocket error: {e}")
+    """Handle all other errors"""
+    print(f"WebSocket default error: {e}")
 
 def broadcast_new_message(user_id, message_text, admin_id=None, session_id=None):
     """Broadcast new message from user to admin"""
     if admin_id and admin_id in active_connections:
-        socketio.emit('new_message', {
+        emit('new_message', {
             'user_id': user_id,
-            'session_id': session_id,
             'message': message_text,
-            'timestamp': datetime.now(timezone.utc).isoformat()  #  Add timezone.utc
+            'session_id': session_id,
+            'timestamp': datetime.now().isoformat()  # ✅ Changed from datetime.now(timezone.utc)
         }, room=f"admin_{admin_id}")

@@ -16,3 +16,4 @@ flask-restful==0.3.10
 flask-cors==4.0.0
 marshmallow==3.20.1
 marshmallow-sqlalchemy==0.29.0
+pytz  # ✅ Add this line

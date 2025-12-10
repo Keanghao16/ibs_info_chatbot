@@ -2,6 +2,8 @@ import os
 from flask import Flask, redirect, url_for, session
 from ..utils import Config
 from .websocket_manager import socketio
+from datetime import datetime
+import pytz  # ✅ Add this import
 
 ADMIN_PREFIX = '/portal/admin'
 
@@ -26,33 +28,62 @@ def create_app():
     # Initialize SocketIO
     socketio.init_app(app)
 
-    #  Add hasattr to Jinja2 globals
+    # Add hasattr to Jinja2 globals
     app.jinja_env.globals['hasattr'] = hasattr
 
-    #  Add custom template filters
-    @app.template_filter('safe_datetime')
-    def safe_datetime_filter(value, format='%Y-%m-%d %H:%M'):
-        """Safely format datetime, handling both string and datetime objects"""
-        if not value:
-            return 'Never'
+    # ✅ UPDATED FILTER for Cambodia timezone - Database already in UTC+7
+    @app.template_filter('cambodia_time')
+    def cambodia_time_filter(dt):
+        """Format datetime that's already in Cambodia time (UTC+7)"""
+        if dt is None:
+            return 'N/A'
         
+        # If input is a string, parse it first
+        if isinstance(dt, str):
+            try:
+                # Parse ISO format string: "2025-12-10T13:50:12" or "2025-12-10T13:50:12.123456"
+                dt = datetime.fromisoformat(dt.replace('Z', '+00:00'))
+            except (ValueError, AttributeError):
+                return dt  # Return original string if parsing fails
+
+        # Database already stores Cambodia time (UTC+7), just format it
+        # Format: Dec 10, 2025 14:30
+        return dt.strftime('%b %d, %Y %H:%M')
+    
+    @app.template_filter('cambodia_time_full')
+    def cambodia_time_full_filter(dt):
+        """Format datetime with seconds - already in Cambodia time"""
+        if dt is None:
+            return 'N/A'
+        
+        # If input is a string, parse it first
+        if isinstance(dt, str):
+            try:
+                dt = datetime.fromisoformat(dt.replace('Z', '+00:00'))
+            except (ValueError, AttributeError):
+                return dt
+    
+        # Database already stores Cambodia time (UTC+7), just format it
+        # Format: 2025-12-10 14:30:45
+        return dt.strftime('%Y-%m-%d %H:%M:%S')
+
+    # Add custom template filters (your existing filters)
+    @app.template_filter('safe_datetime')
+    def safe_datetime_filter(value):
+        """Safely format datetime objects"""
+        if value is None:
+            return 'N/A'
         try:
             if isinstance(value, str):
-                # Try to parse ISO format
-                from datetime import datetime
-                dt = datetime.fromisoformat(value.replace('Z', '+00:00'))
-                return dt.strftime(format)
-            elif hasattr(value, 'strftime'):
-                # It's already a datetime object
-                return value.strftime(format)
-            else:
-                return str(value)
-        except:
-            return str(value) if value else 'Never'
+                from dateutil import parser
+                value = parser.parse(value)
+            return value.strftime('%Y-%m-%d %H:%M:%S')
+        except Exception:
+            return str(value)
     
     @app.template_filter('safe_date')
     def safe_date_filter(value):
-        """Safely format date only"""
+        """Safely format date objects"""
         return safe_datetime_filter(value, '%Y-%m-%d')
 
     # Register blueprints with /portal/admin prefix

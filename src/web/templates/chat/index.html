@@ -207,7 +207,7 @@
                         <!-- Start Time -->
                         <td class="px-6 py-4 text-sm text-gray-900">
                             {% if session.start_time %}
-                            {{ session.start_time | safe_datetime }}
+                            {{ session.start_time | cambodia_time }}
                             {% else %}
                             Unknown
                             {% endif %}
@@ -344,7 +344,7 @@
                 headers: { 'Content-Type': 'application/json' }
             })
             .then(response => response.json())
-            .then(data => {
+            .then data => {
                 if (data.success) {
                     location.reload();
                 } else {

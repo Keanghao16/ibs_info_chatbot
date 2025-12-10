@@ -62,26 +62,22 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         if query.data == "start_chat":
             if user:
-                # Check for existing active session
+                # Check for existing active/waiting session
                 active_session = db.query(ChatSession).filter(
                     ChatSession.user_id == user.id,
-                    ChatSession.status == SessionStatus.active
+                    ChatSession.status.in_([SessionStatus.waiting, SessionStatus.active])
                 ).first()
                 
                 if active_session:
                     await query.edit_message_text(
                         "✅ You already have an active chat session.\n"
-                        "Please continue chatting or wait for an admin to respond."
+                        "Just send your message directly - no need to start again!"
                     )
                 else:
-                    # Create new session
-                    new_session = ChatSession(user_id=user.id, status=SessionStatus.waiting)
-                    db.add(new_session)
-                    db.commit()
-                    
                     await query.edit_message_text(
-                        "✅ Chat session started!\n"
-                        "An admin will be with you shortly. Please type your message."
+                        "✅ Ready to chat!\n\n"
+                        "Just type your message and send it.\n"
+                        "A session will be created automatically, and an agent will assist you shortly."
                     )
             else:
                 await query.edit_message_text("⚠️ Please use /start first.")
