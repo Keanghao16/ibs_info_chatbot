@@ -1,103 +1,125 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, session
-from ...database.connection import SessionLocal
-from ...database.models import User
-from ...services import UserService
-from .auth import any_admin_required, super_admin_required
-import asyncio
-from telegram import Bot
-import os
+from flask import Blueprint, render_template, request, redirect, url_for, flash, session, jsonify
+from ..auth_decorators import any_admin_required, super_admin_required
+from ...utils.apiClient import api_client
 from ...utils import Helpers
 
 users_bp = Blueprint('users', __name__)
-user_service = UserService()
 
 @users_bp.route('/users')
 @any_admin_required
 def list_users():
-    """List all users with management interface and pagination"""
-    db = SessionLocal()
-    try:
-        # Get pagination parameters
-        page = request.args.get('page', 1, type=int)
-        per_page = request.args.get('per_page', 10, type=int)
+    """List all users - now calls API"""
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 20, type=int)
+    search = request.args.get('search', '')
+    sort = request.args.get('sort', 'newest')
+    
+    # 🔄 Call API for users list
+    params = {
+        'page': page,
+        'per_page': per_page,
+        'search': search,
+        'sort': sort
+    }
+    
+    response = api_client.get('/api/v1/users', params)
+    
+    # 🔄 Call API for user statistics
+    stats_response = api_client.get('/api/v1/users/stats')
+    
+    # Handle API responses
+    if not response.get('success'):
+        if response.get('redirect_to_login'):
+            flash('Session expired. Please login again.', 'error')
+            return redirect(url_for('auth.login'))
         
-        users = user_service.get_all_users(db)
-        
-        # Apply pagination
-        paginated_users = Helpers.paginate(users, page, per_page)
-        
-        # Calculate total pages
-        total_users = len(users)
-        total_pages = (total_users + per_page - 1) // per_page
-        
-        return render_template('user/index.html', 
-                             users=paginated_users,
-                             page=page,
-                             per_page=per_page,
-                             total_users=total_users,
-                             total_pages=total_pages)
-    finally:
-        db.close()
+        flash(f"Error loading users: {response.get('message', 'Unknown error')}", 'error')
+        users = []
+        pagination_data = {}
+    else:
+        users = response.get('data', [])
+        pagination_data = response.get('pagination', {})
+    
+    # Handle stats response
+    if not stats_response.get('success'):
+        # Fallback stats if API fails
+        stats = {
+            'total_users': len(users),
+            'active_today': 0,
+            'premium_users': 0,
+            'new_users_today': 0
+        }
+    else:
+        stats = stats_response.get('data', {})
+    
+    return render_template('user/index.html', 
+                         users=users,
+                         stats=stats,  # ✅ Pass stats to template
+                         # Individual pagination variables
+                         page=pagination_data.get('page', 1),
+                         per_page=pagination_data.get('per_page', 20),
+                         total=pagination_data.get('total', 0),
+                         total_pages=pagination_data.get('total_pages', 1),
+                         has_next=pagination_data.get('has_next', False),
+                         has_prev=pagination_data.get('has_prev', False),
+                         # Also pass the full pagination object
+                         pagination=pagination_data,
+                         search=search,
+                         sort=sort)
 
 @users_bp.route('/users/<user_id>')
 @any_admin_required
 def view_user(user_id):
-    """View user details"""
-    db = SessionLocal()
-    try:
-        user = user_service.get_user_by_id(db, user_id)  # ✅ Use service method
-        if not user:
-            flash('User not found.', 'error')
-            return redirect(url_for('users.list_users'))
+    """View single user - now calls API"""
+    # 🔄 Call API instead of service
+    response = api_client.get(f'/api/v1/users/{user_id}')
+    
+    if not response.get('success'):
+        if response.get('redirect_to_login'):
+            flash('Session expired. Please login again.', 'error')
+            return redirect(url_for('auth.login'))
         
-        # Create a user_info dict for the template
-        user_info = {
-            'id': user.id,
-            'telegram_id': user.telegram_id,
-            'username': user.username,
-            'first_name': user.first_name,
-            'last_name': user.last_name,
-            'full_name': user.full_name or f"{user.first_name or ''} {user.last_name or ''}".strip(),
-            'photo_url': user.photo_url,
-            'is_active': user.is_active,
-            'last_activity': user.last_activity,
-            'created_at': user.created_at
-        }
-        
-        return render_template('user/view.html', user_info=user_info)
-    finally:
-        db.close()
+        flash(f"Error loading user: {response.get('message', 'User not found')}", 'error')
+        return redirect(url_for('users.list_users'))
+    
+    user = response.get('data')
+    return render_template('user/view.html', user=user)
 
 @users_bp.route('/users/delete/<user_id>', methods=['POST'])
 @super_admin_required
-def remove_user(user_id):
-    """Delete user (super admin only)"""
-    db = SessionLocal()
-    try:
-        result = user_service.delete_user(db, user_id)  # ✅ Use service method
+def delete_user(user_id):
+    """Delete user - now calls API"""
+    # 🔄 Call API instead of service
+    response = api_client.delete(f'/api/v1/users/{user_id}')
+    
+    if response.get('success'):
+        flash(' User deleted successfully!', 'success')
+    else:
+        if response.get('redirect_to_login'):
+            flash('Session expired. Please login again.', 'error')
+            return redirect(url_for('auth.login'))
         
-        if result['success']:
-            flash(result['message'], 'success')
-        else:
-            flash(result['message'], 'error')
-            
-        return redirect(url_for('users.list_users'))
-    finally:
-        db.close()
+        flash(f"❌ Error deleting user: {response.get('message', 'Unknown error')}", 'error')
+    
+    return redirect(url_for('users.list_users'))
 
 @users_bp.route('/users/toggle-status/<user_id>', methods=['POST'])
 @super_admin_required
 def toggle_status(user_id):
     """Toggle user active status (super admin only)"""
-    db = SessionLocal()
-    try:
-        result = user_service.toggle_user_status(db, user_id)  # ✅ Use service method
-        return jsonify(result)
-    except Exception as e:
-        print(f"Error toggling user status: {e}")
-        return jsonify({'success': False, 'message': 'Error updating user status'})
-    finally:
-        db.close()
+    # 🔄 Call API instead of using service directly
+    response = api_client.put(f'/api/v1/users/{user_id}/toggle-status')
+    
+    if response.get('success'):
+        return jsonify(response)
+    else:
+        if response.get('redirect_to_login'):
+            return jsonify({'success': False, 'message': 'Session expired'})
+        
+        return jsonify({
+            'success': False, 
+            'message': response.get('message', 'Error updating user status')
+        })
 
 @users_bp.route('/users/api/stats')
 @any_admin_required
@@ -105,7 +127,7 @@ def user_stats():
     """API endpoint for user statistics"""
     db = SessionLocal()
     try:
-        users = user_service.get_all_users(db)  # ✅ Use service method
+        users = user_service.get_all_users(db)  #  Use service method
         
         stats = {
             "total_users": len(users),
@@ -126,7 +148,7 @@ def search_users():
     try:
         search_term = request.args.get('q', '').lower()
         
-        users = user_service.get_all_users(db)  # ✅ Use service method
+        users = user_service.get_all_users(db)  #  Use service method
         
         # Filter users based on search term
         filtered_users = [
@@ -202,61 +224,22 @@ def send_message_to_user():
 @users_bp.route('/users/promote/<user_id>', methods=['POST'])
 @super_admin_required
 def promote_to_admin(user_id):
-    """Promote user to admin (super admin only)"""
-    db = SessionLocal()
-    try:
-        user = user_service.get_user_by_id(db, user_id)  # ✅ Use service method
-        if not user:
-            return jsonify({'success': False, 'message': 'User not found'})
-        
-        # Get admin data from request
-        data = request.get_json()
-        role = data.get('role', 'admin')
-        division = data.get('division', 'Support')
-        
-        # Validate role
-        if role not in ['admin', 'super_admin']:
-            return jsonify({'success': False, 'message': 'Invalid role specified'})
-        
-        # Get current admin ID from session
-        current_admin_id = session.get('admin_info', {}).get('id')
-        
-        # Promote user using service method
-        from ...database.models import AdminRole
-        admin_role = AdminRole.super_admin if role == 'super_admin' else AdminRole.admin
-        
-        result = user_service.promote_user_to_admin(  # ✅ Use service method
-            db=db,
-            telegram_id=user.telegram_id,
-            promoted_by_admin_id=current_admin_id,
-            role=admin_role,
-            division=division if role == 'admin' else None,
-            is_available=True if role == 'admin' else None
-        )
-        
-        if not result['success']:
-            return jsonify(result)
-        
-        admin = result['admin']
-        role_name = 'Super Administrator' if role == 'super_admin' else 'Admin/Agent'
-        
-        return jsonify({
-            'success': True,
-            'message': f'User promoted to {role_name} successfully',
-            'admin': {
-                'id': admin.id,
-                'full_name': admin.full_name,
-                'role': admin.role.value
-            }
-        })
-        
-    except Exception as e:
-        print(f"Error promoting user: {e}")
-        import traceback
-        traceback.print_exc()
-        return jsonify({'success': False, 'message': str(e)})
-    finally:
-        db.close()
+    """Promote user to admin - now calls API"""
+    # Get data from JSON body
+    data = request.get_json()
+    role = data.get('role', 'admin')
+    division = data.get('division')
+    
+    # 🔄 Call API instead of service
+    response = api_client.post(f'/api/v1/users/{user_id}/promote', {
+        'role': role,
+        'division': division
+    })
+    
+    # Always return JSON for AJAX requests
+    return jsonify(response)
+    
+    return redirect(url_for('users.view_user', user_id=user_id))
 
 @users_bp.route('/api/users')
 def get_users():

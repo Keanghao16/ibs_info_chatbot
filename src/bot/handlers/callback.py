@@ -2,10 +2,10 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
 from ...database.connection import SessionLocal
 from ...database.models import ChatSession, Admin, AdminRole, SessionStatus
-from ...services import UserService, FAQService
+from ...services import UserService
+from ...utils.bot_api_client import bot_api_client
 
 user_service = UserService()
-faq_service = FAQService()
 
 async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
@@ -26,71 +26,78 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         except Exception as e:
             print(f"Error fetching user photo: {e}")
         
-        # ✅ Use UserService method instead of standalone function
+        # Use UserService method to check if user or admin
         result = user_service.get_user_or_admin_by_telegram_id(db, str(telegram_user.id))
         
-        if result and result['type'] == "admin":
+        is_admin = result and result['type'] == "admin"
+        
+        # ✅ REMOVED the admin restriction - admins can now use FAQ features
+        # Only restrict chat functionality for admins
+        if is_admin and query.data == "start_chat":
             await query.edit_message_text(
-                "⚠️ Admin accounts cannot use regular user features.\n"
-                "Please use the admin panel."
+                "⚠️ Admin accounts cannot start chat sessions.\n"
+                "Please use the admin panel to manage chats."
             )
             return
         
-        # ✅ Use UserService method to create user
-        create_result = user_service.create_user_if_not_admin(
-            db=db,
-            telegram_id=str(telegram_user.id),
-            username=telegram_user.username,
-            first_name=telegram_user.first_name,
-            last_name=telegram_user.last_name,
-            full_name=telegram_user.full_name,
-            photo_url=photo_url
-        )
-        
-        if not create_result['success'] and 'admin' not in create_result['message'].lower():
-            await query.edit_message_text("⚠️ Please use /start first.")
-            return
-        
-        # Get the user object
-        user = create_result.get('user') or user_service.get_user_by_telegram_id(db, str(telegram_user.id))
+        # For non-admins, ensure user exists
+        if not is_admin:
+            create_result = user_service.create_user_if_not_admin(
+                db=db,
+                telegram_id=str(telegram_user.id),
+                username=telegram_user.username,
+                first_name=telegram_user.first_name,
+                last_name=telegram_user.last_name,
+                full_name=telegram_user.full_name,
+                photo_url=photo_url
+            )
+            
+            if not create_result['success']:
+                await query.edit_message_text("⚠️ Please use /start first.")
+                return
+            
+            user = create_result.get('user') or user_service.get_user_by_telegram_id(db, str(telegram_user.id))
+        else:
+            user = None  # Admin doesn't need user object for FAQ browsing
 
         if query.data == "start_chat":
             if user:
-                available_admin = db.query(Admin).filter(
-                    Admin.role == AdminRole.admin,
-                    Admin.is_available == True,
-                    Admin.is_active == True
+                # Check for existing active/waiting session
+                active_session = db.query(ChatSession).filter(
+                    ChatSession.user_id == user.id,
+                    ChatSession.status.in_([SessionStatus.waiting, SessionStatus.active])
                 ).first()
                 
-                if available_admin:
-                    new_session = ChatSession(
-                        user_id=user.id,
-                        admin_id=available_admin.id,
-                        status=SessionStatus.active
-                    )
-                    db.add(new_session)
-                    db.commit()
-                    
+                if active_session:
                     await query.edit_message_text(
-                        f"✅ Chat session started! You've been connected to {available_admin.full_name} "
-                        f"from {available_admin.division or 'Support Team'}."
+                        "✅ You already have an active chat session.\n"
+                        "Just send your message directly - no need to start again!"
                     )
                 else:
                     await query.edit_message_text(
-                        "❌ Sorry, no agents are available at the moment. Please try again later."
+                        "✅ Ready to chat!\n\n"
+                        "Just type your message and send it.\n"
+                        "A session will be created automatically, and an agent will assist you shortly."
                     )
             else:
-                await query.edit_message_text("❌ Please use /start first to register.")
+                await query.edit_message_text("⚠️ Please use /start first.")
             
         elif query.data == "faq":
-            # ✅ Use FAQService method
-            categories = faq_service.get_active_faq_categories(db)
+            # ✅ FAQ accessible to both users and admins
+            response = bot_api_client.get('/bot/faq/categories')
+            
+            if not response.get('success'):
+                await query.edit_message_text(
+                    "❌ Unable to load FAQ categories. Please try again later."
+                )
+                return
+            
+            categories = response.get('data', [])
             
             if not categories:
                 await query.edit_message_text(
-                    "📚 **FAQ Section**\n\n"
-                    "No FAQs available at the moment. Please contact support for assistance.",
-                    parse_mode='Markdown',
+                    "📚 No FAQ categories available at the moment.\n\n"
+                    "Please check back later or contact support directly.",
                     reply_markup=InlineKeyboardMarkup([
                         [InlineKeyboardButton("🔙 Back to Main Menu", callback_data='back_to_main')]
                     ])
@@ -100,14 +107,13 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             # Create category buttons dynamically
             keyboard = []
             for category in categories:
-                # ✅ Use FAQService method
-                faqs_count = faq_service.get_category_faq_count(db, category.id)
-                keyboard.append([
-                    InlineKeyboardButton(
-                        f"{category.icon or '📁'} {category.name} ({faqs_count})",
-                        callback_data=f'faq_cat_{category.id}'
-                    )
-                ])
+                faq_count = category.get('faq_count', 0)
+                icon = category.get('icon', '📁')
+                button_text = f"{icon} {category['name']} ({faq_count})"
+                keyboard.append([InlineKeyboardButton(
+                    button_text,
+                    callback_data=f"faq_cat_{category['id']}"
+                )])
             
             # Add search and back buttons
             keyboard.append([InlineKeyboardButton("🔍 Search FAQs", callback_data='faq_search')])
@@ -123,29 +129,32 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             )
 
         elif query.data.startswith("faq_cat_"):
-            # Show FAQs for selected category
+            # ✅ Show FAQs for selected category - accessible to both users and admins
             category_id = int(query.data.replace("faq_cat_", ""))
             
-            # ✅ Use FAQService methods
-            category = faq_service.get_category_by_id(db, category_id)
-            if not category:
+            response = bot_api_client.get(f'/bot/faq/category/{category_id}')
+            
+            if not response.get('success'):
                 await query.edit_message_text(
-                    "❌ Category not found.",
+                    "❌ Unable to load FAQs. Please try again later.",
                     reply_markup=InlineKeyboardMarkup([
-                        [InlineKeyboardButton("🔙 Back to FAQ", callback_data='faq')]
+                        [InlineKeyboardButton("🔙 Back to FAQ Categories", callback_data='faq')]
                     ])
                 )
                 return
             
-            faqs = faq_service.get_faqs_by_category(db, category_id)
+            data = response.get('data', {})
+            category = data.get('category', {})
+            faqs = data.get('faqs', [])
             
             if not faqs:
                 await query.edit_message_text(
-                    f"📚 **{category.name}**\n\n"
-                    "No FAQs found in this category.",
+                    f"📁 **{category.get('name', 'Category')}**\n\n"
+                    f"No FAQs available in this category yet.",
                     parse_mode='Markdown',
                     reply_markup=InlineKeyboardMarkup([
-                        [InlineKeyboardButton("🔙 Back to FAQ", callback_data='faq')]
+                        [InlineKeyboardButton("🔙 Back to FAQ Categories", callback_data='faq')],
+                        [InlineKeyboardButton("🏠 Main Menu", callback_data='back_to_main')]
                     ])
                 )
                 return
@@ -153,19 +162,20 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             # Create FAQ question buttons
             keyboard = []
             for faq in faqs:
-                # Truncate question if too long
-                question_preview = faq.question[:60] + "..." if len(faq.question) > 60 else faq.question
-                keyboard.append([
-                    InlineKeyboardButton(
-                        f"❓ {question_preview}",
-                        callback_data=f'faq_view_{faq.id}'
-                    )
-                ])
+                # Truncate long questions for button text
+                question_preview = faq['question'][:50] + "..." if len(faq['question']) > 50 else faq['question']
+                keyboard.append([InlineKeyboardButton(
+                    f"❓ {question_preview}",
+                    callback_data=f"faq_view_{faq['id']}"
+                )])
             
             keyboard.append([InlineKeyboardButton("🔙 Back to FAQ Categories", callback_data='faq')])
             keyboard.append([InlineKeyboardButton("🏠 Main Menu", callback_data='back_to_main')])
             
-            text = f"{category.icon or '📁'} **{category.name}**\n\n"
+            icon = category.get('icon', '📁')
+            text = f"{icon} **{category.get('name', 'Category')}**\n\n"
+            if category.get('description'):
+                text += f"{category['description']}\n\n"
             text += f"Found {len(faqs)} FAQ(s) in this category. Select a question:"
             
             await query.edit_message_text(
@@ -175,86 +185,79 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             )
 
         elif query.data.startswith("faq_view_"):
-            # Show specific FAQ answer
+            # ✅ Show specific FAQ answer - accessible to both users and admins
             faq_id = int(query.data.replace("faq_view_", ""))
-            # ✅ Use FAQService method
-            faq = faq_service.get_faq_by_id(db, faq_id)
             
-            if not faq or not faq.faq_category:
+            response = bot_api_client.get(f'/bot/faq/{faq_id}')
+            
+            if not response.get('success'):
                 await query.edit_message_text(
-                    "❌ FAQ not found.",
+                    "❌ Unable to load FAQ. Please try again later.",
                     reply_markup=InlineKeyboardMarkup([
-                        [InlineKeyboardButton("🔙 Back to FAQ", callback_data='faq')]
+                        [InlineKeyboardButton("🔙 Back to FAQ Categories", callback_data='faq')]
                     ])
                 )
                 return
             
-            # Format the FAQ answer
-            answer_text = f"❓ **{faq.question}**\n\n"
-            answer_text += faq.answer
+            faq = response.get('data', {})
             
-            # Add category tag
-            answer_text += f"\n\n{faq.faq_category.icon or '📁'} Category: {faq.faq_category.name}"
+            text = f"❓ **{faq.get('question', 'Question')}**\n\n"
+            text += f"💡 {faq.get('answer', 'No answer available.')}"
             
             keyboard = [
-                [InlineKeyboardButton("🔙 Back to Category", callback_data=f'faq_cat_{faq.category_id}')],
-                [InlineKeyboardButton("📚 All FAQs", callback_data='faq')],
+                [InlineKeyboardButton("🔙 Back to Category", callback_data=f"faq_cat_{faq.get('category_id')}")],
+                [InlineKeyboardButton("📚 All Categories", callback_data='faq')],
                 [InlineKeyboardButton("🏠 Main Menu", callback_data='back_to_main')]
             ]
             
             await query.edit_message_text(
-                answer_text,
+                text,
                 parse_mode='Markdown',
                 reply_markup=InlineKeyboardMarkup(keyboard)
             )
 
         elif query.data == "faq_search":
-            # Prompt user to search
+            # ✅ FAQ search - accessible to both users and admins
+            context.user_data['searching_faq'] = True
             await query.edit_message_text(
-                "🔍 **Search FAQs**\n\n"
-                "Please type your search query in the chat.\n"
-                "I'll search through all FAQs and show you relevant results.\n\n"
-                "Example: Type 'payment' to find FAQs about payments.",
+                "🔍 **FAQ Search**\n\n"
+                "Please type your search query (keywords or question).\n\n"
+                "I'll search through all FAQs and show you relevant results.",
                 parse_mode='Markdown',
                 reply_markup=InlineKeyboardMarkup([
-                    [InlineKeyboardButton("🔙 Back to FAQ", callback_data='faq')],
-                    [InlineKeyboardButton("🏠 Main Menu", callback_data='back_to_main')]
+                    [InlineKeyboardButton("❌ Cancel Search", callback_data='faq')]
                 ])
             )
-            
-            # Store in context that user wants to search FAQs
-            context.user_data['searching_faq'] = True
 
         elif query.data == "view_chat_history":
-            if user:
-                chat_sessions = db.query(ChatSession).filter(ChatSession.user_id == user.id).all()
-                if chat_sessions:
-                    history_text = f"📝 **Your Chat History ({len(chat_sessions)} sessions):**\n\n"
-                    for i, session in enumerate(chat_sessions[-5:], 1):
-                        agent_name = session.admin.full_name if session.admin else "System"
-                        status = session.status.value if session.status else "unknown"
-                        start_time = session.start_time.strftime('%Y-%m-%d %H:%M') if session.start_time else 'Unknown'
-                        history_text += f"{i}. **Agent:** {agent_name}\n   **Date:** {start_time}\n   **Status:** {status.title()}\n\n"
-                else:
-                    history_text = "📝 No chat history found.\n\nStart your first conversation by clicking '💬 Start Chat'!"
-                
-                history_keyboard = InlineKeyboardMarkup([
+            # This would show previous chats - implement as needed
+            await query.edit_message_text(
+                "📜 **Chat History**\n\n"
+                "This feature will show your previous conversations with support.",
+                reply_markup=InlineKeyboardMarkup([
                     [InlineKeyboardButton("🔙 Back to Main Menu", callback_data='back_to_main')]
                 ])
-                await query.edit_message_text(history_text, parse_mode='Markdown', reply_markup=history_keyboard)
-            else:
-                await query.edit_message_text("❌ User not found. Please use /start first.")
+            )
 
         elif query.data == "back_to_main":
-            from ..keyboards.inline import main_keyboard
-            await query.edit_message_text(
-                f"👋 Hello {telegram_user.first_name}! Welcome back to our Telegram bot.\n"
-                "Use the buttons below to navigate.",
-                reply_markup=main_keyboard()
-            )
+            # ✅ Return appropriate keyboard based on user type
+            if is_admin:
+                from ..keyboards.inline import admin_keyboard
+                await query.edit_message_text(
+                    f"👋 Welcome back, Admin {telegram_user.first_name}!\n\n"
+                    "What would you like to do?",
+                    reply_markup=admin_keyboard()
+                )
+            else:
+                from ..keyboards.inline import main_keyboard
+                await query.edit_message_text(
+                    f"👋 Welcome back, {telegram_user.first_name}!\n\n"
+                    "What would you like to do?",
+                    reply_markup=main_keyboard()
+                )
             
         else:
-            await query.edit_message_text("❌ Unknown action. Please try again.")
+            await query.edit_message_text("Unknown action.")
             
     except Exception as e:
         print(f"Error in callback handler: {e}")

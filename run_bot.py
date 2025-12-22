@@ -16,7 +16,7 @@ if __name__ == "__main__":
     print(f"{'='*60}")
     print(f"📱 Bot Username: @{bot_username}")
     print(f"🔌 Connection: Telegram Polling")
-    print(f"✅ Bot Token: {'Configured' if bot_token else '❌ Missing'}")
+    print(f" Bot Token: {'Configured' if bot_token else '❌ Missing'}")
     print(f"{'='*60}\n")
     
     if not bot_token:

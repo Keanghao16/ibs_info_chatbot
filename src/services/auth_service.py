@@ -86,13 +86,23 @@ class AuthService:
         
         db.commit()
         
-        # Generate JWT token
-        token = self.generate_token(admin.id)
+        # Generate JWT tokens instead of simple token
+        access_token = self.jwt_helper.generate_access_token(
+            admin_id=admin.id,
+            role=admin.role.value if hasattr(admin.role, 'value') else admin.role
+        )
+        
+        refresh_token = self.jwt_helper.generate_refresh_token(
+            admin_id=admin.id
+        )
         
         return {
             "success": True,
             "message": "Login successful",
-            "token": token,
+            "access_token": access_token,
+            "refresh_token": refresh_token,
+            "token_type": "Bearer",
+            "expires_in": self.jwt_helper.access_token_expires,
             "admin": self._serialize_admin(admin)
         }
     
@@ -183,18 +193,21 @@ class AuthService:
             "admin": self._serialize_admin(admin)
         }
     
-    def toggle_admin_availability(self, db: Session, admin_id: int):
+    def toggle_admin_availability(self, db: Session, admin_id: str):
         """Toggle admin availability for chat assignment"""
         admin = db.query(Admin).filter(Admin.id == admin_id).first()
         
         if not admin:
-            return {"success": False, "message": "Admin not found"}
+            return {
+                'success': False,
+                'message': 'Admin not found'
+            }
         
         # Only regular admins can change availability
         if admin.role != AdminRole.admin:
             return {
-                "success": False, 
-                "message": "Only regular admins can change availability status"
+                'success': False,
+                'message': 'Only regular admins can change availability status'
             }
         
         admin.is_available = not admin.is_available
@@ -206,8 +219,10 @@ class AuthService:
         return {
             "success": True,
             "message": f"You are now {status} for new chat assignments",
-            "is_available": admin.is_available,
-            "admin": self._serialize_admin(admin)
+            "data": {
+                "is_available": admin.is_available,
+                "admin": self._serialize_admin(admin)
+            }
         }
     
     def authenticate_admin_api(self, db: Session, telegram_id: str):

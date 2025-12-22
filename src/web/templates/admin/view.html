@@ -1,6 +1,6 @@
 {% extends "master.html" %}
 
-{% block title %}Admin Profile - {{ admin_info.full_name or 'Admin' }}{% endblock %}
+{% block title %}Admin Profile - {{ admin.full_name or 'Admin' }}{% endblock %}
 
 {% block content %}
 <div class="max-w-7xl mx-auto px-4 py-8">
@@ -9,27 +9,27 @@
         <h1 class="text-4xl font-bold mb-3 flex items-center justify-center gap-3">
             <i class="fas fa-user-circle"></i> Admin Profile
         </h1>
-        <p class="text-lg opacity-90">Viewing {{ admin_info.full_name or 'Admin' }}'s profile</p>
+        <p class="text-lg opacity-90">Viewing {{ admin.full_name or 'Admin' }}'s profile</p>
     </div>
 
     <!-- Profile Grid -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
         <!-- Profile Card -->
         <div class="bg-white rounded-2xl shadow-lg p-8 text-center">
-            {% if admin_info.telegram_photo_url %}
-            <img src="{{ admin_info.telegram_photo_url }}" alt="Profile" 
+            {% if admin.telegram_photo_url %}
+            <img src="{{ admin.telegram_photo_url }}" alt="Profile" 
                  class="w-32 h-32 rounded-full mx-auto border-4 border-primary-500 object-cover mb-4">
             {% else %}
             <div class="w-32 h-32 rounded-full bg-gradient-to-br from-primary-500 to-secondary-500 flex items-center justify-center text-white text-5xl font-bold mx-auto mb-4 border-4 border-white/30">
-                {{ admin_info.telegram_first_name[0] if admin_info.telegram_first_name else admin_info.full_name[0] if admin_info.full_name else '?' }}
+                {{ admin.telegram_first_name[0] if admin.telegram_first_name else admin.full_name[0] if admin.full_name else '?' }}
             </div>
             {% endif %}
 
-            <h2 class="text-2xl font-bold text-gray-900 mb-2">{{ admin_info.full_name or 'Not Set' }}</h2>
+            <h2 class="text-2xl font-bold text-gray-900 mb-2">{{ admin.full_name or 'Not Set' }}</h2>
 
             <span class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold uppercase mb-4
-                        {{ 'bg-red-100 text-red-800 border border-red-200' if admin_info.role == 'super_admin' else 'bg-blue-100 text-blue-800 border border-blue-200' }}">
-                {% if admin_info.role == 'super_admin' %}
+                        {{ 'bg-red-100 text-red-800 border border-red-200' if admin.role == 'super_admin' else 'bg-blue-100 text-blue-800 border border-blue-200' }}">
+                {% if admin.role == 'super_admin' %}
                 <i class="fas fa-crown"></i> Super Administrator
                 {% else %}
                 <i class="fas fa-user-tie"></i> Administrator
@@ -38,24 +38,25 @@
 
             <div class="mb-4">
                 <span class="inline-flex items-center px-4 py-2 rounded-full text-sm font-semibold bg-gradient-to-r from-blue-400 to-blue-600 text-white">
-                    <i class="fab fa-telegram mr-2"></i> {{ admin_info.telegram_id }}
+                    <i class="fas fa-{{ 'check-circle' if admin.is_active else 'times-circle' }}"></i>
+                    {{ 'Active Account' if admin.is_active else 'Inactive Account' }}
                 </span>
             </div>
 
-            {% if admin_info.role == 'admin' %}
+            {% if admin.role == 'admin' %}
             <div class="mb-4">
                 <span class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold
-                            {{ 'bg-green-100 text-green-800' if admin_info.is_available else 'bg-yellow-100 text-yellow-800' }}">
-                    <i class="fas fa-circle"></i>
-                    {{ 'Available for Chats' if admin_info.is_available else 'Unavailable' }}
+                            {{ 'bg-green-100 text-green-800' if admin.is_available else 'bg-yellow-100 text-yellow-800' }}">
+                    <i class="fas fa-user-clock"></i>
+                    {{ 'Available for Chats' if admin.is_available else 'Currently Busy' }}
                 </span>
             </div>
             {% endif %}
 
-            {% if not admin_info.is_active %}
+            {% if not admin.is_active %}
             <div class="mb-4">
                 <span class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold bg-red-100 text-red-800">
-                    <i class="fas fa-ban"></i> Account Inactive
+                    <i class="fas fa-exclamation-triangle"></i> Account Deactivated
                 </span>
             </div>
             {% endif %}
@@ -63,12 +64,12 @@
             <!-- Stats -->
             <div class="grid grid-cols-2 gap-4 mt-6 pt-6 border-t-2 border-gray-200">
                 <div class="text-center">
-                    <div class="text-3xl font-bold text-primary-500" id="daysSinceLogin">0</div>
-                    <div class="text-xs text-gray-600 uppercase font-semibold mt-1">Days Since Login</div>
+                    <div class="text-2xl font-bold text-gray-900" id="daysSinceLogin">0</div>
+                    <div class="text-xs text-gray-600 uppercase">Days Since Login</div>
                 </div>
                 <div class="text-center">
-                    <div class="text-3xl font-bold text-primary-500" id="monthsActive">0</div>
-                    <div class="text-xs text-gray-600 uppercase font-semibold mt-1">Months Active</div>
+                    <div class="text-2xl font-bold text-gray-900" id="monthsActive">0</div>
+                    <div class="text-xs text-gray-600 uppercase">Months Active</div>
                 </div>
             </div>
         </div>
@@ -83,18 +84,9 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div class="p-4 bg-gray-50 rounded-xl border-l-4 border-primary-500">
                     <div class="text-xs text-gray-600 uppercase font-semibold mb-2">
-                        <i class="fas fa-user"></i> Full Name
+                        <i class="fab fa-telegram"></i> Telegram ID
                     </div>
-                    <div class="text-base font-semibold text-gray-900">{{ admin_info.full_name or 'Not set' }}</div>
-                </div>
-
-                <div class="p-4 bg-gray-50 rounded-xl border-l-4 border-primary-500">
-                    <div class="text-xs text-gray-600 uppercase font-semibold mb-2">
-                        <i class="fab fa-telegram"></i> Telegram Name
-                    </div>
-                    <div class="text-base font-semibold text-gray-900">
-                        {{ admin_info.telegram_first_name or '' }} {{ admin_info.telegram_last_name or '' }}
-                    </div>
+                    <div class="text-base font-semibold text-gray-900">{{ admin.telegram_id or 'Not set' }}</div>
                 </div>
 
                 <div class="p-4 bg-gray-50 rounded-xl border-l-4 border-primary-500">
@@ -102,45 +94,37 @@
                         <i class="fas fa-at"></i> Username
                     </div>
                     <div class="text-base font-semibold text-gray-900">
-                        {% if admin_info.telegram_username %}
-                        <a href="https://t.me/{{ admin_info.telegram_username }}" target="_blank" class="text-blue-600 hover:text-blue-800">
-                            @{{ admin_info.telegram_username }}
-                        </a>
+                        {% if admin.telegram_username %}
+                        @{{ admin.telegram_username }}
                         {% else %}
                         Not set
                         {% endif %}
                     </div>
                 </div>
 
-                {% if admin_info.role == 'admin' %}
+                <div class="p-4 bg-gray-50 rounded-xl border-l-4 border-primary-500">
+                    <div class="text-xs text-gray-600 uppercase font-semibold mb-2">
+                        <i class="fas fa-user"></i> Full Name
+                    </div>
+                    <div class="text-base font-semibold text-gray-900">{{ admin.full_name or 'Not set' }}</div>
+                </div>
+
+                {% if admin.role == 'admin' %}
                 <div class="p-4 bg-gray-50 rounded-xl border-l-4 border-primary-500">
                     <div class="text-xs text-gray-600 uppercase font-semibold mb-2">
                         <i class="fas fa-building"></i> Division
                     </div>
-                    <div class="text-base font-semibold text-gray-900">{{ admin_info.division or 'Not assigned' }}</div>
+                    <div class="text-base font-semibold text-gray-900">{{ admin.division or 'Not assigned' }}</div>
                 </div>
                 {% endif %}
-
-                <div class="p-4 bg-gray-50 rounded-xl border-l-4 border-primary-500">
-                    <div class="text-xs text-gray-600 uppercase font-semibold mb-2">
-                        <i class="fas fa-clock"></i> Last Login
-                    </div>
-                    <div class="text-base font-semibold text-gray-900">
-                        {% if admin_info.last_login %}
-                        {{ admin_info.last_login[:19] }}
-                        {% else %}
-                        Never
-                        {% endif %}
-                    </div>
-                </div>
 
                 <div class="p-4 bg-gray-50 rounded-xl border-l-4 border-primary-500">
                     <div class="text-xs text-gray-600 uppercase font-semibold mb-2">
                         <i class="fas fa-calendar-plus"></i> Account Created
                     </div>
                     <div class="text-base font-semibold text-gray-900">
-                        {% if admin_info.created_at %}
-                        {{ admin_info.created_at[:19] }}
+                        {% if admin.created_at %}
+                        {{ admin.created_at | safe_datetime }}
                         {% else %}
                         Unknown
                         {% endif %}
@@ -149,28 +133,37 @@
 
                 <div class="p-4 bg-gray-50 rounded-xl border-l-4 border-primary-500">
                     <div class="text-xs text-gray-600 uppercase font-semibold mb-2">
-                        <i class="fas fa-toggle-on"></i> Account Status
+                        <i class="fas fa-clock"></i> Last Login
                     </div>
-                    <div class="text-base font-semibold">
-                        {% if admin_info.is_active %}
-                        <span class="text-green-600"><i class="fas fa-check-circle"></i> Active</span>
+                    <div class="text-base font-semibold text-gray-900">
+                        {% if admin.last_login %}
+                        {{ admin.last_login | safe_datetime }}
                         {% else %}
-                        <span class="text-red-600"><i class="fas fa-times-circle"></i> Inactive</span>
+                        Never
                         {% endif %}
                     </div>
                 </div>
 
-                {% if admin_info.role == 'admin' %}
                 <div class="p-4 bg-gray-50 rounded-xl border-l-4 border-primary-500">
                     <div class="text-xs text-gray-600 uppercase font-semibold mb-2">
-                        <i class="fas fa-signal"></i> Availability Status
+                        <i class="fas fa-user-tag"></i> Role
                     </div>
-                    <div class="text-base font-semibold">
-                        {% if admin_info.is_available %}
-                        <span class="text-green-600"><i class="fas fa-circle"></i> Available</span>
+                    <div class="text-base font-semibold text-gray-900">
+                        {% if admin.role == 'super_admin' %}
+                        Super Administrator
                         {% else %}
-                        <span class="text-yellow-600"><i class="fas fa-circle"></i> Unavailable</span>
+                        Administrator/Agent
                         {% endif %}
+                    </div>
+                </div>
+
+                {% if admin.role == 'admin' %}
+                <div class="p-4 bg-gray-50 rounded-xl border-l-4 border-primary-500">
+                    <div class="text-xs text-gray-600 uppercase font-semibold mb-2">
+                        <i class="fas fa-user-clock"></i> Availability
+                    </div>
+                    <div class="text-base font-semibold text-gray-900">
+                        {{ 'Available for Chats' if admin.is_available else 'Currently Busy' }}
                     </div>
                 </div>
                 {% endif %}
@@ -180,18 +173,18 @@
 
     <!-- Action Buttons -->
     <div class="flex flex-wrap gap-4">
-        <a href="{{ url_for('admin.manage_admins') }}" 
+        <a href="{{ url_for('admin.list_admins') }}" 
            class="flex-1 min-w-[200px] px-6 py-3 bg-gradient-to-r from-gray-500 to-gray-600 text-white rounded-xl font-semibold hover:from-gray-600 hover:to-gray-700 transition-all duration-300 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transform hover:-translate-y-1">
-            <i class="fas fa-arrow-left"></i> Back to Admin Management
+            <i class="fas fa-arrow-left"></i> Back to Admins
         </a>
         
-        {% if session.admin_info.role == 'super_admin' %}
-        <a href="{{ url_for('admin.edit_admin', admin_id=admin_info.id) }}" 
+        {% if session.admin.role == 'super_admin' %}
+        <a href="{{ url_for('admin.edit_admin', admin_id=admin.id) }}" 
            class="flex-1 min-w-[200px] px-6 py-3 bg-gradient-to-r from-yellow-400 to-yellow-600 text-white rounded-xl font-semibold hover:from-yellow-500 hover:to-yellow-700 transition-all duration-300 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transform hover:-translate-y-1">
-            <i class="fas fa-edit"></i> Edit Admin
+            <i class="fas fa-edit"></i> Edit Profile
         </a>
         
-        {% if admin_info.role == 'admin' and admin_info.id != session.admin_info.id %}
+        {% if admin.role == 'admin' and admin.id != session.admin.id %}
         <button onclick="demoteToUser()" 
                 class="flex-1 min-w-[200px] px-6 py-3 bg-gradient-to-r from-yellow-400 to-yellow-600 text-white rounded-xl font-semibold hover:from-yellow-500 hover:to-yellow-700 transition-all duration-300 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transform hover:-translate-y-1">
             <i class="fas fa-arrow-down"></i> Demote to User
@@ -205,22 +198,22 @@
     document.addEventListener('DOMContentLoaded', function () {
         const now = new Date();
         
-        {% if admin_info.last_login %}
-        const lastLogin = new Date('{{ admin_info.last_login[:19] }}');
+        {% if admin.last_login %}
+        const lastLogin = new Date('{{ admin.last_login | safe_datetime }}');
         const daysSinceLogin = Math.floor((now - lastLogin) / (1000 * 60 * 60 * 24));
         document.getElementById('daysSinceLogin').textContent = daysSinceLogin;
         {% endif %}
 
-        {% if admin_info.created_at %}
-        const createdAt = new Date('{{ admin_info.created_at[:19] }}');
+        {% if admin.created_at %}
+        const createdAt = new Date('{{ admin.created_at | safe_datetime }}');
         const monthsActive = Math.floor((now - createdAt) / (1000 * 60 * 60 * 24 * 30));
         document.getElementById('monthsActive').textContent = monthsActive;
         {% endif %}
     });
 
     function demoteToUser() {
-        const adminName = '{{ admin_info.full_name }}';
-        const adminId = '{{ admin_info.id }}';
+        const adminName = '{{ admin.full_name }}';
+        const adminId = '{{ admin.id }}';
         
         if (!confirm(`⚠️ Are you sure you want to demote "${adminName}" to a regular user?\n\nThis will:\n- Remove all admin privileges\n- Move their account to the users table\n- Unassign all their active chat sessions\n\nThis action cannot be easily reversed.`)) {
             return;
@@ -238,10 +231,10 @@
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                alert(`✅ ${data.message}`);
+                alert(' Admin demoted successfully! Redirecting to users page...');
                 window.location.href = '/portal/admin/users';
             } else {
-                alert(`❌ ${data.message}`);
+                alert('❌ Failed to demote admin: ' + data.message);
                 btn.innerHTML = originalHTML;
                 btn.disabled = false;
             }

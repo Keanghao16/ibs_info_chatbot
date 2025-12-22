@@ -7,170 +7,53 @@
     <!-- Page Header -->
     <div class="gradient-primary rounded-3xl shadow-2xl p-8 mb-8 text-white text-center">
         <h1 class="text-4xl font-bold mb-3 flex items-center justify-center gap-3">
-            <i class="fas fa-cog"></i> System Settings
+            <i class="fas fa-cogs"></i>
+            System Settings
         </h1>
-        <p class="text-lg opacity-90">Configure bot behavior, FAQ, and system preferences</p>
+        <p class="text-lg opacity-90">Manage FAQ categories and questions</p>
     </div>
 
     <!-- Settings Navigation -->
     <div class="bg-white rounded-2xl shadow-lg p-5 mb-8 flex flex-wrap gap-4">
-        <button class="flex-1 min-w-[180px] px-6 py-3 border-2 border-gray-200 bg-white rounded-xl font-semibold transition-all duration-300 flex items-center justify-center gap-2 hover:border-primary-500 hover:text-primary-500 hover:-translate-y-1 active:gradient-primary active:text-white active:border-transparent settings-nav-btn active"
-                onclick="showSectionWithButton(this, 'general')">
-            <i class="fas fa-sliders-h"></i>
-            General Settings
-        </button>
-        <button class="flex-1 min-w-[180px] px-6 py-3 border-2 border-gray-200 bg-white rounded-xl font-semibold transition-all duration-300 flex items-center justify-center gap-2 hover:border-primary-500 hover:text-primary-500 hover:-translate-y-1 settings-nav-btn"
-                onclick="showSectionWithButton(this, 'category')">
+        <button class="settings-nav-btn active px-4 py-2 bg-primary-500 text-white rounded-lg font-semibold transition-all hover:bg-primary-600 flex items-center gap-2"
+                onclick="showSection('category', this)">
             <i class="fas fa-folder-open"></i>
-            Category Management
+            Categories
         </button>
-        <button class="flex-1 min-w-[180px] px-6 py-3 border-2 border-gray-200 bg-white rounded-xl font-semibold transition-all duration-300 flex items-center justify-center gap-2 hover:border-primary-500 hover:text-primary-500 hover:-translate-y-1 settings-nav-btn"
-                onclick="showSectionWithButton(this, 'faq')">
+        <button class="settings-nav-btn px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-semibold transition-all hover:bg-gray-200 flex items-center gap-2"
+                onclick="showSection('faq', this)">
             <i class="fas fa-question-circle"></i>
-            FAQ Management
+            FAQs
         </button>
-        <button class="flex-1 min-w-[180px] px-6 py-3 border-2 border-gray-200 bg-white rounded-xl font-semibold transition-all duration-300 flex items-center justify-center gap-2 hover:border-primary-500 hover:text-primary-500 hover:-translate-y-1 settings-nav-btn"
-                onclick="showSectionWithButton(this, 'bot')">
-            <i class="fab fa-telegram"></i>
-            Bot Configuration
-        </button>
-        <button class="flex-1 min-w-[180px] px-6 py-3 border-2 border-gray-200 bg-white rounded-xl font-semibold transition-all duration-300 flex items-center justify-center gap-2 hover:border-primary-500 hover:text-primary-500 hover:-translate-y-1 settings-nav-btn"
-                onclick="showSectionWithButton(this, 'notifications')">
-            <i class="fas fa-bell"></i>
-            Notifications
-        </button>
-    </div>
-
-    <!-- General Settings Section -->
-    <div class="settings-section bg-white rounded-2xl shadow-lg p-8 mb-8 block" id="general-section">
-        <h2 class="text-3xl font-bold mb-5 text-gray-900 flex items-center gap-3">
-            <i class="fas fa-sliders-h text-primary-500"></i>
-            General Settings
-        </h2>
-        <p class="text-gray-600 mb-8 text-lg">Configure general system settings and preferences</p>
-
-        <form method="POST" action="{{ url_for('system_settings.save_general_settings') }}">
-            <div class="mb-6">
-                <label for="system_name" class="block text-sm font-bold text-gray-700 mb-2">System Name</label>
-                <input type="text" id="system_name" name="system_name"
-                       value="{{ settings.system_name if settings else 'IBS Info Chatbot' }}" required
-                       class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-primary-500 focus:ring-4 focus:ring-primary-100 transition-all">
-                <small class="block text-gray-600 text-sm mt-2">The name displayed across the system</small>
-            </div>
-
-            <div class="mb-6">
-                <label for="welcome_message" class="block text-sm font-bold text-gray-700 mb-2">Welcome Message</label>
-                <textarea id="welcome_message" name="welcome_message"
-                          placeholder="Enter welcome message for new users..."
-                          class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-primary-500 focus:ring-4 focus:ring-primary-100 transition-all min-h-[120px] resize-y">{{ settings.welcome_message if settings else 'Welcome to our support bot! How can we help you today?' }}</textarea>
-                <small class="block text-gray-600 text-sm mt-2">Message sent to users when they start the bot</small>
-            </div>
-
-            <div class="mb-6">
-                <label for="support_email" class="block text-sm font-bold text-gray-700 mb-2">Support Email</label>
-                <input type="email" id="support_email" name="support_email"
-                       value="{{ settings.support_email if settings else '' }}" placeholder="support@example.com"
-                       class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-primary-500 focus:ring-4 focus:ring-primary-100 transition-all">
-                <small class="block text-gray-600 text-sm mt-2">Email for support inquiries</small>
-            </div>
-
-            <div class="mb-6">
-                <label for="max_chat_duration" class="block text-sm font-bold text-gray-700 mb-2">Maximum Chat Duration (minutes)</label>
-                <input type="number" id="max_chat_duration" name="max_chat_duration"
-                       value="{{ settings.max_chat_duration if settings else 60 }}" min="5" max="480"
-                       class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-primary-500 focus:ring-4 focus:ring-primary-100 transition-all">
-                <small class="block text-gray-600 text-sm mt-2">Auto-close chats after this duration of inactivity</small>
-            </div>
-
-            <div class="flex items-center gap-4 mb-5">
-                <label class="relative inline-block w-16 h-8">
-                    <input type="checkbox" name="auto_assign_chats" {{ 'checked' if settings and settings.auto_assign_chats else '' }}
-                           class="opacity-0 w-0 h-0 peer">
-                    <span class="absolute cursor-pointer inset-0 bg-gray-300 rounded-full transition-all duration-400 before:absolute before:content-[''] before:h-6 before:w-6 before:left-1 before:bottom-1 before:bg-white before:rounded-full before:transition-all before:duration-400 peer-checked:bg-green-500 peer-checked:before:translate-x-8"></span>
-                </label>
-                <div>
-                    <strong class="text-gray-900">Auto-assign Chats</strong>
-                    <p class="text-gray-600 text-sm m-0">Automatically assign new chats to available agents</p>
-                </div>
-            </div>
-
-            <div class="flex items-center gap-4 mb-5">
-                <label class="relative inline-block w-16 h-8">
-                    <input type="checkbox" name="maintenance_mode" {{ 'checked' if settings and settings.maintenance_mode else '' }}
-                           class="opacity-0 w-0 h-0 peer">
-                    <span class="absolute cursor-pointer inset-0 bg-gray-300 rounded-full transition-all duration-400 before:absolute before:content-[''] before:h-6 before:w-6 before:left-1 before:bottom-1 before:bg-white before:rounded-full before:transition-all before:duration-400 peer-checked:bg-green-500 peer-checked:before:translate-x-8"></span>
-                </label>
-                <div>
-                    <strong class="text-gray-900">Maintenance Mode</strong>
-                    <p class="text-gray-600 text-sm m-0">Disable bot for regular users during maintenance</p>
-                </div>
-            </div>
-
-            <button type="submit" 
-                    class="px-6 py-3 bg-gradient-to-r from-primary-500 to-secondary-500 text-white rounded-xl font-semibold hover:from-primary-600 hover:to-secondary-600 transition-all duration-300 flex items-center gap-2 shadow-lg hover:shadow-xl transform hover:-translate-y-1">
-                <i class="fas fa-save"></i>
-                Save General Settings
-            </button>
-        </form>
     </div>
 
     <!-- Category Management Section -->
-    <div class="settings-section bg-white rounded-2xl shadow-lg p-8 mb-8 hidden" id="category-section">
+    <div class="settings-section bg-white rounded-2xl shadow-lg p-8 mb-8" id="category-section">
         <h2 class="text-3xl font-bold mb-5 text-gray-900 flex items-center gap-3">
             <i class="fas fa-folder-open text-primary-500"></i>
             Category Management
         </h2>
         <p class="text-gray-600 mb-8 text-lg">Manage FAQ categories to organize your questions</p>
 
-        <button class="px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl font-semibold hover:from-green-600 hover:to-green-700 transition-all duration-300 flex items-center gap-2 shadow-lg hover:shadow-xl transform hover:-translate-y-1 mb-5"
-                onclick="showAddCategoryModal()">
-            <i class="fas fa-plus-circle"></i>
-            Add New Category
-        </button>
+        <div class="flex flex-wrap gap-4 mb-6">
+            <button class="px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl font-semibold hover:from-green-600 hover:to-green-700 transition-all duration-300 flex items-center gap-2 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
+                    onclick="showAddCategoryModal()">
+                <i class="fas fa-plus-circle"></i>
+                Add New Category
+            </button>
+            <button class="px-6 py-3 bg-blue-500 text-white rounded-xl font-semibold hover:bg-blue-600 transition-all duration-300 flex items-center gap-2 shadow-lg hover:shadow-xl"
+                    onclick="refreshCategories()">
+                <i class="fas fa-refresh"></i>
+                Refresh
+            </button>
+        </div>
 
         <div id="category-items" class="mt-5">
-            {% if categories and categories|length > 0 %}
-            {% for category in categories %}
-            <div class="bg-gray-50 p-5 rounded-xl mb-4 border-l-4 border-primary-500 transition-all duration-200 hover:bg-gray-100 hover:translate-x-1 hover:shadow-md" 
-                 data-id="{{ category.id }}" 
-                 data-slug="{{ category.slug }}" 
-                 {% if not category.is_active %}style="opacity: 0.6;"{% endif %}>
-                <div class="flex justify-between items-center mb-4">
-                    <div class="flex-1">
-                        <span class="inline-block w-2 h-2 rounded-full mr-2 {{ 'bg-green-500' if category.is_active else 'bg-red-500' }}"></span>
-                        <span class="text-xl mr-2">{{ category.icon or '📁' }}</span>
-                        <span class="font-semibold text-gray-900 text-base">{{ category.name }}</span>
-                        <span class="bg-gray-200 px-2 py-1 rounded-full text-xs ml-3">
-                            {{ category.faq_count }} FAQ(s)
-                        </span>
-                    </div>
-                    <div class="flex gap-2">
-                        <button class="px-3 py-2 bg-yellow-100 text-yellow-700 rounded-lg hover:bg-yellow-200 transition-colors font-semibold text-sm flex items-center gap-1"
-                                onclick='editCategory({{ category.id }}, {{ category|tojson }})' title="Edit">
-                            <i class="fas fa-edit"></i>
-                        </button>
-                        <button class="px-3 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors font-semibold text-sm flex items-center gap-1"
-                                onclick="deleteCategory('{{ category.id }}')" title="Delete">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </div>
-                </div>
-                {% if category.description %}
-                <div class="text-gray-600 leading-relaxed whitespace-pre-wrap">{{ category.description }}</div>
-                {% endif %}
-                <div class="mt-3 text-gray-500 text-sm">
-                    <strong>Slug:</strong> {{ category.slug }} |
-                    <strong>Order:</strong> {{ category.order_index }}
-                </div>
+            <!-- Categories will be loaded here via API -->
+            <div class="text-center py-8">
+                <i class="fas fa-spinner fa-spin text-3xl text-gray-400 mb-4"></i>
+                <p class="text-gray-500">Loading categories...</p>
             </div>
-            {% endfor %}
-            {% else %}
-            <div class="text-center py-16 text-gray-400">
-                <i class="fas fa-folder-open text-6xl mb-4 opacity-30"></i>
-                <h3 class="text-2xl font-bold text-gray-600 mb-2">No Categories Available</h3>
-                <p class="text-gray-500">Click "Add New Category" to create your first FAQ category.</p>
-            </div>
-            {% endif %}
         </div>
     </div>
 
@@ -246,144 +129,6 @@
             {% endif %}
         </div>
     </div>
-
-    <!-- Bot Configuration Section -->
-    <div class="settings-section bg-white rounded-2xl shadow-lg p-8 mb-8 hidden" id="bot-section">
-        <h2 class="text-3xl font-bold mb-5 text-gray-900 flex items-center gap-3">
-            <i class="fab fa-telegram text-primary-500"></i>
-            Bot Configuration
-        </h2>
-        <p class="text-gray-600 mb-8 text-lg">Configure Telegram bot behavior and responses</p>
-
-        <form method="POST" action="{{ url_for('system_settings.save_bot_settings') }}">
-            <div class="mb-6">
-                <label for="bot_username" class="block text-sm font-bold text-gray-700 mb-2">Bot Username</label>
-                <input type="text" id="bot_username" name="bot_username"
-                       value="{{ settings.bot_username if settings else '@YourBotUsername' }}" readonly
-                       class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl bg-gray-50 text-gray-600 cursor-not-allowed">
-                <small class="block text-gray-600 text-sm mt-2">Your Telegram bot username (read-only)</small>
-            </div>
-
-            <div class="mb-6">
-                <label for="response_timeout" class="block text-sm font-bold text-gray-700 mb-2">Response Timeout (seconds)</label>
-                <input type="number" id="response_timeout" name="response_timeout"
-                       value="{{ settings.response_timeout if settings else 30 }}" min="10" max="300"
-                       class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-primary-500 focus:ring-4 focus:ring-primary-100 transition-all">
-                <small class="block text-gray-600 text-sm mt-2">Time to wait for agent response before showing warning</small>
-            </div>
-
-            <div class="mb-6">
-                <label for="offline_message" class="block text-sm font-bold text-gray-700 mb-2">Offline Message</label>
-                <textarea id="offline_message" name="offline_message"
-                          placeholder="Message when no agents are available..."
-                          class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-primary-500 focus:ring-4 focus:ring-primary-100 transition-all min-h-[120px] resize-y">{{ settings.offline_message if settings else 'All our agents are currently busy. Please try again later or leave a message.' }}</textarea>
-                <small class="block text-gray-600 text-sm mt-2">Message shown when no agents are available</small>
-            </div>
-
-            <div class="flex items-center gap-4 mb-5">
-                <label class="relative inline-block w-16 h-8">
-                    <input type="checkbox" name="enable_file_uploads" {{ 'checked' if settings and settings.enable_file_uploads else 'checked' }}
-                           class="opacity-0 w-0 h-0 peer">
-                    <span class="absolute cursor-pointer inset-0 bg-gray-300 rounded-full transition-all duration-400 before:absolute before:content-[''] before:h-6 before:w-6 before:left-1 before:bottom-1 before:bg-white before:rounded-full before:transition-all before:duration-400 peer-checked:bg-green-500 peer-checked:before:translate-x-8"></span>
-                </label>
-                <div>
-                    <strong class="text-gray-900">Enable File Uploads</strong>
-                    <p class="text-gray-600 text-sm m-0">Allow users to send files and images</p>
-                </div>
-            </div>
-
-            <div class="flex items-center gap-4 mb-5">
-                <label class="relative inline-block w-16 h-8">
-                    <input type="checkbox" name="enable_typing_indicator" {{ 'checked' if settings and settings.enable_typing_indicator else 'checked' }}
-                           class="opacity-0 w-0 h-0 peer">
-                    <span class="absolute cursor-pointer inset-0 bg-gray-300 rounded-full transition-all duration-400 before:absolute before:content-[''] before:h-6 before:w-6 before:left-1 before:bottom-1 before:bg-white before:rounded-full before:transition-all before:duration-400 peer-checked:bg-green-500 peer-checked:before:translate-x-8"></span>
-                </label>
-                <div>
-                    <strong class="text-gray-900">Typing Indicator</strong>
-                    <p class="text-gray-600 text-sm m-0">Show typing indicator when agent is responding</p>
-                </div>
-            </div>
-
-            <button type="submit" 
-                    class="px-6 py-3 bg-gradient-to-r from-primary-500 to-secondary-500 text-white rounded-xl font-semibold hover:from-primary-600 hover:to-secondary-600 transition-all duration-300 flex items-center gap-2 shadow-lg hover:shadow-xl transform hover:-translate-y-1">
-                <i class="fas fa-save"></i>
-                Save Bot Settings
-            </button>
-        </form>
-    </div>
-
-    <!-- Notifications Section -->
-    <div class="settings-section bg-white rounded-2xl shadow-lg p-8 mb-8 hidden" id="notifications-section">
-        <h2 class="text-3xl font-bold mb-5 text-gray-900 flex items-center gap-3">
-            <i class="fas fa-bell text-primary-500"></i>
-            Notification Settings
-        </h2>
-        <p class="text-gray-600 mb-8 text-lg">Configure email and push notifications</p>
-
-        <form method="POST" action="{{ url_for('system_settings.save_notification_settings') }}">
-            <div class="flex items-center gap-4 mb-5">
-                <label class="relative inline-block w-16 h-8">
-                    <input type="checkbox" name="email_notifications" {{ 'checked' if settings and settings.email_notifications else '' }}
-                           class="opacity-0 w-0 h-0 peer">
-                    <span class="absolute cursor-pointer inset-0 bg-gray-300 rounded-full transition-all duration-400 before:absolute before:content-[''] before:h-6 before:w-6 before:left-1 before:bottom-1 before:bg-white before:rounded-full before:transition-all before:duration-400 peer-checked:bg-green-500 peer-checked:before:translate-x-8"></span>
-                </label>
-                <div>
-                    <strong class="text-gray-900">Email Notifications</strong>
-                    <p class="text-gray-600 text-sm m-0">Send email notifications for important events</p>
-                </div>
-            </div>
-
-            <div class="flex items-center gap-4 mb-5">
-                <label class="relative inline-block w-16 h-8">
-                    <input type="checkbox" name="notify_new_user" {{ 'checked' if settings and settings.notify_new_user else 'checked' }}
-                           class="opacity-0 w-0 h-0 peer">
-                    <span class="absolute cursor-pointer inset-0 bg-gray-300 rounded-full transition-all duration-400 before:absolute before:content-[''] before:h-6 before:w-6 before:left-1 before:bottom-1 before:bg-white before:rounded-full before:transition-all before:duration-400 peer-checked:bg-green-500 peer-checked:before:translate-x-8"></span>
-                </label>
-                <div>
-                    <strong class="text-gray-900">New User Registration</strong>
-                    <p class="text-gray-600 text-sm m-0">Notify admins when new users register</p>
-                </div>
-            </div>
-
-            <div class="flex items-center gap-4 mb-5">
-                <label class="relative inline-block w-16 h-8">
-                    <input type="checkbox" name="notify_new_chat" {{ 'checked' if settings and settings.notify_new_chat else 'checked' }}
-                           class="opacity-0 w-0 h-0 peer">
-                    <span class="absolute cursor-pointer inset-0 bg-gray-300 rounded-full transition-all duration-400 before:absolute before:content-[''] before:h-6 before:w-6 before:left-1 before:bottom-1 before:bg-white before:rounded-full before:transition-all before:duration-400 peer-checked:bg-green-500 peer-checked:before:translate-x-8"></span>
-                </label>
-                <div>
-                    <strong class="text-gray-900">New Chat Session</strong>
-                    <p class="text-gray-600 text-sm m-0">Notify agents when new chat sessions start</p>
-                </div>
-            </div>
-
-            <div class="flex items-center gap-4 mb-5">
-                <label class="relative inline-block w-16 h-8">
-                    <input type="checkbox" name="notify_unassigned_chat" {{ 'checked' if settings and settings.notify_unassigned_chat else 'checked' }}
-                           class="opacity-0 w-0 h-0 peer">
-                    <span class="absolute cursor-pointer inset-0 bg-gray-300 rounded-full transition-all duration-400 before:absolute before:content-[''] before:h-6 before:w-6 before:left-1 before:bottom-1 before:bg-white before:rounded-full before:transition-all before:duration-400 peer-checked:bg-green-500 peer-checked:before:translate-x-8"></span>
-                </label>
-                <div>
-                    <strong class="text-gray-900">Unassigned Chats</strong>
-                    <p class="text-gray-600 text-sm m-0">Alert admins about unassigned chat sessions</p>
-                </div>
-            </div>
-
-            <div class="mb-6">
-                <label for="notification_email" class="block text-sm font-bold text-gray-700 mb-2">Notification Email Address</label>
-                <input type="email" id="notification_email" name="notification_email"
-                       value="{{ settings.notification_email if settings else '' }}" placeholder="admin@example.com"
-                       class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-primary-500 focus:ring-4 focus:ring-primary-100 transition-all">
-                <small class="block text-gray-600 text-sm mt-2">Primary email for system notifications</small>
-            </div>
-
-            <button type="submit" 
-                    class="px-6 py-3 bg-gradient-to-r from-primary-500 to-secondary-500 text-white rounded-xl font-semibold hover:from-primary-600 hover:to-secondary-600 transition-all duration-300 flex items-center gap-2 shadow-lg hover:shadow-xl transform hover:-translate-y-1">
-                <i class="fas fa-save"></i>
-                Save Notification Settings
-            </button>
-        </form>
-    </div>
 </div>
 
 <!-- Add/Edit FAQ Modal -->
@@ -407,6 +152,9 @@
                     <input type="text" id="faq_question" name="question" required
                            placeholder="Enter the FAQ question..."
                            class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-primary-500 focus:ring-4 focus:ring-primary-100 transition-all">
+                    <p class="text-xs text-gray-500 mt-1">
+                        💡 Tip: Questions should end with a question mark (?)
+                    </p>
                 </div>
 
                 <div class="mb-6">
@@ -485,16 +233,7 @@
                     <input type="text" id="category_name" name="name" required
                            placeholder="e.g., Getting Started, Technical Support"
                            class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-primary-500 focus:ring-4 focus:ring-primary-100 transition-all">
-                    <small class="block text-gray-600 text-sm mt-2">Display name for the category</small>
-                </div>
-
-                <div class="mb-6">
-                    <label for="category_slug" class="block text-sm font-bold text-gray-700 mb-2">Slug *</label>
-                    <input type="text" id="category_slug" name="slug" required
-                           placeholder="e.g., getting_started, technical_support" pattern="[a-z0-9_]+"
-                           title="Only lowercase letters, numbers, and underscores"
-                           class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-primary-500 focus:ring-4 focus:ring-primary-100 transition-all">
-                    <small class="block text-gray-600 text-sm mt-2">URL-friendly identifier (lowercase, no spaces)</small>
+                    <small class="block text-gray-600 text-sm mt-2">Display name for the category (slug will be auto-generated)</small>
                 </div>
 
                 <div class="mb-6">
@@ -547,59 +286,52 @@
 
 <script>
     // Section Navigation
-    function showSectionWithButton(buttonElement, sectionName) {
+    function showSection(sectionName, button) {
         // Hide all sections
         document.querySelectorAll('.settings-section').forEach(section => {
             section.classList.add('hidden');
-            section.classList.remove('block');
         });
 
-        // Remove active class from all buttons
+        // Remove active class from all nav buttons
         document.querySelectorAll('.settings-nav-btn').forEach(btn => {
-            btn.classList.remove('gradient-primary', 'text-white', 'border-transparent');
-            btn.classList.add('border-gray-200');
+            btn.classList.remove('active', 'bg-primary-500', 'text-white');
+            btn.classList.add('bg-gray-100', 'text-gray-700');
         });
 
         // Show selected section
-        const selectedSection = document.getElementById(sectionName + '-section');
-        if (selectedSection) {
-            selectedSection.classList.remove('hidden');
-            selectedSection.classList.add('block');
-        }
+        document.getElementById(`${sectionName}-section`).classList.remove('hidden');
 
         // Add active class to clicked button
-        if (buttonElement) {
-            buttonElement.classList.add('gradient-primary', 'text-white', 'border-transparent');
-            buttonElement.classList.remove('border-gray-200');
+        button.classList.add('active', 'bg-primary-500', 'text-white');
+        button.classList.remove('bg-gray-100', 'text-gray-700');
+
+        // Load categories when category section is shown
+        if (sectionName === 'category') {
+            loadCategories();
         }
     }
 
-    // FAQ Modal Functions
+    // FAQ Functions
     function showAddFAQModal() {
         document.getElementById('modalTitle').innerHTML = '<i class="fas fa-plus-circle text-primary-500"></i> Add New FAQ';
+        document.getElementById('faqForm').reset();
         document.getElementById('faq_id').value = '';
-        document.getElementById('faq_question').value = '';
-        document.getElementById('faq_answer').value = '';
-        document.getElementById('faq_category').value = '';
-        document.getElementById('order_index').value = 0;
         document.getElementById('faq_active').checked = true;
         document.getElementById('faqModal').classList.remove('hidden');
         document.body.style.overflow = 'hidden';
     }
 
     function editFAQById(faqId) {
-        const faqItem = document.querySelector(`.faq-item[data-id="${faqId}"]`);
-        if (!faqItem) {
-            alert('FAQ not found');
-            return;
-        }
+        const faqElement = document.querySelector(`[data-id="${faqId}"]`);
+        if (!faqElement) return;
+
         document.getElementById('modalTitle').innerHTML = '<i class="fas fa-edit text-primary-500"></i> Edit FAQ';
         document.getElementById('faq_id').value = faqId;
-        document.getElementById('faq_question').value = faqItem.dataset.question;
-        document.getElementById('faq_answer').value = faqItem.dataset.answer;
-        document.getElementById('faq_category').value = faqItem.dataset.category;
-        document.getElementById('order_index').value = faqItem.dataset.order || 0;
-        document.getElementById('faq_active').checked = faqItem.dataset.active === 'true';
+        document.getElementById('faq_question').value = faqElement.dataset.question;
+        document.getElementById('faq_answer').value = faqElement.dataset.answer.replace(/&#10;/g, '\n');
+        document.getElementById('faq_category').value = faqElement.dataset.category;
+        document.getElementById('order_index').value = faqElement.dataset.order || 0;
+        document.getElementById('faq_active').checked = faqElement.dataset.active === 'true';
         document.getElementById('faqModal').classList.remove('hidden');
         document.body.style.overflow = 'hidden';
     }
@@ -611,38 +343,37 @@
 
     function deleteFAQ(faqId) {
         if (confirm('Are you sure you want to delete this FAQ?')) {
-            fetch(`/admin/system-settings/delete-faq/${faqId}`, {
+            fetch(`/portal/admin/system-settings/delete-faq/${faqId}`, {
                 method: 'DELETE',
-                headers: { 'Content-Type': 'application/json' }
+                headers: { 
+                    'X-Requested-With': 'XMLHttpRequest'
+                    // Removed Content-Type header - not needed for empty body
+                }
             })
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    const faqItem = document.querySelector(`#faq-items .faq-item[data-id="${faqId}"]`);
-                    if (faqItem) faqItem.remove();
-                    const currentCount = parseInt(document.getElementById('faqCount').textContent);
-                    document.getElementById('faqCount').textContent = currentCount - 1;
-                    alert('FAQ deleted successfully!');
+                    document.querySelector(`[data-id="${faqId}"]`).remove();
+                    showNotification('✅ FAQ deleted successfully!', 'success');
+                    updateFAQCount();
                 } else {
-                    alert('Failed to delete FAQ: ' + data.message);
+                    showNotification('❌ Failed to delete FAQ: ' + data.message, 'error');
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                alert('An error occurred while deleting the FAQ.');
+                showNotification('❌ An error occurred while deleting the FAQ.', 'error');
             });
         }
     }
 
-    // Category Modal Functions
+    // Category Functions - Updated to use API
+    let categoriesData = []; // Store categories data locally
+
     function showAddCategoryModal() {
         document.getElementById('categoryModalTitle').innerHTML = '<i class="fas fa-plus-circle text-primary-500"></i> Add New Category';
+        document.getElementById('categoryForm').reset();
         document.getElementById('category_id').value = '';
-        document.getElementById('category_name').value = '';
-        document.getElementById('category_slug').value = '';
-        document.getElementById('category_icon').value = '📁';
-        document.getElementById('category_description').value = '';
-        document.getElementById('category_order').value = 0;
         document.getElementById('category_active').checked = true;
         document.getElementById('categoryModal').classList.remove('hidden');
         document.body.style.overflow = 'hidden';
@@ -652,7 +383,6 @@
         document.getElementById('categoryModalTitle').innerHTML = '<i class="fas fa-edit text-primary-500"></i> Edit Category';
         document.getElementById('category_id').value = categoryId;
         document.getElementById('category_name').value = categoryData.name;
-        document.getElementById('category_slug').value = categoryData.slug;
         document.getElementById('category_icon').value = categoryData.icon || '📁';
         document.getElementById('category_description').value = categoryData.description || '';
         document.getElementById('category_order').value = categoryData.order_index || 0;
@@ -668,37 +398,107 @@
 
     function deleteCategory(categoryId) {
         if (confirm('Are you sure you want to delete this category?\n\nNote: You cannot delete categories that have FAQs assigned to them.')) {
-            fetch(`/admin/system-settings/delete-category/${categoryId}`, {
+            fetch(`/portal/admin/system-settings/delete-category/${categoryId}`, {
                 method: 'DELETE',
-                headers: { 'Content-Type': 'application/json' }
+                headers: { 
+                    'X-Requested-With': 'XMLHttpRequest'
+                    // Removed Content-Type header - not needed for empty body
+                }
             })
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    const categoryItem = document.querySelector(`#category-items .faq-item[data-id="${categoryId}"]`);
-                    if (categoryItem) categoryItem.remove();
-                    alert('✅ Category deleted successfully!');
-                    setTimeout(() => location.reload(), 500);
+                    showNotification('✅ Category deleted successfully!', 'success');
+                    loadCategories(); // Reload categories
                 } else {
-                    alert('❌ Failed to delete category: ' + data.message);
+                    showNotification('❌ Failed to delete category: ' + data.message, 'error');
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                alert('❌ An error occurred while deleting the category.');
+                showNotification('❌ An error occurred while deleting the category.', 'error');
             });
         }
     }
 
-    // Auto-generate slug from name
-    document.getElementById('category_name')?.addEventListener('input', function (e) {
-        if (!document.getElementById('category_id').value) {
-            const slug = e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
-            document.getElementById('category_slug').value = slug;
-        }
-    });
+    function loadCategories() {
+        const container = document.getElementById('category-items');
+        container.innerHTML = '<div class="text-center py-8"><i class="fas fa-spinner fa-spin text-3xl text-gray-400 mb-4"></i><p class="text-gray-500">Loading categories...</p></div>';
 
-    // Form submission handling
+        fetch('/portal/admin/system-settings/api/categories', {
+            headers: { 
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                categoriesData = data.categories;
+                renderCategories(data.categories);
+            } else {
+                container.innerHTML = '<div class="text-center py-8 text-red-500"><i class="fas fa-exclamation-triangle text-3xl mb-4"></i><p>Failed to load categories: ' + data.message + '</p></div>';
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            container.innerHTML = '<div class="text-center py-8 text-red-500"><i class="fas fa-exclamation-triangle text-3xl mb-4"></i><p>Error loading categories</p></div>';
+        });
+    }
+
+    function renderCategories(categories) {
+        const container = document.getElementById('category-items');
+        
+        if (!categories || categories.length === 0) {
+            container.innerHTML = `
+                <div class="text-center py-16 text-gray-400">
+                    <i class="fas fa-folder-open text-6xl mb-4 opacity-30"></i>
+                    <h3 class="text-2xl font-bold text-gray-600 mb-2">No Categories Available</h3>
+                    <p class="text-gray-500">Click "Add New Category" to create your first FAQ category.</p>
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = categories.map(category => `
+            <div class="bg-gray-50 p-5 rounded-xl mb-4 border-l-4 border-primary-500 transition-all duration-200 hover:bg-gray-100 hover:translate-x-1 hover:shadow-md" 
+                 data-id="${category.id}" 
+                 data-slug="${category.slug}" 
+                 ${!category.is_active ? 'style="opacity: 0.6;"' : ''}>
+                <div class="flex justify-between items-center mb-4">
+                    <div class="flex-1">
+                        <span class="inline-block w-2 h-2 rounded-full mr-2 ${category.is_active ? 'bg-green-500' : 'bg-red-500'}"></span>
+                        <span class="text-xl mr-2">${category.icon || '📁'}</span>
+                        <span class="font-semibold text-gray-900 text-base">${category.name}</span>
+                        <span class="bg-gray-200 px-2 py-1 rounded-full text-xs ml-3">
+                            ${category.faq_count || 0} FAQ(s)
+                        </span>
+                    </div>
+                    <div class="flex gap-2">
+                        <button class="px-3 py-2 bg-yellow-100 text-yellow-700 rounded-lg hover:bg-yellow-200 transition-colors font-semibold text-sm flex items-center gap-1"
+                                onclick='editCategory(${category.id}, ${JSON.stringify(category)})' title="Edit">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="px-3 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors font-semibold text-sm flex items-center gap-1"
+                                onclick="deleteCategory('${category.id}')" title="Delete">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+                ${category.description ? `<div class="text-gray-600 leading-relaxed whitespace-pre-wrap">${category.description}</div>` : ''}
+                <div class="mt-3 text-gray-500 text-sm">
+                    <strong>Slug:</strong> ${category.slug} |
+                    <strong>Order:</strong> ${category.order_index || 0}
+                </div>
+            </div>
+        `).join('');
+    }
+
+    function refreshCategories() {
+        loadCategories();
+        showNotification('🔄 Categories refreshed', 'info');
+    }
+
+    // Form submission handling - Updated for API
     document.getElementById('faqForm')?.addEventListener('submit', function (e) {
         e.preventDefault();
         const formData = new FormData(this);
@@ -709,44 +509,93 @@
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                alert('✅ FAQ saved successfully!');
+                showNotification('✅ FAQ saved successfully!', 'success');
                 closeFAQModal();
                 location.reload();
             } else {
-                alert('❌ Failed to save FAQ: ' + data.message);
+                showNotification('❌ Failed to save FAQ: ' + data.message, 'error');
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('❌ An error occurred while saving the FAQ.');
+            showNotification('❌ An error occurred while saving the FAQ.', 'error');
         });
     });
 
-    // Category form submission
+    // Category form submission - Updated for API
     document.getElementById('categoryForm')?.addEventListener('submit', function (e) {
         e.preventDefault();
         const formData = new FormData(this);
+        
         fetch(this.action, {
             method: 'POST',
-            body: formData
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
         })
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                alert('✅ Category saved successfully!');
+                showNotification('✅ Category saved successfully!', 'success');
                 closeCategoryModal();
-                location.reload();
+                loadCategories(); // Reload categories instead of full page reload
             } else {
-                alert('❌ Failed to save category: ' + data.message);
+                showNotification('❌ Failed to save category: ' + data.message, 'error');
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('❌ An error occurred while saving the category.');
+            showNotification('❌ An error occurred while saving the category.', 'error');
         });
     });
 
-    // Filter FAQs by Category
+    // Notification system
+    function showNotification(message, type = 'info') {
+        // Create notification element
+        const notification = document.createElement('div');
+        notification.className = `fixed top-4 right-4 z-[9999] px-6 py-4 rounded-lg shadow-lg text-white font-semibold transform transition-all duration-300 translate-x-full`;
+        
+        // Set colors based on type
+        switch (type) {
+            case 'success':
+                notification.classList.add('bg-green-500');
+                break;
+            case 'error':
+                notification.classList.add('bg-red-500');
+                break;
+            case 'info':
+                notification.classList.add('bg-blue-500');
+                break;
+            default:
+                notification.classList.add('bg-gray-500');
+        }
+        
+        notification.textContent = message;
+        document.body.appendChild(notification);
+        
+        // Show notification
+        setTimeout(() => {
+            notification.classList.remove('translate-x-full');
+        }, 100);
+        
+        // Hide notification after 3 seconds
+        setTimeout(() => {
+            notification.classList.add('translate-x-full');
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.parentNode.removeChild(notification);
+                }
+            }, 300);
+        }, 3000);
+    }
+
+    // Helper functions
+    function updateFAQCount() {
+        const visibleFAQs = document.querySelectorAll('#faq-items > div:not([style*="display: none"])').length;
+        document.getElementById('faqCount').textContent = visibleFAQs;
+    }
+
     function filterFAQsByCategory() {
         const categoryId = document.getElementById('categoryFilter').value;
         const faqItems = document.querySelectorAll('#faq-items > div');
@@ -781,5 +630,35 @@
             }
         }
     });
+
+    // Initialize page - Load categories on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        // Load categories by default since it's the first visible section
+        loadCategories();
+    });
+
+    function saveFAQ() {
+        const question = document.getElementById('faq_question').value.trim();
+        const answer = document.getElementById('faq_answer').value.trim();
+        
+        // Validate question mark
+        if (!question.endsWith('?')) {
+            showNotification('⚠️ Questions should end with a question mark (?)', 'warning');
+            return;
+        }
+        
+        // Validate minimum lengths
+        if (question.length < 5) {
+            showNotification('⚠️ Question must be at least 5 characters long', 'warning');
+            return;
+        }
+        
+        if (answer.length < 10) {
+            showNotification('⚠️ Answer must be at least 10 characters long', 'warning');
+            return;
+        }
+        
+        // Continue with save...
+    }
 </script>
 {% endblock %}

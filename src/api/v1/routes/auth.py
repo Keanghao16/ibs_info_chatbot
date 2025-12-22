@@ -4,7 +4,7 @@ JWT-based authentication for REST API
 """
 
 from flask import Blueprint, request, jsonify, g
-from ....database.connection import SessionLocal
+from ....database.connection import get_db_session
 from ....services.auth_service import AuthService
 from ..middleware.auth import token_required, optional_auth
 from ..middleware.error_handler import validate_request_json, APIError
@@ -44,7 +44,7 @@ def login():
             }
         }
     """
-    db = SessionLocal()
+    db = get_db_session()
     try:
         data = request.get_json()
         telegram_id = data['telegram_id']
@@ -97,7 +97,7 @@ def refresh_token():
             }
         }
     """
-    db = SessionLocal()
+    db = get_db_session()
     try:
         data = request.get_json()
         refresh_token = data['refresh_token']
@@ -127,38 +127,17 @@ def refresh_token():
 
 @auth_api_bp.route('/auth/me', methods=['GET'])
 @token_required
-def get_current_admin():
-    """
-    Get current authenticated admin information
-    
-    Headers:
-        Authorization: Bearer <access_token>
-    
-    Response:
-        {
-            "success": true,
-            "message": "Admin info retrieved",
-            "data": {
-                "id": 1,
-                "telegram_id": "123456789",
-                "full_name": "John Doe",
-                "role": "super_admin",
-                "is_active": true,
-                "is_available": true,
-                "division": "IT",
-                "last_login": "2025-11-11T10:30:00"
-            }
-        }
-    """
+def get_current_admin(current_user):  #  Add parameter
+    """Get current authenticated admin information"""
     admin = g.current_admin
     
     return ResponseBuilder.success(
         data={
             'id': admin.id,
-            'telegram_id': admin.telegram_id,
+            'telegram_id': str(admin.telegram_id),
             'telegram_username': admin.telegram_username,
             'full_name': admin.full_name,
-            'role': admin.role.value,
+            'role': admin.role.value if hasattr(admin.role, 'value') else admin.role,
             'is_active': admin.is_active,
             'is_available': admin.is_available,
             'division': admin.division,
@@ -171,12 +150,9 @@ def get_current_admin():
 
 @auth_api_bp.route('/auth/logout', methods=['POST'])
 @token_required
-def logout():
+def logout(current_user):  #  Add parameter
     """
     Logout (client should discard tokens)
-    
-    Note: JWT tokens are stateless, so "logout" means client should delete tokens.
-    For production, implement token blacklisting.
     
     Headers:
         Authorization: Bearer <access_token>
@@ -187,11 +163,6 @@ def logout():
             "message": "Logout successful"
         }
     """
-    # In a production system, you would:
-    # 1. Add token to blacklist table
-    # 2. Set token expiry in Redis cache
-    # For now, just return success (client will delete tokens)
-    
     admin = g.current_admin
     
     return ResponseBuilder.success(
@@ -202,7 +173,7 @@ def logout():
 @auth_api_bp.route('/auth/update-profile', methods=['PUT'])
 @token_required
 @validate_request_json(['full_name'])
-def update_profile():
+def update_profile(current_user):  #  Add parameter
     """
     Update admin profile information
     
@@ -227,7 +198,7 @@ def update_profile():
             }
         }
     """
-    db = SessionLocal()
+    db = get_db_session()
     try:
         admin = g.current_admin
         data = request.get_json()
@@ -261,23 +232,9 @@ def update_profile():
 
 @auth_api_bp.route('/auth/toggle-availability', methods=['POST'])
 @token_required
-def toggle_availability():
-    """
-    Toggle admin availability for chat assignment (admins only)
-    
-    Headers:
-        Authorization: Bearer <access_token>
-    
-    Response:
-        {
-            "success": true,
-            "message": "You are now available for new chat assignments",
-            "data": {
-                "is_available": true
-            }
-        }
-    """
-    db = SessionLocal()
+def toggle_availability(current_user):
+    """Toggle admin availability for chat assignment (admins only)"""
+    db = get_db_session()
     try:
         admin = g.current_admin
         
@@ -292,7 +249,7 @@ def toggle_availability():
                 message=result['message']
             )
         else:
-            return ResponseBuilder.bad_request(result['message'])
+            return ResponseBuilder.bad_request(result['message'])  #  FIXED
     
     except Exception as e:
         return ResponseBuilder.error(
@@ -305,7 +262,7 @@ def toggle_availability():
 
 @auth_api_bp.route('/auth/verify', methods=['GET'])
 @token_required
-def verify_token():
+def verify_token(current_user):  #  Add parameter
     """
     Verify if current token is valid
     
@@ -331,7 +288,7 @@ def verify_token():
         data={
             'valid': True,
             'admin_id': admin.id,
-            'role': admin.role.value,
+            'role': admin.role.value if hasattr(admin.role, 'value') else admin.role,
             'token_type': payload.get('token_type', 'access'),
             'expires_at': payload.get('exp')
         },
@@ -343,32 +300,12 @@ def verify_token():
 def telegram_callback():
     """
     Handle Telegram Login Widget callback (for web-based login)
-    
-    Request Body:
-        {
-            "id": "123456789",
-            "first_name": "John",
-            "last_name": "Doe",
-            "username": "johndoe",
-            "photo_url": "https://...",
-            "auth_date": "1699699200",
-            "hash": "abc123..."
-        }
-    
-    Response:
-        {
-            "success": true,
-            "message": "Login successful",
-            "data": {
-                "access_token": "...",
-                "refresh_token": "...",
-                "admin": {...}
-            }
-        }
     """
-    db = SessionLocal()
+    db = get_db_session()
     try:
         telegram_data = request.get_json()
+        
+        print(f"🔍 Telegram callback received: {telegram_data}")  # Debug
         
         if not telegram_data.get('id'):
             raise APIError("Telegram ID is required", status_code=400)
@@ -376,30 +313,47 @@ def telegram_callback():
         # Use existing Telegram authentication method
         result = auth_service.authenticate_admin_telegram(db, telegram_data)
         
+        print(f"🔍 Auth result: {result}")  # Debug
+        
         if result['success']:
-            # Generate JWT tokens
-            api_result = auth_service.authenticate_admin_api(
-                db, 
-                str(telegram_data['id'])
-            )
-            
+            #  FIXED: Return proper API tokens
             return ResponseBuilder.success(
                 data={
-                    'access_token': api_result['access_token'],
-                    'refresh_token': api_result['refresh_token'],
-                    'token_type': api_result['token_type'],
-                    'expires_in': api_result['expires_in'],
-                    'admin': api_result['admin']
+                    'access_token': result.get('access_token') or result.get('token'),  # Handle both formats
+                    'refresh_token': result.get('refresh_token'),
+                    'token_type': result.get('token_type', 'Bearer'),
+                    'expires_in': result.get('expires_in', 3600),
+                    'admin': result['admin']
                 },
-                message='Telegram login successful'
+                message='Login successful'
             )
         else:
             return ResponseBuilder.unauthorized(result['message'])
     
     except Exception as e:
+        print(f"❌ Telegram login error: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return ResponseBuilder.error(
             message=f"Telegram login failed: {str(e)}",
             status_code=500
         )
     finally:
         db.close()
+
+
+# Add this test route at the end of the file
+@auth_api_bp.route('/auth/test', methods=['GET'])
+def test_auth_route():
+    """Test route to verify auth blueprint is working"""
+    return jsonify({
+        'success': True,
+        'message': 'Auth blueprint is working!',
+        'available_routes': [
+            '/auth/login',
+            '/auth/refresh',
+            '/auth/me',
+            '/auth/telegram-callback',
+            '/auth/test'
+        ]
+    })

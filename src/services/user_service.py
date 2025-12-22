@@ -1,181 +1,263 @@
 from sqlalchemy.orm import Session
-from ..database.models import User, Admin
-from datetime import datetime
-import uuid
+from ..database.models import User
+from datetime import datetime, timedelta
+from sqlalchemy import func, cast, Date
 
 class UserService:
     """Service for user-related business logic"""
     
-    def get_user_by_id(self, db: Session, user_id: str):
-        """Get user by ID"""
+    @staticmethod
+    def get_all_users(db: Session, page: int = 1, per_page: int = 10, search: str = None, is_premium: bool = None):
+        """Get paginated users with optional filters"""
+        query = db.query(User)
+        
+        # Apply filters
+        if search:
+            search_term = f"%{search}%"
+            query = query.filter(
+                (User.username.ilike(search_term)) |
+                (User.first_name.ilike(search_term)) |
+                (User.last_name.ilike(search_term))
+            )
+        
+        if is_premium is not None:
+            query = query.filter(User.is_premium == is_premium)
+        
+        # Get total count
+        total = query.count()
+        
+        # Apply pagination
+        users = query.order_by(User.registration_date.desc()).offset((page - 1) * per_page).limit(per_page).all()
+        
+        #  Ensure dates are datetime objects, not strings
+        for user in users:
+            # Convert string dates to datetime if needed
+            if hasattr(user, 'registration_date') and isinstance(user.registration_date, str):
+                try:
+                    from datetime import datetime
+                    user.registration_date = datetime.fromisoformat(user.registration_date.replace('Z', '+00:00'))
+                except:
+                    user.registration_date = None
+            
+            if hasattr(user, 'last_activity') and isinstance(user.last_activity, str):
+                try:
+                    from datetime import datetime
+                    user.last_activity = datetime.fromisoformat(user.last_activity.replace('Z', '+00:00'))
+                except:
+                    user.last_activity = None
+        
+        return {
+            'users': users,
+            'total': total,
+            'page': page,
+            'per_page': per_page,
+            'pages': (total + per_page - 1) // per_page
+        }
+    
+    @staticmethod
+    def get_user_by_id(db: Session, user_id: str):  #  Changed to string
+        """Get user by ID (UUID)"""
         return db.query(User).filter(User.id == user_id).first()
     
-    def get_user_by_telegram_id(self, db: Session, telegram_id: str):
+    @staticmethod
+    def get_user_by_telegram_id(db: Session, telegram_id: int):
         """Get user by Telegram ID"""
         return db.query(User).filter(User.telegram_id == telegram_id).first()
     
-    def get_all_users(self, db: Session):
-        """Get all users"""
-        return db.query(User).order_by(User.created_at.desc()).all()
+    @staticmethod
+    def create_user(db: Session, user_data: dict):
+        """Create new user"""
+        user = User(**user_data)
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+        return user
     
-    def get_user_or_admin_by_telegram_id(self, db: Session, telegram_id: str):
-        """Check if telegram_id exists in User or Admin table"""
-        user = self.get_user_by_telegram_id(db, telegram_id)
+    @staticmethod
+    def update_user(db: Session, user_id: str, update_data: dict):  #  Changed to string
+        """Update user"""
+        user = db.query(User).filter(User.id == user_id).first()
         if user:
-            return {'type': 'user', 'data': user}
+            for key, value in update_data.items():
+                setattr(user, key, value)
+            db.commit()
+            db.refresh(user)
+        return user
+    
+    @staticmethod
+    def delete_user(db: Session, user_id: str):  #  Changed to string
+        """Delete user"""
+        user = db.query(User).filter(User.id == user_id).first()
+        if user:
+            db.delete(user)
+            db.commit()
+        return True
+    
+    @staticmethod
+    def get_user_statistics(db: Session):
+        """Get user statistics"""
+        total_users = db.query(User).count()
+        premium_users = db.query(User).filter(User.is_premium == True).count()
+        bot_users = db.query(User).filter(User.is_bot == True).count()
         
+        now = datetime.utcnow()
+        today_start = datetime(now.year, now.month, now.day)
+        week_ago = now - timedelta(days=7)
+        month_ago = now - timedelta(days=30)
+        
+        active_today = db.query(User).filter(
+            cast(User.registration_date, Date) == today_start.date()
+        ).count()
+        
+        active_week = db.query(User).filter(
+            User.registration_date >= week_ago
+        ).count()
+        
+        active_month = db.query(User).filter(
+            User.registration_date >= month_ago
+        ).count()
+        
+        new_today = db.query(User).filter(
+            cast(User.registration_date, Date) == today_start.date()
+        ).count()
+        
+        new_week = db.query(User).filter(
+            User.registration_date >= week_ago
+        ).count()
+        
+        new_month = db.query(User).filter(
+            User.registration_date >= month_ago
+        ).count()
+        
+        return {
+            'total_users': total_users,
+            'active_today': active_today,
+            'active_this_week': active_week,
+            'active_this_month': active_month,
+            'premium_users': premium_users,
+            'bot_users': bot_users,
+            'new_users_today': new_today,
+            'new_users_this_week': new_week,
+            'new_users_this_month': new_month
+        }
+    
+    @staticmethod
+    def get_user_or_admin_by_telegram_id(db: Session, telegram_id: str):
+        """Check if telegram_id belongs to admin or user"""
+        from ..database.models import Admin
+        
+        # Check if admin first
         admin = db.query(Admin).filter(Admin.telegram_id == telegram_id).first()
         if admin:
-            return {'type': 'admin', 'data': admin}
+            return {
+                'type': 'admin',
+                'data': admin
+            }
+        
+        # Check if user
+        user = db.query(User).filter(User.telegram_id == int(telegram_id)).first()
+        if user:
+            return {
+                'type': 'user',
+                'data': user
+            }
         
         return None
-    
-    def create_user_if_not_admin(self, db: Session, telegram_id: str, **user_data):
-        """Create a new user if the telegram_id doesn't belong to an admin"""
-        # Check if already exists as admin
+
+    @staticmethod
+    def create_user_if_not_admin(db: Session, telegram_id: str, username: str = None, 
+                                  first_name: str = None, last_name: str = None, 
+                                  full_name: str = None, photo_url: str = None):
+        """Create user only if they're not an admin"""
+        from ..database.models import Admin
+        
+        # Check if admin
         admin = db.query(Admin).filter(Admin.telegram_id == telegram_id).first()
         if admin:
-            return {'success': False, 'message': 'This Telegram ID belongs to an admin'}
+            return {
+                'success': False,
+                'message': 'Cannot create user - this telegram_id belongs to an admin',
+                'user': None
+            }
         
         # Check if user already exists
-        existing_user = self.get_user_by_telegram_id(db, telegram_id)
+        existing_user = db.query(User).filter(User.telegram_id == int(telegram_id)).first()
         if existing_user:
-            return {'success': False, 'message': 'User already exists'}
+            # Update last activity and photo if provided
+            existing_user.last_activity = datetime.now()
+            if photo_url:
+                existing_user.photo_url = photo_url
+            db.commit()
+            db.refresh(existing_user)
+            return {
+                'success': True,
+                'message': 'User already exists',
+                'user': existing_user
+            }
         
         # Create new user
         new_user = User(
-            id=str(uuid.uuid4()),
-            telegram_id=telegram_id,
-            username=user_data.get('username'),
-            first_name=user_data.get('first_name'),
-            last_name=user_data.get('last_name'),
-            full_name=user_data.get('full_name', ''),
-            photo_url=user_data.get('photo_url'),
-            is_active=True,
-            created_at=datetime.utcnow()
+            telegram_id=int(telegram_id),
+            username=username,
+            first_name=first_name,
+            last_name=last_name,
+            photo_url=photo_url,  # ✅ ADD THIS LINE
+            registration_date=datetime.now(),
+            last_activity=datetime.now()
         )
         
         db.add(new_user)
         db.commit()
         db.refresh(new_user)
         
-        return {'success': True, 'user': new_user}
-    
-    def promote_user_to_admin(self, db: Session, telegram_id: str, promoted_by_admin_id: str, **admin_data):
-        """Promote a user to admin"""
-        # Check if user exists
-        user = self.get_user_by_telegram_id(db, telegram_id)
+        return {
+            'success': True,
+            'message': 'User created successfully',
+            'user': new_user
+        }
+
+    @staticmethod
+    def promote_to_admin(db: Session, user_id: str, role: str = 'admin', division: str = None):
+        """Promote a user to admin status"""
+        from ..database.models import Admin, AdminRole
+        import uuid
+        
+        # Get the user
+        user = db.query(User).filter(User.id == user_id).first()
         if not user:
-            return {'success': False, 'message': 'User not found'}
+            return None
         
         # Check if already an admin
-        admin = db.query(Admin).filter(Admin.telegram_id == telegram_id).first()
-        if admin:
-            return {'success': False, 'message': 'User is already an admin'}
+        existing_admin = db.query(Admin).filter(Admin.telegram_id == str(user.telegram_id)).first()
+        if existing_admin:
+            raise ValueError("User is already an admin")
         
-        # Store user data before deletion
-        user_data_copy = {
-            'username': user.username,
-            'first_name': user.first_name,
-            'last_name': user.last_name,
-            'full_name': user.full_name or admin_data.get('full_name', ''),
-            'photo_url': user.photo_url
+        # Create admin record
+        # Map role string to enum (AdminRole has lowercase values: admin, super_admin)
+        role_map = {
+            'admin': AdminRole.admin,
+            'super_admin': AdminRole.super_admin
         }
+        admin_role = role_map.get(role.lower(), AdminRole.admin)
         
-        # ✅ Delete user record FIRST
-        db.delete(user)
-        db.flush()  # Flush to database but don't commit yet
-        
-        # ✅ Then create admin record
-        new_admin = Admin(
+        admin = Admin(
             id=str(uuid.uuid4()),
-            telegram_id=telegram_id,
-            full_name=admin_data.get('full_name', user_data_copy['full_name']),
-            telegram_username=user_data_copy['username'],
-            telegram_first_name=user_data_copy['first_name'],
-            telegram_last_name=user_data_copy['last_name'],
-            telegram_photo_url=user_data_copy['photo_url'],
-            role=admin_data.get('role', 'admin'),
+            telegram_id=str(user.telegram_id),
+            telegram_username=user.username,
+            full_name=user.full_name or f"{user.first_name or ''} {user.last_name or ''}".strip() or "Admin",
+            role=admin_role,
+            division=division,
             is_active=True,
-            is_available=admin_data.get('is_available', True),
-            division=admin_data.get('division'),
-            created_at=datetime.utcnow()
+            is_available=True
         )
         
-        db.add(new_admin)
-        db.commit()
-        db.refresh(new_admin)
-        
-        return {'success': True, 'admin': new_admin}
-    
-    def demote_admin_to_user(self, db: Session, telegram_id: str):
-        """Demote an admin to user"""
-        # Check if admin exists
-        admin = db.query(Admin).filter(Admin.telegram_id == telegram_id).first()
-        if not admin:
-            return {'success': False, 'message': 'Admin not found'}
-        
-        # Check if user already exists
-        user = self.get_user_by_telegram_id(db, telegram_id)
-        if user:
-            return {'success': False, 'message': 'User already exists'}
-        
-        # ✅ Store admin data before deletion
-        admin_data = {
-            'telegram_id': admin.telegram_id,
-            'username': admin.telegram_username,
-            'first_name': admin.telegram_first_name,
-            'last_name': admin.telegram_last_name,
-            'full_name': admin.full_name,
-            'photo_url': admin.telegram_photo_url
-        }
-        
-        # ✅ Delete admin record FIRST
-        db.delete(admin)
-        db.flush()  # Flush to database but don't commit yet
-        
-        # ✅ Then create user record
-        new_user = User(
-            id=str(uuid.uuid4()),
-            telegram_id=admin_data['telegram_id'],
-            username=admin_data['username'],
-            first_name=admin_data['first_name'],
-            last_name=admin_data['last_name'],
-            full_name=admin_data['full_name'],
-            photo_url=admin_data['photo_url'],
-            is_active=True,
-            created_at=datetime.utcnow()
-        )
-        
-        db.add(new_user)
-        db.commit()
-        db.refresh(new_user)
-        
-        return {'success': True, 'user': new_user}
-    
-    def delete_user(self, db: Session, user_id: str):
-        """Delete a user"""
-        user = self.get_user_by_id(db, user_id)
-        if not user:
-            return {'success': False, 'message': 'User not found'}
-        
+        # Delete the user record to avoid telegram_id conflict
+        # The database has a constraint preventing same telegram_id in both tables
         db.delete(user)
+        db.flush()  # Ensure user is deleted before adding admin
+        
+        db.add(admin)
         db.commit()
+        db.refresh(admin)
         
-        return {'success': True, 'message': f'User {user.full_name} deleted successfully'}
-    
-    def toggle_user_status(self, db: Session, user_id: str):
-        """Toggle user active status"""
-        user = self.get_user_by_id(db, user_id)
-        if not user:
-            return {'success': False, 'message': 'User not found'}
-        
-        user.is_active = not user.is_active
-        db.commit()
-        
-        status = 'activated' if user.is_active else 'deactivated'
-        return {'success': True, 'message': f'User {status} successfully', 'is_active': user.is_active}
-
-
-# Keep any existing standalone functions below if needed for backward compatibility
-# Or remove them if you want to use only the class-based approach
+        return admin

@@ -7,7 +7,7 @@ from .auth import (
     token_required,
     admin_required,
     super_admin_required,
-    optional_auth
+    optional_auth  # Now it exists
 )
 from .cors import (
     configure_cors,

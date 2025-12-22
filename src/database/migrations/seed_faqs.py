@@ -143,13 +143,13 @@ def seed_faqs():
                     order_index=faq_data["order_index"]
                 )
                 created_count += 1
-                print(f"✅ Created FAQ: {faq_data['question'][:50]}...")
+                print(f" Created FAQ: {faq_data['question'][:50]}...")
             except Exception as e:
                 print(f"❌ Error creating FAQ '{faq_data['question'][:50]}...': {e}")
                 skipped_count += 1
         
         print(f"\n📊 Summary:")
-        print(f"   ✅ Successfully created: {created_count} FAQs")
+        print(f"    Successfully created: {created_count} FAQs")
         if skipped_count > 0:
             print(f"   ⚠️  Skipped: {skipped_count} FAQs")
         

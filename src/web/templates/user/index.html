@@ -15,24 +15,31 @@
     <!-- Statistics Overview -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <div class="bg-white rounded-2xl shadow-lg p-6 border-l-4 border-primary-500 transform hover:-translate-y-2 transition-transform duration-300">
-            <div class="text-4xl font-bold text-primary-500 mb-2">{{ users|length if users else 0 }}</div>
+            <!-- ✅ UPDATED: Use stats from API instead of users array length -->
+            <div class="text-4xl font-bold text-primary-500 mb-2">{{ stats.total_users if stats and stats.total_users else 0 }}</div>
             <div class="text-gray-600 font-semibold uppercase text-sm tracking-wide">
                 <i class="fas fa-users"></i> Total Users
             </div>
         </div>
 
         <div class="bg-white rounded-2xl shadow-lg p-6 border-l-4 border-green-500 transform hover:-translate-y-2 transition-transform duration-300">
+            <!-- ✅ UPDATED: Use calculated active users from current page + API stats fallback -->
             <div class="text-4xl font-bold text-green-500 mb-2">
-                {{ users|selectattr("is_active")|list|length if users else 0 }}
+                {{ stats.active_today if stats and stats.active_today is defined else (users|selectattr("is_active", "equalto", True)|list|length if users else 0) }}
             </div>
             <div class="text-gray-600 font-semibold uppercase text-sm tracking-wide">
-                <i class="fas fa-check-circle"></i> Active Users
+                <i class="fas fa-check-circle"></i> Active Today
             </div>
         </div>
 
         <div class="bg-white rounded-2xl shadow-lg p-6 border-l-4 border-red-500 transform hover:-translate-y-2 transition-transform duration-300">
+            <!-- ✅ UPDATED: Calculate inactive users from total - active -->
             <div class="text-4xl font-bold text-red-500 mb-2">
-                {{ users|rejectattr("is_active")|list|length if users else 0 }}
+                {% if stats and stats.total_users and stats.active_today is defined %}
+                {{ stats.total_users - stats.active_today }}
+                {% else %}
+                {{ users|selectattr("is_active", "equalto", False)|list|length if users else 0 }}
+                {% endif %}
             </div>
             <div class="text-gray-600 font-semibold uppercase text-sm tracking-wide">
                 <i class="fas fa-times-circle"></i> Inactive Users
@@ -40,22 +47,49 @@
         </div>
 
         <div class="bg-white rounded-2xl shadow-lg p-6 border-l-4 border-yellow-500 transform hover:-translate-y-2 transition-transform duration-300">
+            <!-- ✅ UPDATED: Use premium users from API stats -->
             <div class="text-4xl font-bold text-yellow-500 mb-2">
-                {{ users|selectattr("created_at")|list|length if users else 0 }}
+                {{ stats.premium_users if stats and stats.premium_users is defined else (users|selectattr("is_premium", "equalto", True)|list|length if users else 0) }}
             </div>
             <div class="text-gray-600 font-semibold uppercase text-sm tracking-wide">
-                <i class="fas fa-calendar-plus"></i> This Month
+                <i class="fas fa-crown"></i> Premium Users
             </div>
         </div>
     </div>
+
+    <!-- Additional Statistics Cards (Optional) -->
+    {% if stats %}
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div class="bg-white rounded-2xl shadow-lg p-6 border-l-4 border-blue-500 transform hover:-translate-y-2 transition-transform duration-300">
+            <div class="text-3xl font-bold text-blue-500 mb-2">{{ stats.new_users_today if stats.new_users_today is defined else 0 }}</div>
+            <div class="text-gray-600 font-semibold uppercase text-sm tracking-wide">
+                <i class="fas fa-user-plus"></i> New Users Today
+            </div>
+        </div>
+
+        <div class="bg-white rounded-2xl shadow-lg p-6 border-l-4 border-purple-500 transform hover:-translate-y-2 transition-transform duration-300">
+            <div class="text-3xl font-bold text-purple-500 mb-2">{{ stats.new_users_this_week if stats.new_users_this_week is defined else 0 }}</div>
+            <div class="text-gray-600 font-semibold uppercase text-sm tracking-wide">
+                <i class="fas fa-calendar-week"></i> New This Week
+            </div>
+        </div>
+
+        <div class="bg-white rounded-2xl shadow-lg p-6 border-l-4 border-indigo-500 transform hover:-translate-y-2 transition-transform duration-300">
+            <div class="text-3xl font-bold text-indigo-500 mb-2">{{ stats.new_users_this_month if stats.new_users_this_month is defined else 0 }}</div>
+            <div class="text-gray-600 font-semibold uppercase text-sm tracking-wide">
+                <i class="fas fa-calendar-alt"></i> New This Month
+            </div>
+        </div>
+    </div>
+    {% endif %}
 
     <!-- Search and Filters -->
     <div class="bg-white rounded-2xl shadow-lg p-6 mb-8">
         <div class="flex flex-col md:flex-row gap-4 items-center">
             <div class="flex-1 relative w-full">
-                <input type="text" id="searchInput" 
-                       class="w-full pl-12 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-primary-500 transition-colors"
-                       placeholder="Search by name, username, or Telegram ID...">
+                <input type="text" id="searchInput" value="{{ search or '' }}"
+                       placeholder="Search by name, username, or Telegram ID..."
+                       class="w-full px-12 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-primary-500 focus:ring-4 focus:ring-primary-100 transition-all text-base">
                 <i class="fas fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 text-lg"></i>
             </div>
 
@@ -64,20 +98,16 @@
                 <option value="">All Status</option>
                 <option value="active">Active Only</option>
                 <option value="inactive">Inactive Only</option>
+                <option value="premium">Premium Only</option>
             </select>
 
             <select id="sortFilter" 
                     class="px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-primary-500 bg-white cursor-pointer min-w-[150px]">
                 <option value="newest">Newest First</option>
                 <option value="oldest">Oldest First</option>
-                <option value="name">By Name</option>
-                <option value="activity">By Activity</option>
+                <option value="name">Name A-Z</option>
+                <option value="activity">Recent Activity</option>
             </select>
-
-            <button onclick="exportUsers()" 
-                    class="px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl font-semibold hover:from-green-600 hover:to-green-700 transition-all duration-300 flex items-center gap-2 shadow-lg hover:shadow-xl transform hover:-translate-y-1">
-                <i class="fas fa-download"></i> Export CSV
-            </button>
         </div>
     </div>
 
@@ -85,10 +115,11 @@
     <div class="bg-white rounded-2xl shadow-lg overflow-hidden">
         <div class="gradient-primary text-white p-6 flex justify-between items-center">
             <h3 class="text-2xl font-bold flex items-center gap-2">
-                <i class="fas fa-list"></i> All Users
+                <i class="fas fa-users"></i> Users List
             </h3>
             <div id="resultsCount" class="text-sm opacity-90">
-                Showing {{ users|length if users else 0 }} users
+                <!-- ✅ UPDATED: Show pagination info and total -->
+                Showing {{ users|length if users else 0 }} of {{ stats.total_users if stats and stats.total_users else pagination.total if pagination else 0 }} users
             </div>
         </div>
 
@@ -97,117 +128,105 @@
             <table class="w-full" id="usersTable">
                 <thead class="bg-gray-50 border-b-2 border-gray-200">
                     <tr>
-                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                            <i class="fas fa-user mr-2"></i>User
-                        </th>
-                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                            <i class="fas fa-id-badge mr-2"></i>Telegram ID
-                        </th>
-                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                            <i class="fas fa-calendar mr-2"></i>Joined
-                        </th>
-                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                            <i class="fas fa-clock mr-2"></i>Last Active
-                        </th>
-                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                            <i class="fas fa-toggle-on mr-2"></i>Status
-                        </th>
-                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                            <i class="fas fa-cog mr-2"></i>Actions
-                        </th>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">User</th>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Telegram</th>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Status</th>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Registered</th>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Last Active</th>
+                        <th class="px-6 py-4 text-center text-xs font-bold text-gray-600 uppercase tracking-wider">Actions</th>
                     </tr>
                 </thead>
-                <tbody id="usersTableBody" class="divide-y divide-gray-200">
+                <tbody class="divide-y divide-gray-200" id="usersTableBody">
                     {% for user in users %}
-                    <tr class="hover:bg-gray-50 transition-colors"
-                        data-user-id="{{ user.id }}"
+                    <tr class="hover:bg-gray-50 transition-colors" 
+                        data-user-name="{{ user.full_name|lower }}"
                         data-status="{{ 'active' if user.is_active else 'inactive' }}"
-                        data-name="{{ (user.full_name or (user.first_name ~ ' ' ~ user.last_name))|trim|lower }}"
-                        data-username="{{ user.username|lower if user.username else '' }}"
-                        data-telegram-id="{{ user.telegram_id }}">
+                        data-premium="{{ user.is_premium|lower }}"
+                        data-timestamp="{{ user.registration_date.timestamp() if user.registration_date and hasattr(user.registration_date, 'timestamp') else 0 }}">
                         
+                        <!-- User Info -->
                         <td class="px-6 py-4">
-                            <div class="flex items-center gap-4">
-                                {% if user.photo_url %}
-                                <img src="{{ user.photo_url }}" alt="Avatar" 
-                                     class="w-12 h-12 rounded-full border-3 border-gray-200 object-cover">
-                                {% else %}
-                                <div class="w-12 h-12 rounded-full bg-gradient-to-br from-primary-500 to-secondary-500 flex items-center justify-center text-white font-bold text-lg">
-                                    {{ (user.first_name[0] if user.first_name else 'U') }}
+                            <div class="flex items-center gap-3">
+                                <div class="w-12 h-12 rounded-full bg-gradient-to-br from-primary-500 to-secondary-500 flex items-center justify-center text-white font-bold text-lg border-2 border-white shadow-md">
+                                    {{ user.first_name[0] if user.first_name else user.username[0] if user.username else 'U' }}
                                 </div>
-                                {% endif %}
-
                                 <div>
-                                    <h4 class="font-semibold text-gray-900">
-                                        {{ (user.full_name or (user.first_name ~ ' ' ~ user.last_name))|trim or 'Unknown User' }}
-                                    </h4>
-                                    <div class="text-sm text-gray-500 flex flex-col gap-1">
-                                        {% if user.username %}
-                                        <span><i class="fas fa-at text-xs"></i> @{{ user.username }}</span>
-                                        {% endif %}
+                                    <div class="font-semibold text-gray-900">{{ user.full_name or 'Unknown User' }}</div>
+                                    <div class="text-sm text-gray-600">
+                                        {% if user.username %}@{{ user.username }}{% else %}No username{% endif %}
                                     </div>
                                 </div>
                             </div>
                         </td>
 
+                        <!-- Telegram Info -->
                         <td class="px-6 py-4">
-                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-gradient-to-r from-blue-400 to-blue-600 text-white">
-                                <i class="fab fa-telegram mr-1"></i> {{ user.telegram_id }}
-                            </span>
+                            <div class="text-sm font-mono text-gray-900">{{ user.telegram_id }}</div>
+                            <div class="text-xs text-gray-600">{{ user.language_code or 'Unknown' }}</div>
                         </td>
 
-                        <td class="px-6 py-4 text-sm text-gray-700">
-                            {% if user.created_at %}
-                            <div class="flex flex-col">
-                                <span class="font-medium">{{ user.created_at.strftime('%Y-%m-%d') if user.created_at is not string else user.created_at[:10] }}</span>
-                                <span class="text-xs text-gray-500">{{ user.created_at.strftime('%H:%M') if user.created_at is not string else user.created_at[11:16] }}</span>
+                        <!-- Status -->
+                        <td class="px-6 py-4">
+                            <div class="flex flex-col gap-2">
+                                <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold
+                                            {{ 'bg-green-100 text-green-800' if user.is_active else 'bg-red-100 text-red-800' }}">
+                                    <i class="fas fa-circle"></i>
+                                    {{ 'Active' if user.is_active else 'Inactive' }}
+                                </span>
+                                {% if user.is_premium %}
+                                <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-800">
+                                    <i class="fas fa-crown"></i> Premium
+                                </span>
+                                {% endif %}
                             </div>
+                        </td>
+
+                        <!-- Registration Date -->
+                        <td class="px-6 py-4 text-sm text-gray-900">
+                            {% if user.registration_date %}
+                                {% if user.registration_date is string %}
+                                    {{ user.registration_date[:10] }}
+                                {% else %}
+                                    {{ user.registration_date.strftime('%Y-%m-%d') }}
+                                {% endif %}
                             {% else %}
-                            <span class="text-gray-400 italic">Unknown</span>
+                                Unknown
                             {% endif %}
                         </td>
 
-                        <td class="px-6 py-4 text-sm text-gray-700">
+                        <!-- Last Activity -->
+                        <td class="px-6 py-4 text-sm text-gray-900">
                             {% if user.last_activity %}
-                            <div class="flex flex-col">
-                                <span class="font-medium">{{ user.last_activity.strftime('%Y-%m-%d') if user.last_activity is not string else user.last_activity[:10] }}</span>
-                                <span class="text-xs text-gray-500">{{ user.last_activity.strftime('%H:%M') if user.last_activity is not string else user.last_activity[11:16] }}</span>
-                            </div>
+                                {% if user.last_activity is string %}
+                                    {{ user.last_activity[:10] }}
+                                {% else %}
+                                    {{ user.last_activity.strftime('%Y-%m-%d') }}
+                                {% endif %}
                             {% else %}
-                            <span class="text-gray-400 italic">Never</span>
+                                Never
                             {% endif %}
                         </td>
 
-                        <td class="px-6 py-4">
-                            <span class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold
-                                        {{ 'bg-green-100 text-green-800 border border-green-200' if user.is_active else 'bg-red-100 text-red-800 border border-red-200' }}">
-                                <i class="fas fa-{{ 'check-circle' if user.is_active else 'times-circle' }}"></i>
-                                {{ 'Active' if user.is_active else 'Inactive' }}
-                            </span>
-                        </td>
-
-                        <td class="px-6 py-4">
-                            <div class="flex items-center gap-2">
+                        <!-- Actions -->
+                        <td class="px-6 py-4 text-center">
+                            <div class="flex items-center justify-center gap-2">
                                 <button onclick="viewUser('{{ user.id }}')" 
-                                        class="px-3 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors font-medium text-sm flex items-center gap-1"
-                                        title="View Details">
-                                    <i class="fas fa-eye"></i>
+                                        class="px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-xs font-semibold transition-colors">
+                                    <i class="fas fa-eye"></i> View
                                 </button>
                                 <button onclick="messageUser('{{ user.telegram_id }}')" 
-                                        class="px-3 py-2 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 transition-colors font-medium text-sm flex items-center gap-1"
-                                        title="Send Message">
-                                    <i class="fas fa-paper-plane"></i>
+                                        class="px-3 py-1 bg-green-500 hover:bg-green-600 text-white rounded-lg text-xs font-semibold transition-colors">
+                                    <i class="fas fa-message"></i> Message
                                 </button>
-                                {% if session.admin_info.role == 'super_admin' %}
-                                <button onclick="showPromoteModalFromTable('{{ user.id }}', '{{ user.full_name or (user.first_name ~ " " ~ user.last_name)|trim }}')" 
-                                        class="px-3 py-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors font-medium text-sm flex items-center gap-1"
-                                        title="Promote to Admin">
-                                    <i class="fas fa-user-shield"></i>
+                                {% if session.admin.role == 'super_admin' %}
+                                <button onclick="showPromoteModalFromTable('{{ user.id }}', '{{ user.full_name or "Unknown" }}')" 
+                                        class="px-3 py-1 bg-purple-500 hover:bg-purple-600 text-white rounded-lg text-xs font-semibold transition-colors">
+                                    <i class="fas fa-arrow-up"></i> Promote
                                 </button>
-                                <button onclick="toggleUserStatus('{{ user.id }}', {{ 'true' if user.is_active else 'false' }})" 
-                                        class="px-3 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors font-medium text-sm flex items-center gap-1"
-                                        title="{{ 'Deactivate' if user.is_active else 'Activate' }}">
-                                    <i class="fas fa-{{ 'user-slash' if user.is_active else 'user-check' }}"></i>
+                                <button onclick="toggleUserStatus('{{ user.id }}', {{ user.is_active|lower }})" 
+                                        class="px-3 py-1 {{ 'bg-red-500 hover:bg-red-600' if user.is_active else 'bg-green-500 hover:bg-green-600' }} text-white rounded-lg text-xs font-semibold transition-colors">
+                                    <i class="fas fa-{{ 'ban' if user.is_active else 'check' }}"></i> 
+                                    {{ 'Deactivate' if user.is_active else 'Activate' }}
                                 </button>
                                 {% endif %}
                             </div>
@@ -224,7 +243,7 @@
         <div class="text-center py-16">
             <i class="fas fa-users-slash text-6xl text-gray-300 mb-4"></i>
             <h3 class="text-2xl font-bold text-gray-600 mb-2">No Users Found</h3>
-            <p class="text-gray-500">No users have interacted with the bot yet.</p>
+            <p class="text-gray-500">There are currently no users to display.</p>
         </div>
         {% endif %}
     </div>
@@ -234,40 +253,27 @@
 <div id="messageModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 transform transition-all">
         <div class="flex justify-between items-center mb-6">
-            <h2 class="text-2xl font-bold text-gray-900 flex items-center gap-2">
-                <i class="fas fa-paper-plane text-primary-500"></i> Send Message
-            </h2>
+            <h3 class="text-xl font-bold text-gray-900 flex items-center gap-2">
+                <i class="fas fa-message text-primary-500"></i> Send Message
+            </h3>
             <button onclick="closeMessageModal()" class="text-gray-400 hover:text-gray-600 text-2xl">
                 <i class="fas fa-times"></i>
             </button>
         </div>
         
         <div class="space-y-4">
-            <div>
-                <label class="block text-sm font-semibold text-gray-700 mb-2">
-                    <i class="fab fa-telegram"></i> Telegram ID
-                </label>
-                <input type="text" id="modalTelegramId" readonly 
-                       class="w-full px-4 py-2 border-2 border-gray-200 rounded-lg bg-gray-50">
-            </div>
-            
-            <div>
-                <label class="block text-sm font-semibold text-gray-700 mb-2">
-                    <i class="fas fa-comment-dots"></i> Message
-                </label>
-                <textarea id="modalMessage" rows="5" 
-                          placeholder="Type your message here..."
-                          class="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-primary-500 resize-none"></textarea>
-            </div>
-            
-            <div class="flex gap-3 pt-2">
+            <input type="hidden" id="modalTelegramId">
+            <textarea id="modalMessage" placeholder="Type your message here..."
+                      class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-primary-500 resize-none" 
+                      rows="4"></textarea>
+            <div class="flex gap-3">
                 <button onclick="closeMessageModal()" 
-                        class="flex-1 px-4 py-3 border-2 border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 transition-colors">
+                        class="flex-1 px-4 py-2 border-2 border-gray-200 text-gray-600 rounded-xl hover:bg-gray-50 transition-colors">
                     Cancel
                 </button>
                 <button onclick="sendMessageFromModal()" 
-                        class="flex-1 px-4 py-3 bg-gradient-to-r from-primary-500 to-secondary-500 text-white rounded-lg font-semibold hover:from-primary-600 hover:to-secondary-600 transition-all shadow-lg">
-                    <i class="fas fa-paper-plane mr-2"></i> Send
+                        class="flex-1 px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-xl transition-colors">
+                    Send Message
                 </button>
             </div>
         </div>
@@ -278,59 +284,45 @@
 <div id="promoteModalFromTable" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 transform transition-all">
         <div class="flex justify-between items-center mb-6">
-            <h2 class="text-2xl font-bold text-gray-900 flex items-center gap-2">
-                <i class="fas fa-user-shield text-primary-500"></i> Promote User
-            </h2>
+            <h3 class="text-xl font-bold text-gray-900 flex items-center gap-2">
+                <i class="fas fa-arrow-up text-purple-500"></i> Promote User
+            </h3>
             <button onclick="closePromoteModalFromTable()" class="text-gray-400 hover:text-gray-600 text-2xl">
                 <i class="fas fa-times"></i>
             </button>
         </div>
         
         <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6 rounded-r-lg">
-            <p class="text-yellow-800 font-semibold flex items-center gap-2">
-                <i class="fas fa-exclamation-triangle"></i> Warning
-            </p>
-            <p class="text-yellow-700 text-sm mt-1">
-                This action will convert the user to an admin account and cannot be easily reversed.
+            <p class="text-yellow-800 text-sm">
+                <strong>Warning:</strong> This will promote user <span id="promoteUserName" class="font-bold"></span> 
+                (ID: <span id="promoteUserId" class="font-mono"></span>) to admin status. This action cannot be easily reversed.
             </p>
         </div>
 
         <div class="space-y-4">
             <div>
-                <label class="block text-sm font-semibold text-gray-700 mb-2">User Information</label>
-                <div class="bg-gray-50 p-3 rounded-lg border-2 border-gray-200">
-                    <div class="mb-2"><strong>Name:</strong> <span id="promoteUserName"></span></div>
-                    <div><strong>Telegram ID:</strong> <span id="promoteUserId"></span></div>
-                </div>
-            </div>
-
-            <div>
-                <label class="block text-sm font-semibold text-gray-700 mb-2">
-                    <i class="fas fa-shield-alt"></i> Admin Role *
-                </label>
+                <label class="block text-sm font-bold text-gray-700 mb-2">Admin Role</label>
                 <select id="promoteRoleTable" onchange="togglePromoteDivisionFieldTable()"
-                        class="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-primary-500">
-                    <option value="admin">Admin/Agent</option>
+                        class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-primary-500">
+                    <option value="admin">Administrator/Agent</option>
                     <option value="super_admin">Super Administrator</option>
                 </select>
             </div>
-
-            <div id="promoteDivisionGroupTable">
-                <label class="block text-sm font-semibold text-gray-700 mb-2">
-                    <i class="fas fa-building"></i> Division/Department
-                </label>
-                <input type="text" id="promoteDivisionTable" placeholder="e.g., Customer Support"
-                       class="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-primary-500">
-            </div>
             
-            <div class="flex gap-3 pt-2">
+            <div id="promoteDivisionGroupTable">
+                <label class="block text-sm font-bold text-gray-700 mb-2">Division (Optional)</label>
+                <input type="text" id="promoteDivisionTable" placeholder="e.g., Support, Sales, IT"
+                       class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-primary-500">
+            </div>
+
+            <div class="flex gap-3 pt-4">
                 <button onclick="closePromoteModalFromTable()" 
-                        class="flex-1 px-4 py-3 border-2 border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 transition-colors">
+                        class="flex-1 px-4 py-2 border-2 border-gray-200 text-gray-600 rounded-xl hover:bg-gray-50 transition-colors">
                     Cancel
                 </button>
                 <button onclick="promoteUserFromTable()" 
-                        class="flex-1 px-4 py-3 bg-gradient-to-r from-primary-500 to-secondary-500 text-white rounded-lg font-semibold hover:from-primary-600 hover:to-secondary-600 transition-all shadow-lg">
-                    <i class="fas fa-user-shield mr-2"></i> Promote
+                        class="flex-1 px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-xl transition-colors">
+                    Promote User
                 </button>
             </div>
         </div>
@@ -352,25 +344,47 @@
     sortFilter?.addEventListener('change', filterAndSort);
     
     function filterAndSort() {
+        if (!usersTableBody) return;
+        
         const searchTerm = searchInput.value.toLowerCase();
         const status = statusFilter.value;
+        const sort = sortFilter.value;
         
         let filtered = allRows.filter(row => {
-            const name = row.dataset.name || '';
-            const username = row.dataset.username || '';
-            const telegramId = row.dataset.telegramId || '';
+            const userName = row.dataset.userName;
             const rowStatus = row.dataset.status;
+            const isPremium = row.dataset.premium === 'true';
             
-            const matchesSearch = !searchTerm || name.includes(searchTerm) || 
-                                 username.includes(searchTerm) || telegramId.includes(searchTerm);
-            const matchesStatus = !status || rowStatus === status;
+            const matchesSearch = !searchTerm || userName.includes(searchTerm);
+            const matchesStatus = !status || 
+                (status === 'active' && rowStatus === 'active') ||
+                (status === 'inactive' && rowStatus === 'inactive') ||
+                (status === 'premium' && isPremium);
             
             return matchesSearch && matchesStatus;
         });
         
+        // Sort
+        filtered.sort((a, b) => {
+            const aTime = parseFloat(a.dataset.timestamp);
+            const bTime = parseFloat(b.dataset.timestamp);
+            const aName = a.dataset.userName;
+            const bName = b.dataset.userName;
+            
+            switch (sort) {
+                case 'newest': return bTime - aTime;
+                case 'oldest': return aTime - bTime;
+                case 'name': return aName.localeCompare(bName);
+                default: return bTime - aTime;
+            }
+        });
+        
         usersTableBody.innerHTML = '';
         filtered.forEach(row => usersTableBody.appendChild(row));
-        resultsCount.textContent = `Showing ${filtered.length} users`;
+        
+        // ✅ UPDATED: Update results count to show filtered vs total
+        const totalUsers = {{ stats.total_users if stats and stats.total_users else 0 }};
+        resultsCount.textContent = `Showing ${filtered.length} of ${totalUsers} users`;
     }
     
     function viewUser(userId) {
@@ -381,6 +395,7 @@
         document.getElementById('messageModal').classList.remove('hidden');
         document.getElementById('modalTelegramId').value = telegramId;
         document.getElementById('modalMessage').value = '';
+        document.getElementById('modalMessage').focus();
     }
     
     function closeMessageModal() {
@@ -404,10 +419,10 @@
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                alert('✅ Message sent successfully!');
+                alert(' Message sent successfully!');
                 closeMessageModal();
             } else {
-                alert('❌ Failed: ' + (data.message || 'Unknown error'));
+                alert('❌ Failed to send message: ' + data.message);
             }
         })
         .catch(error => {
@@ -428,6 +443,8 @@
     
     function closePromoteModalFromTable() {
         document.getElementById('promoteModalFromTable').classList.add('hidden');
+        document.getElementById('promoteRoleTable').value = 'admin';
+        document.getElementById('promoteDivisionTable').value = '';
     }
     
     function togglePromoteDivisionFieldTable() {
@@ -444,6 +461,11 @@
             return;
         }
         
+        const btn = event.target;
+        const originalHTML = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Promoting...';
+        btn.disabled = true;
+        
         fetch(`/portal/admin/users/promote/${currentPromoteUserId}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -452,15 +474,20 @@
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                alert('✅ User promoted successfully!');
-                window.location.href = '/portal/admin/administrators';
+                alert(' User promoted successfully!');
+                closePromoteModalFromTable();
+                location.reload();
             } else {
-                alert('❌ Failed: ' + (data.message || 'Unknown error'));
+                alert('❌ Failed to promote user: ' + data.message);
+                btn.innerHTML = originalHTML;
+                btn.disabled = false;
             }
         })
         .catch(error => {
             console.error('Error:', error);
             alert('❌ Failed to promote user.');
+            btn.innerHTML = originalHTML;
+            btn.disabled = false;
         });
     }
     
@@ -468,23 +495,31 @@
         const action = currentStatus ? 'deactivate' : 'activate';
         if (!confirm(`Are you sure you want to ${action} this user?`)) return;
         
+        const btn = event.target;
+        const originalHTML = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        btn.disabled = true;
+        
         fetch(`/portal/admin/users/toggle-status/${userId}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' }
         })
         .then(response => response.json())
         .then(data => {
-            if (data.success) location.reload();
-            else alert('Failed: ' + (data.message || 'Unknown error'));
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Failed: ' + (data.message || 'Unknown error'));
+                btn.innerHTML = originalHTML;
+                btn.disabled = false;
+            }
         })
         .catch(error => {
             console.error('Error:', error);
             alert('Failed to update status.');
+            btn.innerHTML = originalHTML;
+            btn.disabled = false;
         });
-    }
-    
-    function exportUsers() {
-        console.log('Exporting users...');
     }
 </script>
 {% endblock %}

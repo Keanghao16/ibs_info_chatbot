@@ -1,7 +1,7 @@
 {% extends "master.html" %}
 
 {% block extra_head %}
-<script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 {% endblock %}
 
 {% block content %}
@@ -16,39 +16,41 @@
         {% if sessions and sessions|length > 0 %}
             <div id="chatListItems" class="space-y-3">
                 {% for session in sessions %}
-                <div class="chat-item p-4 mb-3 rounded-xl cursor-pointer transition-all duration-300 border-l-4 border-gray-200 hover:bg-gray-50 hover:border-primary-500" 
+                <div class="chat-item p-4 border-2 border-gray-200 rounded-xl hover:border-primary-500 cursor-pointer transition-all duration-300 hover:shadow-md"
                      data-session-id="{{ session.id }}"
-                     data-user-name="{{ session.user.full_name or (session.user.first_name ~ ' ' ~ (session.user.last_name or ''))|trim or 'User' }}"
-                     data-telegram-id="{{ session.user.telegram_id }}"
-                     data-user-avatar="{{ session.user.first_name[0] if session.user.first_name else 'U' }}">
+                     data-user-name="{{ session.user_name or 'Unknown User' }}"
+                     data-user-id="{{ session.user_id }}"
+                     data-status="{{ session.status }}"
+                     onclick="selectChat({{ session.id }}, '{{ session.user_name or 'Unknown User' }}', '{{ session.user_id }}', '{{ (session.user_name or 'U')[0]|upper }}', '{{ session.status }}')">
                     
                     <div class="flex items-center gap-3 mb-2">
-                        {% if session.user.photo_url %}
-                        <img src="{{ session.user.photo_url }}" class="w-10 h-10 rounded-full object-cover">
-                        {% else %}
-                        <div class="w-10 h-10 rounded-full bg-gradient-to-br from-primary-500 to-secondary-500 flex items-center justify-center text-white font-bold">
-                            {{ session.user.first_name[0] if session.user.first_name else 'U' }}
+                        <div class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm shadow-md">
+                            {{ (session.user_name or 'U')[0]|upper }}
                         </div>
+                        <div class="flex-1 min-w-0">
+                            <h4 class="font-semibold text-gray-900 truncate">{{ session.user_name or 'Unknown User' }}</h4>
+                            <div class="text-xs text-gray-600">ID: {{ session.user_id[:8] }}...</div>
+                        </div>
+                        {% if session.status == 'waiting' %}
+                        <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-800">
+                            <i class="fas fa-clock animate-pulse"></i> Waiting
+                        </span>
+                        {% else %}
+                        <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800">
+                            <i class="fas fa-circle animate-pulse"></i> Active
+                        </span>
                         {% endif %}
-                        
-                        <span class="flex-1 font-semibold text-gray-900">
-                            {{ session.user.full_name or (session.user.first_name ~ ' ' ~ (session.user.last_name or ''))|trim or 'User' }}
-                        </span>
-                        
-                        <span class="text-xs text-gray-500">
-                            {{ session.start_time.strftime('%H:%M') if session.start_time else '' }}
-                        </span>
                     </div>
                     
-                    <div class="text-sm text-gray-600 ml-13 truncate">
-                        Click to view conversation
+                    <div class="text-sm text-gray-600 truncate">
+                        Started: {{ session.start_time | cambodia_time if session.start_time else 'Unknown' }}
                     </div>
                 </div>
                 {% endfor %}
             </div>
         {% else %}
             <div class="text-center py-10 text-gray-400">
-                <i class="fas fa-inbox text-5xl mb-4 opacity-30"></i>
+                <i class="fas fa-comments-slash text-3xl mb-3"></i>
                 <p>No active chats</p>
             </div>
         {% endif %}
@@ -59,8 +61,9 @@
         <!-- Chat Header -->
         <div class="chat-header gradient-primary text-white p-6 border-b-2 border-white/10" id="chatHeader">
             <div class="flex flex-col items-center justify-center h-full text-center py-16">
-                <i class="fas fa-comments text-6xl mb-5 opacity-30"></i>
-                <p class="text-lg">Select a chat to start messaging</p>
+                <i class="fas fa-comments text-6xl mb-4 opacity-50"></i>
+                <h3 class="text-2xl font-bold mb-2">Select a chat to start</h3>
+                <p class="text-lg opacity-90">Choose a chat session from the sidebar</p>
             </div>
         </div>
         
@@ -74,12 +77,12 @@
         <div class="message-input p-6 border-t-2 border-gray-100 flex gap-3 bg-white hidden" 
              id="messageInputContainer">
             <input type="text" 
-                   id="messageInput" 
-                   placeholder="Type your message..." 
-                   class="flex-1 px-5 py-3 border-2 border-gray-200 rounded-full text-base focus:outline-none focus:border-primary-500 focus:ring-4 focus:ring-primary-100 transition-all"
+                   id="messageInput"
+                   placeholder="Type your message..."
+                   class="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-primary-500 focus:ring-4 focus:ring-primary-100 transition-all"
                    onkeypress="if(event.key === 'Enter') sendMessage()">
             <button onclick="sendMessage()" 
-                    class="px-6 py-3 bg-gradient-to-r from-primary-500 to-secondary-500 text-white rounded-full font-semibold hover:-translate-y-1 hover:shadow-xl transition-all duration-300 flex items-center gap-2">
+                    class="px-6 py-3 bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-xl font-semibold hover:from-primary-600 hover:to-primary-700 transition-all duration-300 shadow-lg hover:shadow-xl flex items-center gap-2">
                 <i class="fas fa-paper-plane"></i> Send
             </button>
         </div>
@@ -87,7 +90,6 @@
 </div>
 
 <style>
-    /* Custom scrollbar */
     .messages-container::-webkit-scrollbar {
         width: 8px;
     }
@@ -103,13 +105,12 @@
         background: #5568d3;
     }
 
-    /* Chat item active state */
     .chat-item.active {
-        background: linear-gradient(135deg, rgba(102, 126, 234, 0.08), rgba(118, 75, 162, 0.08));
-        border-left-color: #667eea;
+        background: linear-gradient(135deg, rgba(102, 126, 234, 0.15), rgba(118, 75, 162, 0.15));
+        border-color: #667eea !important;
+        border-width: 3px !important;
     }
 
-    /* Message animation */
     @keyframes slideIn {
         from {
             opacity: 0;
@@ -132,91 +133,229 @@
     let currentUserName = '';
     let currentTelegramId = null;
     let currentUserAvatar = 'U';
+    let currentSessionStatus = '';
     
-    document.addEventListener('DOMContentLoaded', function() {
-        const chatListItems = document.getElementById('chatListItems');
+    const currentAdminName = '{{ session.admin.full_name or "Admin" }}';
+    const currentAdminId = '{{ session.admin.id }}';
+    const preselectSessionId = {% if preselect_session_id %}{{ preselect_session_id }}{% else %}null{% endif %};
+    
+    socket.on('connect', () => {
+        console.log('✅ Connected to WebSocket');
         
-        if (chatListItems) {
-            chatListItems.addEventListener('click', function(e) {
-                const chatItem = e.target.closest('.chat-item');
-                if (chatItem) {
-                    selectChat(
-                        chatItem.dataset.sessionId,
-                        chatItem.dataset.userName,
-                        chatItem.dataset.telegramId,
-                        chatItem.dataset.userAvatar
-                    );
-                }
-            });
+        // Auto-select session if provided in URL
+        if (preselectSessionId) {
+            setTimeout(() => {
+                autoSelectSession(preselectSessionId);
+            }, 500);
         }
     });
     
-    socket.on('connect', () => console.log('Connected to WebSocket'));
+    socket.on('disconnect', () => {
+        console.log('❌ Disconnected from WebSocket');
+    });
     
     socket.on('new_message', function(data) {
+        console.log('📩 New message received:', data);
         if (data.session_id == currentSessionId) {
             appendMessage(data.message, false, data.timestamp);
         }
         updateChatPreview(data.session_id, data.message);
+        
+        // Update notification badges
+        if (window.updateNotificationBadges) {
+            fetchSessionCounts();
+        }
     });
     
-    socket.on('message_sent', data => appendMessage(data.message, true, data.timestamp));
-    socket.on('error', data => alert('Error: ' + data.message));
+    socket.on('message_sent', data => {
+        console.log('✉️ Message sent confirmation:', data);
+        appendMessage(data.message, true, data.timestamp);
+    });
     
-    function selectChat(sessionId, userName, telegramId, userAvatar) {
+    socket.on('error', data => {
+        console.error('⚠️ Socket error:', data);
+        alert('Error: ' + data.message);
+    });
+    
+    // Handle new waiting sessions
+    socket.on('new_waiting_session', function(data) {
+        console.log('🔔 New waiting session:', data);
+        
+        // Show notification
+        showNotification(`New chat from ${data.user_name}`, 'info');
+        
+        // Update badges
+        if (window.updateNotificationBadges) {
+            fetchSessionCounts();
+        }
+        
+        // Reload to show new session
+        setTimeout(() => {
+            window.location.reload();
+        }, 1000);
+    });
+    
+    // Handle session assignments
+    socket.on('session_assigned', function(data) {
+        console.log('👤 Session assigned:', data);
+        const chatItem = document.querySelector(`[data-session-id="${data.session_id}"] .status-badge`);
+        if (chatItem) {
+            chatItem.className = 'inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800';
+            chatItem.innerHTML = '<i class="fas fa-circle animate-pulse"></i> Active';
+        }
+    });
+    
+    // Handle session closures
+    socket.on('session_closed', function(data) {
+        console.log('🔒 Session closed:', data);
+        const chatItem = document.querySelector(`[data-session-id="${data.session_id}"]`);
+        if (chatItem) {
+            chatItem.style.opacity = '0.5';
+        }
+    });
+    
+    // Notification helper function
+    function showNotification(message, type = 'info') {
+        // Browser notification
+        if ('Notification' in window && Notification.permission === 'granted') {
+            new Notification('IBS Chat System', {
+                body: message,
+                icon: '/static/favicon.ico'
+            });
+        }
+        
+        // Console log
+        console.log(`🔔 ${type.toUpperCase()}: ${message}`);
+        
+        // Optional: Add visual notification banner
+        const banner = document.createElement('div');
+        banner.className = 'fixed top-4 right-4 bg-blue-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 animate-bounce';
+        banner.textContent = message;
+        document.body.appendChild(banner);
+        
+        setTimeout(() => {
+            banner.remove();
+        }, 5000);
+    }
+    
+    // Request notification permission on page load
+    if ('Notification' in window && Notification.permission === 'default') {
+        Notification.requestPermission();
+    }
+    
+    function selectChat(sessionId, userName, userId, userAvatar, status) {
         currentSessionId = sessionId;
         currentUserName = userName;
-        currentTelegramId = telegramId;
+        currentTelegramId = userId;
         currentUserAvatar = userAvatar || 'U';
+        currentSessionStatus = status;
         
-        // Update active state
+        console.log(`📱 Selected chat: Session ${sessionId}, User: ${userName}, Status: ${status}`);
+        
         document.querySelectorAll('.chat-item').forEach(item => item.classList.remove('active'));
-        document.querySelector(`[data-session-id="${sessionId}"]`)?.classList.add('active');
+        const selectedItem = document.querySelector(`[data-session-id="${sessionId}"]`);
+        if (selectedItem) {
+            selectedItem.classList.add('active');
+        }
         
-        // Update header
+        const statusBadge = status === 'waiting' 
+            ? '<span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-semibold bg-yellow-400/20 text-yellow-200"><i class="fas fa-clock animate-pulse"></i> Waiting</span>'
+            : '<span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-semibold bg-green-400/20 text-green-200"><i class="fas fa-circle animate-pulse"></i> Active</span>';
+        
         document.getElementById('chatHeader').innerHTML = `
-            <h4 class="text-2xl font-bold flex items-center gap-3 m-0">
-                <i class="fas fa-user-circle"></i>
-                ${escapeHtml(userName)}
-            </h4>
-            <p class="mt-2 opacity-90 text-base">
-                <i class="fab fa-telegram"></i> Telegram ID: ${escapeHtml(telegramId)}
-            </p>
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center text-white font-bold text-lg shadow-lg">
+                        ${userAvatar}
+                    </div>
+                    <div>
+                        <h4 class="text-2xl font-bold m-0">${escapeHtml(userName)}</h4>
+                        <p class="mt-1 opacity-90 text-sm">ID: ${escapeHtml(userId.substring(0, 8))}...</p>
+                    </div>
+                </div>
+                ${statusBadge}
+            </div>
         `;
         
-        // Show containers
         document.getElementById('messagesContainer').classList.remove('hidden');
         document.getElementById('messagesContainer').classList.add('flex');
         document.getElementById('messageInputContainer').classList.remove('hidden');
         document.getElementById('messageInputContainer').classList.add('flex');
         
+        if (status === 'waiting') {
+            assignSessionToMe(sessionId);
+        }
+        
         loadMessages(sessionId);
+    }
+    
+    function assignSessionToMe(sessionId) {
+        console.log(`🔄 Auto-assigning session ${sessionId} to current admin`);
+        
+        fetch(`/portal/admin/chat/assign/${sessionId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                console.log('✅ Session assigned successfully');
+                currentSessionStatus = 'active';
+                const statusBadge = document.querySelector('.chat-header span');
+                if (statusBadge) {
+                    statusBadge.className = 'inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-semibold bg-green-400/20 text-green-200';
+                    statusBadge.innerHTML = '<i class="fas fa-circle animate-pulse"></i> Active';
+                }
+                const chatItem = document.querySelector(`[data-session-id="${sessionId}"] span`);
+                if (chatItem) {
+                    chatItem.className = 'inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800';
+                    chatItem.innerHTML = '<i class="fas fa-circle animate-pulse"></i> Active';
+                }
+            } else {
+                console.error('❌ Failed to assign session:', data.message);
+            }
+        })
+        .catch(error => {
+            console.error('❌ Error assigning session:', error);
+        });
     }
     
     function loadMessages(sessionId) {
         const container = document.getElementById('messagesContainer');
-        container.innerHTML = '<div class="text-center py-5 text-gray-400"><i class="fas fa-spinner fa-spin"></i> Loading messages...</div>';
+        container.innerHTML = '<div class="text-center py-5 text-gray-400"><i class="fas fa-spinner fa-spin text-2xl"></i><div class="mt-2">Loading messages...</div></div>';
+        
+        console.log(`📥 Loading messages for session ${sessionId}...`);
         
         fetch(`/portal/admin/chat/${sessionId}/messages`)
-            .then(response => response.json())
+            .then(response => {
+                console.log('📡 Messages API response status:', response.status);
+                return response.json();
+            })
             .then(data => {
+                console.log('📊 Messages data:', data);
                 container.innerHTML = '';
                 
-                if (data.success && data.messages?.length > 0) {
-                    data.messages.forEach(msg => {
-                        appendMessage(msg.message, msg.is_from_admin, msg.timestamp, msg.admin_name);
+                if (data.success && data.data && data.data.length > 0) {
+                    console.log(`✅ Loaded ${data.data.length} messages`);
+                    data.data.forEach(msg => {
+                        appendMessage(
+                            msg.message, 
+                            msg.is_from_admin, 
+                            msg.timestamp,
+                            msg.admin_name || msg.admin_id
+                        );
                     });
+                    container.scrollTop = container.scrollHeight;
                 } else {
-                    container.innerHTML = `
-                        <div class="flex flex-col items-center justify-center h-full text-gray-400">
-                            <i class="fas fa-comment-slash text-5xl mb-4 opacity-30"></i>
-                            <p>No messages yet. Start the conversation!</p>
-                        </div>
-                    `;
+                    console.log('📭 No messages found');
+                    container.innerHTML = '<div class="text-center py-10 text-gray-400"><i class="fas fa-inbox text-4xl mb-3"></i><div>No messages yet</div><div class="text-sm mt-2">Send a message to start the conversation</div></div>';
                 }
             })
             .catch(error => {
-                container.innerHTML = `<div class="text-center py-5 text-red-500">Error: ${error.message}</div>`;
+                console.error('❌ Error loading messages:', error);
+                container.innerHTML = `<div class="text-center py-5 text-red-500"><i class="fas fa-exclamation-triangle text-2xl mb-2"></i><div>Error loading messages</div><div class="text-sm mt-1">${escapeHtml(error.message)}</div></div>`;
             });
     }
     
@@ -224,7 +363,12 @@
         const input = document.getElementById('messageInput');
         const message = input.value.trim();
         
-        if (!message || !currentSessionId) return;
+        if (!message || !currentSessionId) {
+            console.warn('⚠️ Cannot send: message or session missing');
+            return;
+        }
+        
+        console.log(`📤 Sending message to session ${currentSessionId}:`, message);
         
         socket.emit('send_message', {
             session_id: currentSessionId,
@@ -239,7 +383,15 @@
         const container = document.getElementById('messagesContainer');
         if (!container) return;
         
-        const time = new Date(timestamp);
+        const placeholder = container.querySelector('.text-center.py-10');
+        if (placeholder) {
+            placeholder.remove();
+        }
+        
+        // Convert UTC timestamp to Cambodia time (UTC+7)
+        const time = timestamp ? new Date(timestamp) : new Date();
+        
+        // No timezone conversion needed - database already in Cambodia time
         const timeStr = time.toLocaleTimeString('en-US', { 
             hour: '2-digit', 
             minute: '2-digit',
@@ -251,27 +403,29 @@
         
         const avatar = document.createElement('div');
         avatar.className = `w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
-            isFromAdmin ? 'order-1 ml-3 bg-gradient-to-br from-secondary-500 to-primary-500' : 'order-[-1] mr-3 bg-gradient-to-br from-blue-400 to-blue-600'
+            isFromAdmin 
+                ? 'order-1 ml-3 bg-gradient-to-br from-purple-500 to-pink-500' 
+                : 'order-[-1] mr-3 bg-gradient-to-br from-blue-500 to-cyan-500'
         } text-white shadow-md`;
         avatar.textContent = isFromAdmin ? (adminName ? adminName[0].toUpperCase() : 'A') : currentUserAvatar;
         
         const messageDiv = document.createElement('div');
-        messageDiv.className = `max-w-[65%] px-5 py-3 rounded-2xl shadow-md ${
+        messageDiv.className = `max-w-[70%] px-4 py-3 rounded-2xl shadow-md ${
             isFromAdmin 
-                ? 'bg-gradient-to-br from-primary-500 to-secondary-500 text-white rounded-br-sm' 
-                : 'bg-gradient-to-br from-blue-50 to-blue-100 text-blue-900 rounded-bl-sm'
+                ? 'bg-gradient-to-br from-purple-500 to-pink-500 text-white rounded-br-sm'
+                : 'bg-white border-2 border-gray-200 text-gray-800 rounded-bl-sm'
         }`;
         
         const senderLabel = isFromAdmin && adminName 
-            ? `<div class="font-bold mb-2 text-xs uppercase tracking-wide opacity-90">${escapeHtml(adminName)}</div>`
+            ? `<div class="font-bold text-xs uppercase tracking-wide opacity-90 mb-1">${escapeHtml(adminName)}</div>`
             : !isFromAdmin 
-            ? `<div class="font-bold mb-2 text-xs uppercase tracking-wide text-blue-700">${escapeHtml(currentUserName)}</div>`
-            : '';
+                ? `<div class="font-semibold text-xs uppercase tracking-wide opacity-75 mb-1 text-blue-600">${escapeHtml(currentUserName)}</div>`
+                : '';
         
         messageDiv.innerHTML = `
             ${senderLabel}
-            <div class="mb-2 leading-relaxed">${escapeHtml(text)}</div>
-            <div class="text-xs opacity-70 text-right mt-1">${timeStr}</div>
+            <div class="text-sm leading-relaxed whitespace-pre-wrap break-words">${escapeHtml(text)}</div>
+            <div class="text-xs ${isFromAdmin ? 'opacity-80' : 'opacity-60'} text-right mt-2">${timeStr}</div>
         `;
         
         messageWrapper.appendChild(avatar);
@@ -288,10 +442,74 @@
     }
 
     function updateChatPreview(sessionId, message) {
-        const chatItem = document.querySelector(`[data-session-id="${sessionId}"] .truncate`);
+        const chatItem = document.querySelector(`[data-session-id="${sessionId}"]`);
         if (chatItem) {
-            chatItem.textContent = message.substring(0, 50) + (message.length > 50 ? '...' : '');
+            const preview = chatItem.querySelector('.text-sm.text-gray-600');
+            if (preview) {
+                const shortMsg = message.length > 40 ? message.substring(0, 40) + '...' : message;
+                preview.textContent = 'Last: ' + shortMsg;
+            }
         }
+    }
+    
+    // Helper function to fetch session counts
+    function fetchSessionCounts() {
+        fetch('/portal/admin/api/session-counts')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && window.updateNotificationBadges) {
+                    window.updateNotificationBadges(data.waiting_count || 0, data.active_count || 0);
+                }
+            })
+            .catch(error => console.error('Error fetching session counts:', error));
+    }
+    
+    // Auto-select a specific session (called when coming from another page)
+    function autoSelectSession(sessionId) {
+        console.log('🎯 Auto-selecting session:', sessionId);
+        
+        // Find the chat item in the sidebar
+        const chatItem = document.querySelector(`[data-session-id="${sessionId}"]`);
+        
+        if (chatItem) {
+            // Extract data from the chat item
+            const userName = chatItem.querySelector('.chat-user-name')?.textContent || 'User';
+            const userId = chatItem.querySelector('.chat-user-info')?.getAttribute('data-telegram-id') || null;
+            const status = chatItem.getAttribute('data-status') || 'active';
+            
+            // Click the chat item to select it
+            chatItem.click();
+            
+            console.log('✅ Session auto-selected:', {sessionId, userName, status});
+        } else {
+            console.warn('⚠️ Session not found in sidebar:', sessionId);
+            // Try to load the session directly via API
+            loadSessionDirectly(sessionId);
+        }
+    }
+    
+    // Load a session directly from API if not in sidebar
+    function loadSessionDirectly(sessionId) {
+        fetch(`/portal/admin/api/chat-session/${sessionId}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.session) {
+                    const session = data.session;
+                    selectChat(
+                        session.id,
+                        session.user?.full_name || 'User',
+                        session.user?.telegram_id,
+                        session.user?.username?.[0]?.toUpperCase() || 'U',
+                        session.status
+                    );
+                } else {
+                    alert('Chat session not found or no longer available');
+                }
+            })
+            .catch(error => {
+                console.error('Error loading session:', error);
+                alert('Failed to load chat session');
+            });
     }
 </script>
 {% endblock %}

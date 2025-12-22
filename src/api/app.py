@@ -79,23 +79,32 @@ def create_app():
 
 
 def register_blueprints(app):
-    """
-    Register all API blueprints (routes)
-    
-    Args:
-        app: Flask application instance
-    """
+    """Register all API blueprints (routes)"""
     # Import blueprints
-    from .v1.routes.test_auth import test_auth_bp
-    from .v1.routes.test_jwt import test_jwt_bp
-    from .v1.routes.auth import auth_api_bp  # ✅ NEW
+    from .v1.routes.auth import auth_api_bp
+    from .v1.routes.users import users_api_bp
+    from .v1.routes.admins import admins_api_bp
+    from .v1.routes.chats import chats_api_bp
+    from .v1.routes.dashboard import dashboard_api_bp
+    from .v1.routes.system_settings import settings_api_bp
+    from .v1.routes.bot import bot_api_bp
     
-    # Register blueprints
-    app.register_blueprint(test_auth_bp, url_prefix=f'{API_PREFIX}')
-    app.register_blueprint(test_jwt_bp, url_prefix=f'{API_PREFIX}')
-    app.register_blueprint(auth_api_bp, url_prefix=f'{API_PREFIX}')  # ✅ NEW
+    # Register blueprints with correct prefix
+    app.register_blueprint(auth_api_bp, url_prefix=API_PREFIX)
+    app.register_blueprint(users_api_bp, url_prefix=API_PREFIX)
+    app.register_blueprint(admins_api_bp, url_prefix=API_PREFIX)
+    app.register_blueprint(chats_api_bp, url_prefix=API_PREFIX)
+    app.register_blueprint(dashboard_api_bp, url_prefix=API_PREFIX)
+    app.register_blueprint(settings_api_bp, url_prefix=API_PREFIX)
+    app.register_blueprint(bot_api_bp, url_prefix=API_PREFIX)
     
-    print("✅ API blueprints registered")
+    # 🔍 DEBUG: Print ALL registered routes
+    print("\n🔍 DEBUG: All registered routes:")
+    for rule in app.url_map.iter_rules():
+        print(f"   {rule.methods} {rule.rule} -> {rule.endpoint}")
+    print()
+    
+    print(" API blueprints registered")
 
 
 def register_request_handlers(app):
@@ -115,9 +124,15 @@ def register_request_handlers(app):
         
         app.logger.info(f"📥 {request.method} {request.path}")
         
-        # Log request body for POST/PUT/DELETE
-        if request.method in ['POST', 'PUT', 'DELETE'] and request.is_json:
-            app.logger.debug(f"Request body: {request.get_json()}")
+        # Log request body for POST/PUT/DELETE (only if there's actual content)
+        if request.method in ['POST', 'PUT', 'DELETE']:
+            try:
+                # Use silent=True to avoid raising errors on empty bodies
+                body = request.get_json(silent=True)
+                if body:
+                    app.logger.debug(f"Request body: {body}")
+            except Exception as e:
+                app.logger.debug(f"Could not parse request body: {str(e)}")
     
     @app.after_request
     def after_request(response):
@@ -142,7 +157,7 @@ def register_request_handlers(app):
         if exception:
             app.logger.error(f"Teardown exception: {str(exception)}")
     
-    print("✅ Request handlers registered")
+    print(" Request handlers registered")
 
 
 # Create app instance for imports

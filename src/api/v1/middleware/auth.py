@@ -6,18 +6,13 @@ Provides token-based authentication for API endpoints
 from functools import wraps
 from flask import request, jsonify, g
 from ....utils.jwt_helper import jwt_helper
-from ....database.connection import SessionLocal
-from ....database.models import Admin, AdminRole
+# from ....utils import jwt_helper
+from ....database.connection import get_db_session
+from ....database.models import Admin
 
 def token_required(f):
     """
     Decorator to require valid JWT token for API endpoints
-    
-    Usage:
-        @token_required
-        def protected_route():
-            # Access current admin via g.current_admin
-            pass
     """
     @wraps(f)
     def decorated(*args, **kwargs):
@@ -26,7 +21,15 @@ def token_required(f):
         # Get token from Authorization header
         auth_header = request.headers.get('Authorization')
         if auth_header:
-            token = jwt_helper.extract_token_from_header(auth_header)
+            try:
+                # Format: "Bearer <token>"
+                token = auth_header.split(' ')[1]
+            except IndexError:
+                return jsonify({
+                    'success': False,
+                    'error': 'invalid_token_format',
+                    'message': 'Token format must be: Bearer <token>'
+                }), 401
         
         if not token:
             return jsonify({
@@ -41,12 +44,12 @@ def token_required(f):
         if not result['success']:
             return jsonify({
                 'success': False,
-                'error': result['error'],
+                'error': 'invalid_token',
                 'message': result['message']
             }), 401
         
         # Get admin from database
-        db = SessionLocal()
+        db = get_db_session()
         try:
             payload = result['payload']
             admin_id = payload.get('admin_id')
@@ -63,20 +66,17 @@ def token_required(f):
                     'message': 'Admin account not found or inactive'
                 }), 401
             
-            # Store admin in Flask's g object for access in route
+            # Store in Flask g object for access in other decorators
             g.current_admin = admin
             g.token_payload = payload
             
-        except Exception as e:
-            return jsonify({
-                'success': False,
-                'error': 'authentication_error',
-                'message': str(e)
-            }), 500
+            # Pass admin as kwarg to route function
+            kwargs['current_user'] = admin
+            
+            return f(*args, **kwargs)
+            
         finally:
             db.close()
-        
-        return f(*args, **kwargs)
     
     return decorated
 
@@ -85,29 +85,27 @@ def admin_required(f):
     """
     Decorator to require admin or super_admin role
     Must be used after @token_required
-    
-    Usage:
-        @token_required
-        @admin_required
-        def admin_only_route():
-            pass
     """
     @wraps(f)
     def decorated(*args, **kwargs):
+        # Check if current_admin is in g (set by token_required)
         if not hasattr(g, 'current_admin'):
             return jsonify({
                 'success': False,
-                'error': 'authentication_required',
+                'error': 'unauthorized',
                 'message': 'Authentication required'
             }), 401
         
         admin = g.current_admin
         
-        if admin.role not in [AdminRole.admin, AdminRole.super_admin]:
+        # Handle both string and Enum types
+        role = admin.role.value if hasattr(admin.role, 'value') else admin.role
+        
+        if role not in ['admin', 'super_admin']:
             return jsonify({
                 'success': False,
-                'error': 'insufficient_permissions',
-                'message': 'Admin privileges required'
+                'error': 'forbidden',
+                'message': 'Admin access required'
             }), 403
         
         return f(*args, **kwargs)
@@ -119,29 +117,27 @@ def super_admin_required(f):
     """
     Decorator to require super_admin role
     Must be used after @token_required
-    
-    Usage:
-        @token_required
-        @super_admin_required
-        def super_admin_only_route():
-            pass
     """
     @wraps(f)
     def decorated(*args, **kwargs):
+        # Check if current_admin is in g (set by token_required)
         if not hasattr(g, 'current_admin'):
             return jsonify({
                 'success': False,
-                'error': 'authentication_required',
+                'error': 'unauthorized',
                 'message': 'Authentication required'
             }), 401
         
         admin = g.current_admin
         
-        if admin.role != AdminRole.super_admin:
+        # Handle both string and Enum types
+        role = admin.role.value if hasattr(admin.role, 'value') else admin.role
+        
+        if role != 'super_admin':
             return jsonify({
                 'success': False,
-                'error': 'insufficient_permissions',
-                'message': 'Super Admin privileges required'
+                'error': 'forbidden',
+                'message': 'Super admin access required'
             }), 403
         
         return f(*args, **kwargs)
@@ -152,51 +148,61 @@ def super_admin_required(f):
 def optional_auth(f):
     """
     Decorator for optional authentication
-    If token is provided and valid, sets g.current_admin
-    If token is missing or invalid, continues without authentication
-    
-    Usage:
-        @optional_auth
-        def public_route():
-            if hasattr(g, 'current_admin'):
-                # User is authenticated
-                pass
-            else:
-                # User is not authenticated
-                pass
+    Validates token if provided, but doesn't require it
+    Sets g.current_admin if token is valid, otherwise sets to None
     """
     @wraps(f)
     def decorated(*args, **kwargs):
         token = None
         
-        # Get token from Authorization header
+        # Try to get token from Authorization header
         auth_header = request.headers.get('Authorization')
         if auth_header:
-            token = jwt_helper.extract_token_from_header(auth_header)
+            try:
+                token = auth_header.split(' ')[1]
+            except IndexError:
+                pass  # Invalid format, treat as no token
         
-        if token:
-            # Verify token
-            result = jwt_helper.verify_token(token)
+        if not token:
+            # No token provided, set current_admin to None and continue
+            g.current_admin = None
+            g.token_payload = None
+            kwargs['current_user'] = None
+            return f(*args, **kwargs)
+        
+        # Token provided, try to verify it
+        result = jwt_helper.verify_token(token)
+        
+        if not result['success']:
+            # Invalid token, treat as no authentication
+            g.current_admin = None
+            g.token_payload = None
+            kwargs['current_user'] = None
+            return f(*args, **kwargs)
+        
+        # Valid token, get admin from database
+        db = get_db_session()
+        try:
+            payload = result['payload']
+            admin_id = payload.get('admin_id')
             
-            if result['success']:
-                # Get admin from database
-                db = SessionLocal()
-                try:
-                    payload = result['payload']
-                    admin_id = payload.get('admin_id')
-                    
-                    admin = db.query(Admin).filter(
-                        Admin.id == admin_id,
-                        Admin.is_active == True
-                    ).first()
-                    
-                    if admin:
-                        g.current_admin = admin
-                        g.token_payload = payload
-                
-                finally:
-                    db.close()
-        
-        return f(*args, **kwargs)
+            admin = db.query(Admin).filter(
+                Admin.id == admin_id,
+                Admin.is_active == True
+            ).first()
+            
+            if admin:
+                g.current_admin = admin
+                g.token_payload = payload
+                kwargs['current_user'] = admin
+            else:
+                g.current_admin = None
+                g.token_payload = None
+                kwargs['current_user'] = None
+            
+            return f(*args, **kwargs)
+            
+        finally:
+            db.close()
     
     return decorated
