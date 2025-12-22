@@ -8,7 +8,6 @@ from telegram.ext import ContextTypes
 from ...database.connection import SessionLocal
 from ...database.models import ChatMessage, SessionStatus, ChatSession
 from ...services import UserService
-from ...web.websocket_manager import broadcast_new_message
 from ...utils.bot_api_client import bot_api_client
 from datetime import datetime
 user_service = UserService()
@@ -222,20 +221,35 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         
         print(f"✅ Message saved successfully to session #{active_session.id}")
         
-        # 🆕 Broadcast to admin via WebSocket if session is assigned
+        # 🆕 Notify admin via API (which will broadcast via WebSocket)
         if active_session.admin_id:
-            broadcast_new_message(
-                str(user.id),  # 🔧 FIX: Ensure string UUID
-                message_text, 
-                str(active_session.admin_id),  # 🔧 FIX: Ensure string UUID
-                active_session.id
-            )
+            # Broadcast to assigned admin
+            broadcast_response = bot_api_client.post('/bot/chat/broadcast-message', {
+                'session_id': active_session.id,
+                'user_id': str(user.id),
+                'user_name': user.full_name,
+                'message': message_text,
+                'admin_id': str(active_session.admin_id)
+            })
+            
+            if broadcast_response.get('success'):
+                print(f"✅ Message broadcasted to admin {active_session.admin_id}")
             
             await update.message.reply_text(
                 "✅ Your message has been sent to our support agent."
             )
         else:
-            # Session is waiting for admin
+            # Session is waiting - broadcast to all admins
+            broadcast_response = bot_api_client.post('/bot/chat/broadcast-message', {
+                'session_id': active_session.id,
+                'user_id': str(user.id),
+                'user_name': user.full_name,
+                'message': message_text
+            })
+            
+            if broadcast_response.get('success'):
+                print(f"✅ New waiting session broadcasted to all admins")
+            
             await update.message.reply_text(
                 "📝 Message received! An agent will be with you soon."
             )

@@ -137,9 +137,17 @@
     
     const currentAdminName = '{{ session.admin.full_name or "Admin" }}';
     const currentAdminId = '{{ session.admin.id }}';
+    const preselectSessionId = {% if preselect_session_id %}{{ preselect_session_id }}{% else %}null{% endif %};
     
     socket.on('connect', () => {
         console.log('✅ Connected to WebSocket');
+        
+        // Auto-select session if provided in URL
+        if (preselectSessionId) {
+            setTimeout(() => {
+                autoSelectSession(preselectSessionId);
+            }, 500);
+        }
     });
     
     socket.on('disconnect', () => {
@@ -152,6 +160,11 @@
             appendMessage(data.message, false, data.timestamp);
         }
         updateChatPreview(data.session_id, data.message);
+        
+        // Update notification badges
+        if (window.updateNotificationBadges) {
+            fetchSessionCounts();
+        }
     });
     
     socket.on('message_sent', data => {
@@ -163,6 +176,72 @@
         console.error('⚠️ Socket error:', data);
         alert('Error: ' + data.message);
     });
+    
+    // Handle new waiting sessions
+    socket.on('new_waiting_session', function(data) {
+        console.log('🔔 New waiting session:', data);
+        
+        // Show notification
+        showNotification(`New chat from ${data.user_name}`, 'info');
+        
+        // Update badges
+        if (window.updateNotificationBadges) {
+            fetchSessionCounts();
+        }
+        
+        // Reload to show new session
+        setTimeout(() => {
+            window.location.reload();
+        }, 1000);
+    });
+    
+    // Handle session assignments
+    socket.on('session_assigned', function(data) {
+        console.log('👤 Session assigned:', data);
+        const chatItem = document.querySelector(`[data-session-id="${data.session_id}"] .status-badge`);
+        if (chatItem) {
+            chatItem.className = 'inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800';
+            chatItem.innerHTML = '<i class="fas fa-circle animate-pulse"></i> Active';
+        }
+    });
+    
+    // Handle session closures
+    socket.on('session_closed', function(data) {
+        console.log('🔒 Session closed:', data);
+        const chatItem = document.querySelector(`[data-session-id="${data.session_id}"]`);
+        if (chatItem) {
+            chatItem.style.opacity = '0.5';
+        }
+    });
+    
+    // Notification helper function
+    function showNotification(message, type = 'info') {
+        // Browser notification
+        if ('Notification' in window && Notification.permission === 'granted') {
+            new Notification('IBS Chat System', {
+                body: message,
+                icon: '/static/favicon.ico'
+            });
+        }
+        
+        // Console log
+        console.log(`🔔 ${type.toUpperCase()}: ${message}`);
+        
+        // Optional: Add visual notification banner
+        const banner = document.createElement('div');
+        banner.className = 'fixed top-4 right-4 bg-blue-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 animate-bounce';
+        banner.textContent = message;
+        document.body.appendChild(banner);
+        
+        setTimeout(() => {
+            banner.remove();
+        }, 5000);
+    }
+    
+    // Request notification permission on page load
+    if ('Notification' in window && Notification.permission === 'default') {
+        Notification.requestPermission();
+    }
     
     function selectChat(sessionId, userName, userId, userAvatar, status) {
         currentSessionId = sessionId;
@@ -371,6 +450,66 @@
                 preview.textContent = 'Last: ' + shortMsg;
             }
         }
+    }
+    
+    // Helper function to fetch session counts
+    function fetchSessionCounts() {
+        fetch('/portal/admin/api/session-counts')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && window.updateNotificationBadges) {
+                    window.updateNotificationBadges(data.waiting_count || 0, data.active_count || 0);
+                }
+            })
+            .catch(error => console.error('Error fetching session counts:', error));
+    }
+    
+    // Auto-select a specific session (called when coming from another page)
+    function autoSelectSession(sessionId) {
+        console.log('🎯 Auto-selecting session:', sessionId);
+        
+        // Find the chat item in the sidebar
+        const chatItem = document.querySelector(`[data-session-id="${sessionId}"]`);
+        
+        if (chatItem) {
+            // Extract data from the chat item
+            const userName = chatItem.querySelector('.chat-user-name')?.textContent || 'User';
+            const userId = chatItem.querySelector('.chat-user-info')?.getAttribute('data-telegram-id') || null;
+            const status = chatItem.getAttribute('data-status') || 'active';
+            
+            // Click the chat item to select it
+            chatItem.click();
+            
+            console.log('✅ Session auto-selected:', {sessionId, userName, status});
+        } else {
+            console.warn('⚠️ Session not found in sidebar:', sessionId);
+            // Try to load the session directly via API
+            loadSessionDirectly(sessionId);
+        }
+    }
+    
+    // Load a session directly from API if not in sidebar
+    function loadSessionDirectly(sessionId) {
+        fetch(`/portal/admin/api/chat-session/${sessionId}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.session) {
+                    const session = data.session;
+                    selectChat(
+                        session.id,
+                        session.user?.full_name || 'User',
+                        session.user?.telegram_id,
+                        session.user?.username?.[0]?.toUpperCase() || 'U',
+                        session.status
+                    );
+                } else {
+                    alert('Chat session not found or no longer available');
+                }
+            })
+            .catch(error => {
+                console.error('Error loading session:', error);
+                alert('Failed to load chat session');
+            });
     }
 </script>
 {% endblock %}

@@ -144,6 +144,49 @@ def send_message():
         traceback.print_exc()
         return error_response(str(e), 500)
 
+@bot_api_bp.route('/bot/chat/broadcast-message', methods=['POST'])
+def broadcast_message():
+    """Broadcast new message to admin via WebSocket - calls web app endpoint"""
+    try:
+        data = request.json
+        required_fields = ['session_id', 'user_id', 'message']
+        
+        if not all(field in data for field in required_fields):
+            return error_response('Missing required fields', 400)
+        
+        # Call the web app's broadcast endpoint
+        import requests
+        import os
+        
+        web_url = os.getenv('WEB_BASE_URL', 'http://127.0.0.1:5000')
+        broadcast_url = f"{web_url}/portal/admin/api/broadcast-message"
+        
+        try:
+            response = requests.post(
+                broadcast_url,
+                json=data,
+                timeout=2  # Short timeout since it's internal
+            )
+            
+            if response.status_code == 200:
+                print(f"✅ Message broadcasted successfully")
+                return success_response(message='Message broadcasted')
+            else:
+                print(f"⚠️ Broadcast failed: {response.status_code}")
+                # Don't fail the request, just log it
+                return success_response(message='Message received but broadcast failed')
+                
+        except requests.exceptions.RequestException as e:
+            print(f"⚠️ Could not reach web app for broadcasting: {e}")
+            # Don't fail - the message is still saved, just no real-time update
+            return success_response(message='Message received')
+        
+    except Exception as e:
+        print(f"❌ Error in broadcast_message: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return error_response(str(e), 500)
+
 @bot_api_bp.route('/bot/faq/categories', methods=['GET'])
 def get_faq_categories():
     """Get all active FAQ categories"""

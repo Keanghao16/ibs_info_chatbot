@@ -191,3 +191,49 @@ def get_user_stats(current_user):
         return error_response(str(e), 500)
     finally:
         db.close()
+
+
+@users_api_bp.route('/users/<string:user_id>/promote', methods=['POST'])
+@token_required
+@admin_required
+def promote_user_to_admin(current_user, user_id):
+    """Promote user to admin"""
+    db = get_db_session()
+    try:
+        # Only super_admin can promote
+        if current_user.role.value != 'super_admin':
+            return error_response("Only super admins can promote users", 403)
+        
+        data = request.json or {}
+        role = data.get('role', 'admin')
+        division = data.get('division')
+        
+        # Validate role
+        if role not in ['admin', 'super_admin']:
+            return validation_error_response({'role': ['Must be either admin or super_admin']})
+        
+        admin = UserService.promote_to_admin(db, user_id, role, division)
+        
+        if not admin:
+            return not_found_response('User')
+        
+        from ..schemas.admin_schema import AdminResponseSchema
+        admin_schema = AdminResponseSchema()
+        admin_data = admin_schema.dump(admin)
+        
+        return success_response(
+            data=admin_data,
+            message=f"User successfully promoted to {role}"
+        )
+        
+    except ValueError as e:
+        import logging
+        logging.error(f"ValueError promoting user {user_id}: {str(e)}")
+        return error_response(str(e), 400)
+    except Exception as e:
+        import logging
+        logging.error(f"Exception promoting user {user_id}: {str(e)}")
+        db.rollback()
+        return error_response(str(e), 500)
+    finally:
+        db.close()

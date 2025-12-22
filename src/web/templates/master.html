@@ -5,6 +5,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Telegram Bot Admin Panel{% endblock %}</title>
+    
+    <!-- Bootstrap CSS CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     
     <!-- Tailwind CSS CDN -->
@@ -70,8 +74,14 @@
             to { opacity: 1; }
         }
         
+        /* Smooth dropdown - no animation delay */
         .dropdown-menu {
-            animation: slideDown 0.3s ease;
+            transition: none !important;
+        }
+        
+        .dropdown-menu.show {
+            animation: none !important;
+            display: block !important;
         }
         
         /* Fallback gradients */
@@ -93,10 +103,39 @@
         .hover-lift:hover {
             transform: translateY(-2px);
         }
+
+        /* Badge pulse animation */
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+            50% {
+                opacity: 0.8;
+                transform: scale(1.05);
+            }
+        }
+        
+        .pulse {
+            animation: pulse 2s ease-in-out infinite;
+        }
+        
+        /* Badge positioning fix */
+        .badge {
+            font-size: 0.75rem;
+            padding: 0.25rem 0.5rem;
+            border-radius: 10px;
+            font-weight: 600;
+        }
     </style>
 </head>
 
 <body class="bg-gradient-bg min-h-screen">
+    <!-- Toast Container for Notifications -->
+    <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 9999;">
+        <!-- Toasts will be dynamically inserted here -->
+    </div>
+
     <!-- Navigation Header - Hide on login page -->
     {% if not request.endpoint or request.endpoint != 'auth.login' %}
     <nav class="gradient-primary text-white shadow-lg sticky top-0 z-50">
@@ -126,9 +165,18 @@
                     </li>
                     <li>
                         <a href="{{ url_for('chats.chat_management') }}"
-                           class="flex items-center space-x-2 px-4 py-2 rounded-lg hover:bg-white/20 transition {{ 'bg-white/25 border border-white/30' if request.endpoint and request.endpoint.startswith('chats.') else '' }}">
+                           class="flex items-center space-x-2 px-4 py-2 rounded-lg hover:bg-white/20 transition {{ 'bg-white/25 border border-white/30' if request.endpoint == 'chats.chat_management' else '' }}">
                             <i class="fas fa-comments"></i>
                             <span>Chats</span>
+                            <span class="badge bg-info text-white ms-2" id="totalChatsBadge">0</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{{ url_for('chats.live_chat') }}"
+                           class="flex items-center space-x-2 px-4 py-2 rounded-lg hover:bg-white/20 transition {{ 'bg-white/25 border border-white/30' if request.endpoint == 'chats.live_chat' else '' }}">
+                            <i class="fas fa-headset"></i>
+                            <span>Live Chat</span>
+                            <span class="badge bg-danger ms-2 pulse" id="activeChatsBadge">0</span>
                         </a>
                     </li>
                     {% if session.admin and session.admin.role == 'super_admin' %}
@@ -151,33 +199,41 @@
 
                 <!-- User Profile Dropdown -->
                 {% if session.admin %}
-                <div class="relative">
-                    <button onclick="toggleDropdown()" class="flex items-center space-x-3 px-4 py-2 rounded-full bg-white/10 hover:bg-white/20 transition">
+                <div class="dropdown">
+                    <button class="btn btn-link text-white text-decoration-none dropdown-toggle d-flex align-items-center px-3 py-2 rounded-pill" 
+                            type="button" 
+                            id="userDropdown" 
+                            data-bs-toggle="dropdown" 
+                            aria-expanded="false"
+                            style="background-color: rgba(255,255,255,0.1);">
                         {% if session.admin.telegram_photo_url %}
-                        <img src="{{ session.admin.telegram_photo_url }}" alt="Profile" class="w-10 h-10 rounded-full border-2 border-white/30 object-cover">
+                        <img src="{{ session.admin.telegram_photo_url }}" alt="Profile" class="rounded-circle border border-white border-2 me-2" style="width: 40px; height: 40px; object-fit: cover;">
                         {% else %}
-                        <div class="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center border-2 border-white/30 font-bold">
+                        <div class="rounded-circle d-flex align-items-center justify-center border border-white border-2 fw-bold me-2" style="width: 40px; height: 40px; background-color: rgba(255,255,255,0.2);">
                             {{ session.admin.full_name[0] if session.admin.full_name else '?' }}
                         </div>
                         {% endif %}
-                        <div class="hidden md:block text-left">
-                            <div class="font-semibold">{{ session.admin.full_name or 'Admin' }}</div>
-                            <div class="text-xs opacity-80">{{ session.admin.role|title }}</div>
+                        <div class="d-none d-md-block text-start me-2">
+                            <div class="fw-semibold">{{ session.admin.full_name or 'Admin' }}</div>
+                            <div class="small opacity-75">{{ session.admin.role|title }}</div>
                         </div>
-                        <i class="fas fa-chevron-down text-sm"></i>
                     </button>
 
-                    <div id="userDropdown" class="dropdown-menu absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-xl overflow-hidden opacity-0 invisible transform -translate-y-2 transition-all duration-300">
-                        <a href="{{ url_for('auth.profile') }}" class="flex items-center space-x-3 px-4 py-3 text-gray-700 hover:bg-gray-50 transition">
-                            <i class="fas fa-user"></i>
-                            <span>My Profile</span>
-                        </a>
-                        <div class="border-t border-gray-100"></div>
-                        <a href="{{ url_for('auth.logout') }}" class="flex items-center space-x-3 px-4 py-3 text-red-600 hover:bg-red-50 transition">
-                            <i class="fas fa-sign-out-alt"></i>
-                            <span>Logout</span>
-                        </a>
-                    </div>
+                    <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 mt-2" aria-labelledby="userDropdown" style="border-radius: 12px; min-width: 200px;">
+                        <li>
+                            <a class="dropdown-item d-flex align-items-center py-2" href="{{ url_for('auth.profile') }}">
+                                <i class="fas fa-user me-3"></i>
+                                <span>My Profile</span>
+                            </a>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <a class="dropdown-item d-flex align-items-center py-2 text-danger" href="{{ url_for('auth.logout') }}">
+                                <i class="fas fa-sign-out-alt me-3"></i>
+                                <span>Logout</span>
+                            </a>
+                        </li>
+                    </ul>
                 </div>
                 {% endif %}
 
@@ -228,21 +284,47 @@
 
     <!-- JavaScript -->
     <script>
-        // Dropdown Toggle
-        function toggleDropdown() {
-            const dropdown = document.getElementById('userDropdown');
-            dropdown.classList.toggle('opacity-0');
-            dropdown.classList.toggle('invisible');
-            dropdown.classList.toggle('-translate-y-2');
-        }
+        // Profile Dropdown Hover Functionality - Instant show/hide
+        document.addEventListener('DOMContentLoaded', function () {
+            const dropdown = document.querySelector('.dropdown');
+            const dropdownButton = document.querySelector('#userDropdown');
+            const dropdownMenu = document.querySelector('.dropdown-menu');
+            let hideTimeout;
 
-        // Close dropdown when clicking outside
-        document.addEventListener('click', function (event) {
-            const dropdown = document.getElementById('userDropdown');
-            const userProfile = document.querySelector('.relative button');
+            if (dropdown && dropdownButton && dropdownMenu) {
+                // Disable Bootstrap's animation
+                dropdownMenu.classList.remove('fade');
+                
+                // Show dropdown instantly on hover
+                dropdown.addEventListener('mouseenter', function() {
+                    clearTimeout(hideTimeout);
+                    dropdownMenu.classList.add('show');
+                    dropdownButton.setAttribute('aria-expanded', 'true');
+                });
 
-            if (!event.target.closest('.relative')) {
-                dropdown.classList.add('opacity-0', 'invisible', '-translate-y-2');
+                // Hide dropdown when mouse leaves
+                dropdown.addEventListener('mouseleave', function() {
+                    hideTimeout = setTimeout(() => {
+                        dropdownMenu.classList.remove('show');
+                        dropdownButton.setAttribute('aria-expanded', 'false');
+                    }, 150);
+                });
+
+                // Keep Bootstrap click functionality working
+                dropdownButton.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    dropdownMenu.classList.toggle('show');
+                    const isShown = dropdownMenu.classList.contains('show');
+                    dropdownButton.setAttribute('aria-expanded', isShown);
+                });
+
+                // Close on outside click
+                document.addEventListener('click', function(e) {
+                    if (!dropdown.contains(e.target)) {
+                        dropdownMenu.classList.remove('show');
+                        dropdownButton.setAttribute('aria-expanded', 'false');
+                    }
+                });
             }
         });
 
@@ -264,7 +346,236 @@
         function toggleMobileMenu() {
             console.log('Mobile menu toggle');
         }
+
+        // Update navigation badges
+        async function updateNavigationBadges() {
+            try {
+                // Fetch active chats count
+                const response = await fetch('/portal/admin/api/active-chats-count');
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    // Update active chats badge (Live Chat)
+                    const activeBadge = document.getElementById('activeChatsBadge');
+                    if (activeBadge && data.count !== undefined) {
+                        activeBadge.textContent = data.count;
+                        // Change badge color based on count
+                        if (data.count === 0) {
+                            activeBadge.className = 'badge bg-secondary ms-2';
+                        } else if (data.count < 5) {
+                            activeBadge.className = 'badge bg-warning text-dark ms-2 pulse';
+                        } else {
+                            activeBadge.className = 'badge bg-danger ms-2 pulse';
+                        }
+                    }
+                    
+                    // Update total chats badge
+                    const totalBadge = document.getElementById('totalChatsBadge');
+                    if (totalBadge && data.details) {
+                        const totalSessions = (data.details.active || 0) + (data.details.waiting || 0);
+                        totalBadge.textContent = totalSessions;
+                    }
+                }
+            } catch (error) {
+                console.error('Error updating badges:', error);
+            }
+        }
+
+        // Update badges on page load and every 15 seconds
+        document.addEventListener('DOMContentLoaded', function() {
+            updateNavigationBadges();
+            setInterval(updateNavigationBadges, 15000);
+        });
+
+        // ===================================================================
+        // NOTIFICATION SYSTEM - Toast Alerts for New Sessions and Messages
+        // ===================================================================
+        
+        let lastKnownCounts = {
+            activeSessions: 0,
+            waitingSessions: 0,
+            totalSessions: 0,
+            isInitialized: false
+        };
+
+        // Play notification sound
+        function playNotificationSound() {
+            try {
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                oscillator.frequency.value = 800;
+                oscillator.type = 'sine';
+                
+                gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+                
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + 0.5);
+            } catch (error) {
+                console.log('Could not play sound:', error);
+            }
+        }
+
+        // Create and show Bootstrap toast
+        function showToast(title, message, type = 'info', autoHide = true) {
+            const toastContainer = document.querySelector('.toast-container');
+            if (!toastContainer) {
+                console.error('Toast container not found');
+                return;
+            }
+
+            const toastColors = {
+                'success': 'bg-success text-white',
+                'info': 'bg-info text-white',
+                'warning': 'bg-warning text-dark',
+                'danger': 'bg-danger text-white',
+                'primary': 'bg-primary text-white'
+            };
+
+            const toastIcons = {
+                'success': 'fa-check-circle',
+                'info': 'fa-info-circle',
+                'warning': 'fa-exclamation-triangle',
+                'danger': 'fa-times-circle',
+                'primary': 'fa-bell'
+            };
+
+            const toastId = 'toast-' + Date.now();
+            const colorClass = toastColors[type] || toastColors['info'];
+            const iconClass = toastIcons[type] || toastIcons['info'];
+
+            const toastHTML = `
+                <div id="${toastId}" class="toast" role="alert" aria-live="assertive" aria-atomic="true" data-bs-autohide="${autoHide}" data-bs-delay="5000">
+                    <div class="toast-header ${colorClass}">
+                        <i class="fas ${iconClass} me-2"></i>
+                        <strong class="me-auto">${title}</strong>
+                        <small class="text-white-50">just now</small>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
+                    </div>
+                    <div class="toast-body">
+                        ${message}
+                    </div>
+                </div>
+            `;
+
+            toastContainer.insertAdjacentHTML('beforeend', toastHTML);
+            const toastElement = document.getElementById(toastId);
+            const toast = new bootstrap.Toast(toastElement);
+            toast.show();
+
+            // Play sound for important notifications
+            if (type === 'warning' || type === 'danger' || type === 'primary') {
+                playNotificationSound();
+            }
+
+            // Remove toast element after hidden
+            toastElement.addEventListener('hidden.bs.toast', function() {
+                toastElement.remove();
+            });
+        }
+
+        // Combined function: Update badges AND check for new activity
+        async function updateBadgesAndCheckActivity() {
+            try {
+                const response = await fetch('/portal/admin/api/active-chats-count');
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    if (data.success && data.details) {
+                        const currentActive = data.details.active || 0;
+                        const currentWaiting = data.details.waiting || 0;
+                        const currentTotal = currentActive + currentWaiting;
+
+                        // Update active chats badge (Live Chat)
+                        const activeBadge = document.getElementById('activeChatsBadge');
+                        if (activeBadge) {
+                            activeBadge.textContent = currentTotal;
+                            if (currentTotal === 0) {
+                                activeBadge.className = 'badge bg-secondary ms-2';
+                            } else if (currentTotal < 5) {
+                                activeBadge.className = 'badge bg-warning text-dark ms-2 pulse';
+                            } else {
+                                activeBadge.className = 'badge bg-danger ms-2 pulse';
+                            }
+                        }
+                        
+                        // Update total chats badge
+                        const totalBadge = document.getElementById('totalChatsBadge');
+                        if (totalBadge) {
+                            totalBadge.textContent = currentTotal;
+                        }
+
+                        // Check for notifications (skip on first load)
+                        if (!lastKnownCounts.isInitialized) {
+                            // Initialize counts on first load
+                            lastKnownCounts = {
+                                activeSessions: currentActive,
+                                waitingSessions: currentWaiting,
+                                totalSessions: currentTotal,
+                                isInitialized: true
+                            };
+                            console.log('Notification system initialized:', lastKnownCounts);
+                        } else {
+                            // Detect new waiting sessions
+                            if (currentWaiting > lastKnownCounts.waitingSessions) {
+                                const newSessions = currentWaiting - lastKnownCounts.waitingSessions;
+                                showToast(
+                                    '🆕 New Chat Session',
+                                    `${newSessions} new ${newSessions === 1 ? 'session' : 'sessions'} waiting for assignment!`,
+                                    'warning',
+                                    true
+                                );
+                                console.log(`New waiting sessions: ${newSessions}`);
+                            }
+
+                            // Detect new active sessions
+                            if (currentActive > lastKnownCounts.activeSessions) {
+                                const newActive = currentActive - lastKnownCounts.activeSessions;
+                                showToast(
+                                    '💬 New Active Chat',
+                                    `${newActive} new ${newActive === 1 ? 'chat' : 'chats'} became active!`,
+                                    'primary',
+                                    true
+                                );
+                                console.log(`New active sessions: ${newActive}`);
+                            }
+
+                            // Detect sessions being closed
+                            if (currentTotal < lastKnownCounts.totalSessions) {
+                                const closedSessions = lastKnownCounts.totalSessions - currentTotal;
+                                showToast(
+                                    '✅ Chat Closed',
+                                    `${closedSessions} ${closedSessions === 1 ? 'session' : 'sessions'} closed.`,
+                                    'success',
+                                    true
+                                );
+                                console.log(`Closed sessions: ${closedSessions}`);
+                            }
+
+                            // Update last known counts
+                            lastKnownCounts = {
+                                activeSessions: currentActive,
+                                waitingSessions: currentWaiting,
+                                totalSessions: currentTotal,
+                                isInitialized: true
+                            };
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('Error updating badges and checking activity:', error);
+            }
+        }
+
     </script>
+
+    <!-- Bootstrap JS Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 
 </html>

@@ -215,3 +215,49 @@ class UserService:
             'message': 'User created successfully',
             'user': new_user
         }
+
+    @staticmethod
+    def promote_to_admin(db: Session, user_id: str, role: str = 'admin', division: str = None):
+        """Promote a user to admin status"""
+        from ..database.models import Admin, AdminRole
+        import uuid
+        
+        # Get the user
+        user = db.query(User).filter(User.id == user_id).first()
+        if not user:
+            return None
+        
+        # Check if already an admin
+        existing_admin = db.query(Admin).filter(Admin.telegram_id == str(user.telegram_id)).first()
+        if existing_admin:
+            raise ValueError("User is already an admin")
+        
+        # Create admin record
+        # Map role string to enum (AdminRole has lowercase values: admin, super_admin)
+        role_map = {
+            'admin': AdminRole.admin,
+            'super_admin': AdminRole.super_admin
+        }
+        admin_role = role_map.get(role.lower(), AdminRole.admin)
+        
+        admin = Admin(
+            id=str(uuid.uuid4()),
+            telegram_id=str(user.telegram_id),
+            telegram_username=user.username,
+            full_name=user.full_name or f"{user.first_name or ''} {user.last_name or ''}".strip() or "Admin",
+            role=admin_role,
+            division=division,
+            is_active=True,
+            is_available=True
+        )
+        
+        # Delete the user record to avoid telegram_id conflict
+        # The database has a constraint preventing same telegram_id in both tables
+        db.delete(user)
+        db.flush()  # Ensure user is deleted before adding admin
+        
+        db.add(admin)
+        db.commit()
+        db.refresh(admin)
+        
+        return admin

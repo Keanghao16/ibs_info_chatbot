@@ -17,7 +17,7 @@ def main():
         host = os.getenv('API_HOST', '0.0.0.0')
         port = int(os.getenv('API_PORT', 5001))
         debug = os.getenv('API_DEBUG', 'True').lower() == 'true'
-        
+            
         # Print startup information
         print(f"\n{'='*60}")
         print(f"🚀 Starting IBS Info Chatbot REST API")

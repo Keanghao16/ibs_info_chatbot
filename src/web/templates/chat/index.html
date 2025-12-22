@@ -233,11 +233,6 @@
                                 </button>
                                 
                                 {% if session.status == 'active' %}
-                                <button onclick="sendMessage({{ session.id }})" 
-                                        class="px-3 py-1 bg-green-500 hover:bg-green-600 text-white rounded-lg text-xs font-semibold transition-colors">
-                                    <i class="fas fa-paper-plane"></i> Message
-                                </button>
-                                
                                 <button onclick="closeChat({{ session.id }})" 
                                         class="px-3 py-1 bg-red-500 hover:bg-red-600 text-white rounded-lg text-xs font-semibold transition-colors">
                                     <i class="fas fa-times"></i> Close
@@ -330,11 +325,7 @@
     }
 
     function viewChat(sessionId) {
-        window.location.href = `/portal/admin/chat/${sessionId}`;
-    }
-
-    function sendMessage(sessionId) {
-        window.location.href = `/portal/admin/chat/${sessionId}#send-message`;
+        window.location.href = `/portal/admin/live-chat?session_id=${sessionId}`;
     }
 
     function closeChat(sessionId) {
@@ -344,7 +335,7 @@
                 headers: { 'Content-Type': 'application/json' }
             })
             .then(response => response.json())
-            .then data => {
+            .then(data => {
                 if (data.success) {
                     location.reload();
                 } else {

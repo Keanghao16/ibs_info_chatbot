@@ -225,24 +225,19 @@ def send_message_to_user():
 @super_admin_required
 def promote_to_admin(user_id):
     """Promote user to admin - now calls API"""
-    admin_role = request.form.get('admin_role', 'admin')
+    # Get data from JSON body
+    data = request.get_json()
+    role = data.get('role', 'admin')
+    division = data.get('division')
     
     # 🔄 Call API instead of service
     response = api_client.post(f'/api/v1/users/{user_id}/promote', {
-        'role': admin_role
+        'role': role,
+        'division': division
     })
     
-    if response.get('success'):
-        flash(' User promoted to admin successfully!', 'success')
-    else:
-        if response.get('redirect_to_login'):
-            return jsonify({'success': False, 'message': 'Session expired'})
-        
-        flash(f"❌ Error promoting user: {response.get('message', 'Unknown error')}", 'error')
-    
-    # Handle AJAX request
-    if request.headers.get('Content-Type') == 'application/json':
-        return jsonify(response)
+    # Always return JSON for AJAX requests
+    return jsonify(response)
     
     return redirect(url_for('users.view_user', user_id=user_id))
 
