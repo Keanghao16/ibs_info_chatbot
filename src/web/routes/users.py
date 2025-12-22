@@ -224,13 +224,13 @@ def send_message_to_user():
 @users_bp.route('/users/promote/<user_id>', methods=['POST'])
 @super_admin_required
 def promote_to_admin(user_id):
-    """Promote user to admin - now calls API"""
+    """Promote user to admin - calls API"""
     # Get data from JSON body
     data = request.get_json()
     role = data.get('role', 'admin')
     division = data.get('division')
     
-    # 🔄 Call API instead of service
+    # Call API to promote user
     response = api_client.post(f'/api/v1/users/{user_id}/promote', {
         'role': role,
         'division': division
@@ -238,8 +238,6 @@ def promote_to_admin(user_id):
     
     # Always return JSON for AJAX requests
     return jsonify(response)
-    
-    return redirect(url_for('users.view_user', user_id=user_id))
 
 @users_bp.route('/api/users')
 def get_users():

@@ -344,18 +344,26 @@ def demote_admin_to_user(current_user, admin_id):
         if not admin:
             return not_found_response('Admin')
         
-        # TODO: Implement actual demotion logic
-        # This would involve:
-        # 1. Moving admin data to users table
-        # 2. Removing admin record
-        # 3. Reassigning any active chats
+        # Demote admin to user
+        user = AdminService.demote_to_user(db, admin_id)
         
-        return error_response(
-            "Demotion feature not implemented yet. Please contact system administrator.",
-            501  # Not Implemented
+        if not user:
+            return error_response("Failed to demote admin", 500)
+        
+        # Return success with user data
+        from ..schemas.user_schema import UserResponseSchema
+        user_schema = UserResponseSchema()
+        user_data = user_schema.dump(user)
+        
+        return success_response(
+            data=user_data,
+            message=f"Admin {admin.full_name} successfully demoted to user"
         )
         
     except Exception as e:
+        import logging
+        logging.error(f"Exception demoting admin {admin_id}: {str(e)}")
+        db.rollback()
         return error_response(str(e), 500)
     finally:
         db.close()

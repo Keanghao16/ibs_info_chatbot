@@ -219,7 +219,7 @@ class UserService:
     @staticmethod
     def promote_to_admin(db: Session, user_id: str, role: str = 'admin', division: str = None):
         """Promote a user to admin status"""
-        from ..database.models import Admin, AdminRole
+        from ..database.models import Admin, AdminRole, ChatSession, ChatMessage
         import uuid
         
         # Get the user
@@ -231,6 +231,13 @@ class UserService:
         existing_admin = db.query(Admin).filter(Admin.telegram_id == str(user.telegram_id)).first()
         if existing_admin:
             raise ValueError("User is already an admin")
+        
+        # ✅ FIX: Delete related records first to avoid foreign key constraint violation
+        # Delete chat messages associated with this user
+        db.query(ChatMessage).filter(ChatMessage.user_id == user_id).delete(synchronize_session=False)
+        
+        # Delete chat sessions associated with this user
+        db.query(ChatSession).filter(ChatSession.user_id == user_id).delete(synchronize_session=False)
         
         # Create admin record
         # Map role string to enum (AdminRole has lowercase values: admin, super_admin)
@@ -251,8 +258,7 @@ class UserService:
             is_available=True
         )
         
-        # Delete the user record to avoid telegram_id conflict
-        # The database has a constraint preventing same telegram_id in both tables
+        # Now delete the user record (no foreign key conflicts)
         db.delete(user)
         db.flush()  # Ensure user is deleted before adding admin
         
