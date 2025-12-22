@@ -4,6 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="frame-ancestors 'self' http://20.20.14.168 https://oauth.telegram.org">
     <title>{% block title %}Telegram Bot Admin Panel{% endblock %}</title>
     
     <!-- Bootstrap CSS CDN -->
@@ -347,44 +348,49 @@
             console.log('Mobile menu toggle');
         }
 
-        // Update navigation badges
+        // Update navigation badges - DISABLED when not logged in
         async function updateNavigationBadges() {
-            try {
-                // Fetch active chats count
-                const response = await fetch('/portal/admin/api/active-chats-count');
-                if (response.ok) {
-                    const data = await response.json();
-                    
-                    // Update active chats badge (Live Chat)
-                    const activeBadge = document.getElementById('activeChatsBadge');
-                    if (activeBadge && data.count !== undefined) {
-                        activeBadge.textContent = data.count;
-                        // Change badge color based on count
-                        if (data.count === 0) {
-                            activeBadge.className = 'badge bg-secondary ms-2';
-                        } else if (data.count < 5) {
-                            activeBadge.className = 'badge bg-warning text-dark ms-2 pulse';
-                        } else {
-                            activeBadge.className = 'badge bg-danger ms-2 pulse';
+            // Only run if user is logged in (session exists)
+            if (!window.location.pathname.includes('/login')) {
+                try {
+                    // Fetch active chats count
+                    const response = await fetch('/portal/admin/api/active-chats-count');
+                    if (response.ok) {
+                        const data = await response.json();
+                        
+                        // Update active chats badge (Live Chat)
+                        const activeBadge = document.getElementById('activeChatsBadge');
+                        if (activeBadge && data.count !== undefined) {
+                            activeBadge.textContent = data.count;
+                            // Change badge color based on count
+                            if (data.count === 0) {
+                                activeBadge.className = 'badge bg-secondary ms-2';
+                            } else if (data.count < 5) {
+                                activeBadge.className = 'badge bg-warning text-dark ms-2 pulse';
+                            } else {
+                                activeBadge.className = 'badge bg-danger ms-2 pulse';
+                            }
+                        }
+                        
+                        // Update total chats badge
+                        const totalBadge = document.getElementById('totalChatsBadge');
+                        if (totalBadge && data.details) {
+                            const totalSessions = (data.details.active || 0) + (data.details.waiting || 0);
+                            totalBadge.textContent = totalSessions;
                         }
                     }
-                    
-                    // Update total chats badge
-                    const totalBadge = document.getElementById('totalChatsBadge');
-                    if (totalBadge && data.details) {
-                        const totalSessions = (data.details.active || 0) + (data.details.waiting || 0);
-                        totalBadge.textContent = totalSessions;
-                    }
+                } catch (error) {
+                    console.log('Badge update skipped - server not available');
                 }
-            } catch (error) {
-                console.error('Error updating badges:', error);
             }
         }
 
-        // Update badges on page load and every 15 seconds
+        // Update badges on page load and every 15 seconds (only when logged in)
         document.addEventListener('DOMContentLoaded', function() {
-            updateNavigationBadges();
-            setInterval(updateNavigationBadges, 15000);
+            if (!window.location.pathname.includes('/login')) {
+                updateNavigationBadges();
+                setInterval(updateNavigationBadges, 15000);
+            }
         });
 
         // ===================================================================

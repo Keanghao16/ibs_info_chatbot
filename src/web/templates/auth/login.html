@@ -6,12 +6,8 @@
 <div class="max-w-7xl mx-auto px-4 py-8">
     <!-- Page Header - Fixed classes -->
     <div class="bg-gradient-primary rounded-3xl shadow-2xl p-8 mb-8 text-white text-center">
-        <div class="mx-auto w-20 h-20 bg-white bg-opacity-20 rounded-full flex items-center justify-center shadow-lg mb-4">
-            <svg class="w-12 h-12 text-white" viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg">
-                <path d="m98 175c-3.888 0-3.227-1.468-4.568-5.17L82 132.207 170 80" fill="currentColor" opacity="0.6"/>
-                <path d="m98 175c3 0 4.325-1.372 6-3l16-15.558-19.958-12.035" fill="currentColor" opacity="0.8"/>
-                <path d="m100.04 144.41 48.36 35.729c5.519 3.045 9.501 1.468 10.876-5.123l19.685-92.763c2.015-8.08-3.08-11.746-8.36-9.349l-115.59 44.571c-7.89 3.165-7.843 7.567-1.438 9.528l29.663 9.259 68.673-43.325c3.242-1.966 6.218-.91 3.776 1.258" fill="currentColor"/>
-            </svg>
+        <div class="mx-auto w-auto max-w-2xl bg-white rounded-xl flex items-center justify-center shadow-lg mb-4 p-6">
+            <img src="https://ibs.edu.kh/img/logo-color.svg" alt="IBS Logo" class="h-24 w-auto object-contain">
         </div>
         <h1 class="text-4xl font-bold mb-3 flex items-center justify-center gap-3">
             <i class="fas fa-sign-in-alt"></i> IBS Admin Panel
@@ -158,18 +154,25 @@
 </div>
 
 <script>
-    //  Use your domain instead of localhost
-    // const API_BASE_URL = 'https://chatbot.ibs.local';
-    const API_BASE_URL = 'http://20.20.14.168:5001';
+    // API Base URL from environment configuration
+    const API_BASE_URL = '{{ api_base_url if api_base_url else "http://localhost:5001" }}';
+    const BOT_USERNAME = '{{ bot_username if bot_username else "digitalguybot" }}';
+    const AUTH_URL = '{{ url_for("auth.telegram_auth", _external=True) }}';
 
-    
     // Debug logging
-    console.log('🤖 Bot username:', '{{ bot_username }}');
-    console.log('🔗 Auth URL:', '{{ url_for("auth.telegram_auth", _external=True) }}');
+    console.log('🤖 Bot username:', BOT_USERNAME);
+    console.log('🔗 Auth URL:', AUTH_URL);
     console.log('🌐 API Base URL:', API_BASE_URL);
     
+    // Validate required variables
+    if (!API_BASE_URL || API_BASE_URL === 'None' || !BOT_USERNAME || BOT_USERNAME === 'None') {
+        console.error('❌ Missing configuration variables!');
+        console.error('API_BASE_URL:', API_BASE_URL);
+        console.error('BOT_USERNAME:', BOT_USERNAME);
+    }
+    
     //  UPDATED: API-Based Login with your domain
-    document.getElementById('apiLoginForm').addEventListener('submit', async (e) => {
+    document.getElementById('apiLoginForm')?.addEventListener('submit', async (e) => {
         e.preventDefault();
         
         const telegram_id = e.target.telegram_id.value;

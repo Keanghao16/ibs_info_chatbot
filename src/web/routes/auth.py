@@ -1,5 +1,6 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session, jsonify
 from ...utils.apiClient import api_client
+from ...utils.config import Config
 import os
 
 auth_bp = Blueprint('auth', __name__)
@@ -8,7 +9,8 @@ auth_bp = Blueprint('auth', __name__)
 def login():
     """Show Telegram login page"""
     bot_username = os.getenv("BOT_USERNAME", "YourBotUsername")
-    return render_template('auth/login.html', bot_username=bot_username)
+    api_base_url = Config.API_BASE_URL
+    return render_template('auth/login.html', bot_username=bot_username, api_base_url=api_base_url)
 
 @auth_bp.route('/telegram', methods=['GET', 'POST'])
 def telegram_auth():
