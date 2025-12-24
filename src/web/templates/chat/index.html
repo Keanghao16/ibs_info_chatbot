@@ -268,37 +268,147 @@
     const resultsCount = document.getElementById('resultsCount');
 
     let allRows = Array.from(chatTableBody?.querySelectorAll('tr') || []);
+    let currentPage = 1;
 
-    searchInput?.addEventListener('input', filterAndSort);
-    statusFilter?.addEventListener('change', filterAndSort);
-    agentFilter?.addEventListener('change', filterAndSort);
-    sortFilter?.addEventListener('change', filterAndSort);
+    searchInput?.addEventListener('input', filterClientSide);
+    statusFilter?.addEventListener('change', fetchFilteredSessions);  // Fetch from server
+    agentFilter?.addEventListener('change', filterClientSide);
+    sortFilter?.addEventListener('change', filterClientSide);
 
-    function filterAndSort() {
+    // Fetch filtered sessions from server when status changes
+    function fetchFilteredSessions() {
+        const status = statusFilter.value;
+        const params = new URLSearchParams({
+            page: currentPage,
+            per_page: 20
+        });
+        
+        if (status) {
+            params.append('status', status);
+        }
+        
+        fetch(`/portal/admin/api/chats?${params}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    displaySessions(data.data.sessions || []);
+                    updatePagination(data.pagination);
+                } else {
+                    alert('Error loading sessions: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error loading sessions');
+            });
+    }
+
+    // Display sessions in table
+    function displaySessions(sessions) {
+        if (!chatTableBody) return;
+        
+        if (sessions.length === 0) {
+            chatTableBody.innerHTML = `
+                <tr>
+                    <td colspan="7" class="px-6 py-8 text-center text-gray-500">
+                        <div class="text-4xl mb-2">📭</div>
+                        <div>No sessions found</div>
+                    </td>
+                </tr>
+            `;
+            allRows = [];
+            return;
+        }
+        
+        chatTableBody.innerHTML = sessions.map(session => {
+            const statusClass = {
+                'waiting': 'bg-yellow-100 text-yellow-800',
+                'active': 'bg-green-100 text-green-800',
+                'closed': 'bg-gray-100 text-gray-800'
+            }[session.status] || 'bg-gray-100 text-gray-800';
+            
+            const statusIcon = {
+                'waiting': '⏳',
+                'active': '💬',
+                'closed': '✅'
+            }[session.status] || '❓';
+            
+            const startTime = new Date(session.start_time).toLocaleString();
+            const endTime = session.end_time ? new Date(session.end_time).toLocaleString() : '-';
+            
+            return `
+                <tr class="hover:bg-gray-50 cursor-pointer"
+                    data-user-name="${(session.user?.full_name || '').toLowerCase()}"
+                    data-status="${session.status}"
+                    data-agent-id="${session.admin_id || 0}"
+                    data-timestamp="${session.start_time}">
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="text-sm font-medium text-gray-900">#${session.id}</span>
+                    </td>
+                    <td class="px-6 py-4">
+                        <div class="flex items-center">
+                            <div>
+                                <div class="text-sm font-medium text-gray-900">${session.user?.full_name || 'Unknown'}</div>
+                                <div class="text-sm text-gray-500">@${session.user?.username || 'N/A'}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4">
+                        <div class="text-sm text-gray-900">${session.admin?.full_name || 'Not assigned'}</div>
+                    </td>
+                    <td class="px-6 py-4">
+                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusClass}">
+                            ${statusIcon} ${session.status}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 text-sm text-gray-500">
+                        <div>Started: ${startTime}</div>
+                        ${session.status === 'closed' ? `<div>Ended: ${endTime}</div>` : ''}
+                    </td>
+                    <td class="px-6 py-4 text-sm text-gray-500">
+                        ${session.message_count || 0} messages
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <a href="/portal/admin/chat/${session.id}" class="text-blue-600 hover:text-blue-900 mr-3">
+                            👁️ View
+                        </a>
+                        ${session.status !== 'closed' ? `
+                            <button onclick="closeChat(${session.id})" class="text-red-600 hover:text-red-900">
+                                🔒 Close
+                            </button>
+                        ` : ''}
+                    </td>
+                </tr>
+            `;
+        }).join('');
+        
+        allRows = Array.from(chatTableBody.querySelectorAll('tr'));
+        resultsCount.textContent = `Showing ${sessions.length} sessions`;
+    }
+
+    // Client-side filtering for search and agent filter
+    function filterClientSide() {
         if (!chatTableBody) return;
 
         const searchTerm = searchInput.value.toLowerCase();
-        const statusValue = statusFilter.value;
         const agentValue = agentFilter.value;
         const sortValue = sortFilter.value;
 
         let filteredRows = allRows.filter(row => {
             const userName = row.dataset.userName || '';
-            const status = row.dataset.status;
-            const agentId = parseInt(row.dataset.agentId);
+            const agentId = row.dataset.agentId;
 
             const matchesSearch = !searchTerm || userName.includes(searchTerm);
-            const matchesStatus = !statusValue || status === statusValue;
 
             let matchesAgent = true;
             if (agentValue === 'unassigned') {
-                matchesAgent = agentId === 0;
+                matchesAgent = agentId === '0';
             } else if (agentValue === 'mine') {
                 const currentAdminId = '{{ session.admin.id }}';
-                matchesAgent = row.dataset.agentId === currentAdminId;
+                matchesAgent = agentId === currentAdminId;
             }
 
-            return matchesSearch && matchesStatus && matchesAgent;
+            return matchesSearch && matchesAgent;
         });
 
         // Sort filtered rows
@@ -306,22 +416,18 @@
             const aTime = new Date(a.dataset.timestamp).getTime();
             const bTime = new Date(b.dataset.timestamp).getTime();
 
-            switch (sortValue) {
-                case 'newest':
-                    return bTime - aTime;
-                case 'oldest':
-                    return aTime - bTime;
-                default:
-                    return 0;
-            }
+            return sortValue === 'newest' ? bTime - aTime : aTime - bTime;
         });
 
         chatTableBody.innerHTML = '';
         filteredRows.forEach(row => chatTableBody.appendChild(row));
         
-        // ✅ UPDATED: Update results count to show filtered vs total
-        const totalSessions = {{ stats.total_sessions if stats and stats.total_sessions else 0 }};
-        resultsCount.textContent = `Showing ${filteredRows.length} of ${totalSessions} sessions`;
+        resultsCount.textContent = `Showing ${filteredRows.length} sessions`;
+    }
+
+    function updatePagination(pagination) {
+        // Update pagination info if you have pagination elements
+        console.log('Pagination:', pagination);
     }
 
     function viewChat(sessionId) {
@@ -337,7 +443,7 @@
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    location.reload();
+                    fetchFilteredSessions();  // Refresh list
                 } else {
                     alert('❌ Failed to close chat: ' + (data.message || 'Unknown error'));
                 }
@@ -349,7 +455,11 @@
         }
     }
 
-    // Auto-refresh every 30 seconds
-    setInterval(() => location.reload(), 30000);
+    // Auto-refresh every 30 seconds (only if not viewing closed sessions)
+    setInterval(() => {
+        if (!statusFilter.value || statusFilter.value !== 'closed') {
+            fetchFilteredSessions();
+        }
+    }, 30000);
 </script>
 {% endblock %}

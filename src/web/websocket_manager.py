@@ -132,31 +132,100 @@ def broadcast_new_message_internal(user_id, message_text, admin_id=None, session
             print("⚠️ SocketIO not initialized - cannot broadcast")
             return
         
-        if admin_id:
-            # Broadcast to specific admin's room
-            socketio.emit('new_message', {
-                'user_id': user_id,
-                'user_name': user_name,
-                'message': message_text,
-                'session_id': session_id,
-                'timestamp': datetime.now().isoformat(),
-                'is_from_admin': False
-            }, room=f"admin_{admin_id}", namespace='/')
-            
-            print(f"✅ Message broadcasted to admin {admin_id}")
-        else:
-            # Broadcast to all connected admins (for waiting sessions)
-            socketio.emit('new_waiting_session', {
-                'session_id': session_id,
-                'user_id': user_id,
-                'user_name': user_name,
-                'message': message_text,
-                'timestamp': datetime.now().isoformat()
-            }, namespace='/')
-            
-            print(f"✅ New waiting session broadcasted to all admins")
+        # Broadcast new_message to ALL admins (includes toast notifications)
+        socketio.emit('new_message', {
+            'user_id': user_id,
+            'user_name': user_name,
+            'message': message_text,
+            'message_preview': message_text[:50] + ('...' if len(message_text) > 50 else ''),
+            'session_id': session_id,
+            'timestamp': datetime.now().isoformat(),
+            'is_from_admin': False,
+            'admin_id': admin_id  # Include admin_id for targeted notifications
+        }, namespace='/')
+        
+        print(f"✅ Message broadcasted to {'admin ' + str(admin_id) if admin_id else 'all admins'}")
             
     except Exception as e:
         print(f"❌ Error broadcasting message: {e}")
+        import traceback
+        traceback.print_exc()
+
+def broadcast_new_session(session_id, user_id, user_name=None):
+    """
+    Broadcast new chat session to all connected admins
+    """
+    try:
+        print(f"📡 Broadcasting new session {session_id}")
+        
+        # Check if socketio is properly initialized
+        if not socketio.server:
+            print("⚠️ SocketIO not initialized - cannot broadcast")
+            return
+        
+        # Broadcast to all connected admins
+        socketio.emit('new_session', {
+            'session_id': session_id,
+            'user_id': user_id,
+            'user_name': user_name or f'User {user_id}',
+            'timestamp': datetime.now().isoformat()
+        }, namespace='/')
+        
+        print(f"✅ New session broadcasted to all admins")
+            
+    except Exception as e:
+        print(f"❌ Error broadcasting new session: {e}")
+        import traceback
+        traceback.print_exc()
+
+def broadcast_session_assigned(session_id, admin_id, user_name=None):
+    """
+    Broadcast when a session is assigned to an admin
+    This should decrease badge counts
+    """
+    try:
+        print(f"📡 Broadcasting session assignment: {session_id} to admin {admin_id}")
+        
+        if not socketio.server:
+            print("⚠️ SocketIO not initialized - cannot broadcast")
+            return
+        
+        # Broadcast to all connected admins
+        socketio.emit('session_assigned', {
+            'session_id': session_id,
+            'admin_id': admin_id,
+            'user_name': user_name,
+            'timestamp': datetime.now().isoformat()
+        }, namespace='/')
+        
+        print(f"✅ Session assignment broadcasted")
+            
+    except Exception as e:
+        print(f"❌ Error broadcasting session assignment: {e}")
+        import traceback
+        traceback.print_exc()
+
+def broadcast_session_closed(session_id):
+    """
+    Broadcast when a session is closed
+    This should decrease badge counts
+    """
+    try:
+        print(f"📡 Broadcasting session closed: {session_id}")
+        
+        if not socketio.server:
+            print("⚠️ SocketIO not initialized - cannot broadcast")
+            return
+        
+        # Broadcast to all connected admins
+        socketio.emit('session_closed', {
+            'session_id': session_id,
+            'timestamp': datetime.now().isoformat()
+        }, namespace='/')
+        
+        print(f"✅ Session closed broadcasted")
+            
+    except Exception as e:
+        print(f"❌ Error broadcasting session closed: {e}")
         import traceback
         traceback.print_exc()

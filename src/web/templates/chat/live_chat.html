@@ -8,13 +8,26 @@
 <div class="grid grid-cols-1 lg:grid-cols-[350px_1fr] gap-5 h-[calc(100vh-100px)] m-5 max-w-full">
     <!-- Chat List Sidebar -->
     <div class="bg-white rounded-2xl p-5 overflow-y-auto shadow-lg">
-        <h3 class="text-xl font-bold text-gray-900 mb-5 pb-3 border-b-2 border-primary-500 flex items-center gap-2">
+        <h3 class="text-xl font-bold text-gray-900 mb-3 pb-3 border-b-2 border-primary-500 flex items-center gap-2">
             <i class="fas fa-comments text-primary-500"></i> 
-            Active Chats ({{ sessions|length }})
+            <span id="chatListTitle">Active Chats</span> (<span id="chatCount">{{ sessions|length }}</span>)
         </h3>
         
+        <!-- Status Filter Toggle -->
+        <div class="mb-4 flex gap-2">
+            <button onclick="switchChatFilter('active')" id="filter-active" 
+                    class="flex-1 px-3 py-2 text-sm font-medium rounded-lg bg-blue-100 text-blue-700 border-2 border-blue-500">
+                💬 Active
+            </button>
+            <button onclick="switchChatFilter('closed')" id="filter-closed"
+                    class="flex-1 px-3 py-2 text-sm font-medium rounded-lg bg-gray-100 text-gray-600 border-2 border-gray-300 hover:bg-gray-200">
+                ✅ Closed
+            </button>
+        </div>
+        
+        <!-- Chat List Container - Always present -->
+        <div id="chatListItems" class="space-y-3">
         {% if sessions and sessions|length > 0 %}
-            <div id="chatListItems" class="space-y-3">
                 {% for session in sessions %}
                 <div class="chat-item p-4 border-2 border-gray-200 rounded-xl hover:border-primary-500 cursor-pointer transition-all duration-300 hover:shadow-md"
                      data-session-id="{{ session.id }}"
@@ -47,13 +60,13 @@
                     </div>
                 </div>
                 {% endfor %}
-            </div>
-        {% else %}
-            <div class="text-center py-10 text-gray-400">
-                <i class="fas fa-comments-slash text-3xl mb-3"></i>
-                <p>No active chats</p>
-            </div>
-        {% endif %}
+            {% else %}
+                <div class="text-center py-10 text-gray-400">
+                    <i class="fas fa-comments-slash text-3xl mb-3"></i>
+                    <p>No active chats</p>
+                </div>
+            {% endif %}
+        </div>
     </div>
     
     <!-- Chat Window -->
@@ -258,9 +271,14 @@
             selectedItem.classList.add('active');
         }
         
-        const statusBadge = status === 'waiting' 
-            ? '<span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-semibold bg-yellow-400/20 text-yellow-200"><i class="fas fa-clock animate-pulse"></i> Waiting</span>'
-            : '<span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-semibold bg-green-400/20 text-green-200"><i class="fas fa-circle animate-pulse"></i> Active</span>';
+        let statusBadge = '';
+        if (status === 'closed') {
+            statusBadge = '<span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-semibold bg-gray-400/20 text-gray-300"><i class="fas fa-check-circle"></i> Closed</span>';
+        } else if (status === 'waiting') {
+            statusBadge = '<span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-semibold bg-yellow-400/20 text-yellow-200"><i class="fas fa-clock animate-pulse"></i> Waiting</span>';
+        } else {
+            statusBadge = '<span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-semibold bg-green-400/20 text-green-200"><i class="fas fa-circle animate-pulse"></i> Active</span>';
+        }
         
         document.getElementById('chatHeader').innerHTML = `
             <div class="flex items-center justify-between">
@@ -279,8 +297,31 @@
         
         document.getElementById('messagesContainer').classList.remove('hidden');
         document.getElementById('messagesContainer').classList.add('flex');
-        document.getElementById('messageInputContainer').classList.remove('hidden');
-        document.getElementById('messageInputContainer').classList.add('flex');
+        
+        // Handle message input based on status
+        const messageInputContainer = document.getElementById('messageInputContainer');
+        const messageInput = document.getElementById('messageInput');
+        const sendButton = messageInputContainer.querySelector('button');
+        
+        if (status === 'closed') {
+            // Disable input for closed sessions
+            messageInputContainer.classList.remove('hidden');
+            messageInputContainer.classList.add('flex');
+            messageInput.disabled = true;
+            messageInput.placeholder = 'This chat is closed';
+            messageInput.className = 'flex-1 px-4 py-3 border-2 border-gray-300 rounded-xl bg-gray-100 text-gray-500 cursor-not-allowed';
+            sendButton.disabled = true;
+            sendButton.className = 'px-6 py-3 bg-gray-400 text-white rounded-xl font-semibold cursor-not-allowed flex items-center gap-2';
+        } else {
+            // Enable input for active/waiting sessions
+            messageInputContainer.classList.remove('hidden');
+            messageInputContainer.classList.add('flex');
+            messageInput.disabled = false;
+            messageInput.placeholder = 'Type your message...';
+            messageInput.className = 'flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-primary-500 focus:ring-4 focus:ring-primary-100 transition-all';
+            sendButton.disabled = false;
+            sendButton.className = 'px-6 py-3 bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-xl font-semibold hover:from-primary-600 hover:to-primary-700 transition-all duration-300 shadow-lg hover:shadow-xl flex items-center gap-2';
+        }
         
         if (status === 'waiting') {
             assignSessionToMe(sessionId);
@@ -339,7 +380,9 @@
                 
                 if (data.success && data.data && data.data.length > 0) {
                     console.log(`✅ Loaded ${data.data.length} messages`);
+                    console.log('First message structure:', data.data[0]);
                     data.data.forEach(msg => {
+                        console.log('Message admin info:', { admin_id: msg.admin_id, admin_name: msg.admin_name });
                         appendMessage(
                             msg.message, 
                             msg.is_from_admin, 
@@ -510,6 +553,151 @@
                 console.error('Error loading session:', error);
                 alert('Failed to load chat session');
             });
+    }
+    
+    // Switch between active and closed chats
+    let currentFilter = 'active';
+    
+    function switchChatFilter(filterType) {
+        if (currentFilter === filterType) return;
+        
+        currentFilter = filterType;
+        
+        // Update button styles
+        const activeBtn = document.getElementById('filter-active');
+        const closedBtn = document.getElementById('filter-closed');
+        
+        if (filterType === 'active') {
+            activeBtn.className = 'flex-1 px-3 py-2 text-sm font-medium rounded-lg bg-blue-100 text-blue-700 border-2 border-blue-500';
+            closedBtn.className = 'flex-1 px-3 py-2 text-sm font-medium rounded-lg bg-gray-100 text-gray-600 border-2 border-gray-300 hover:bg-gray-200';
+        } else {
+            activeBtn.className = 'flex-1 px-3 py-2 text-sm font-medium rounded-lg bg-gray-100 text-gray-600 border-2 border-gray-300 hover:bg-gray-200';
+            closedBtn.className = 'flex-1 px-3 py-2 text-sm font-medium rounded-lg bg-green-100 text-green-700 border-2 border-green-500';
+        }
+        
+        // Fetch sessions based on filter
+        fetchSessionsByStatus(filterType);
+    }
+    
+    function fetchSessionsByStatus(status) {
+        const url = status === 'closed' 
+            ? '/portal/admin/api/chats?status=closed&page=1&per_page=50'
+            : '/portal/admin/api/chats?status=active&page=1&per_page=50'; // Active sessions only
+        
+        console.log('Fetching sessions from:', url);
+        
+        fetch(url)
+            .then(response => response.json())
+            .then(data => {
+                console.log('Full API Response:', data);
+                console.log('data.success:', data.success);
+                console.log('data.data:', data.data);
+                
+                if (data.success && data.data) {
+                    // Try different possible paths for sessions
+                    const sessions = data.data.sessions || data.data.items || data.data || [];
+                    console.log('Sessions array:', sessions);
+                    console.log('Sessions length:', sessions.length);
+                    
+                    // Log first session structure for debugging
+                    if (sessions.length > 0) {
+                        console.log('First session structure:', sessions[0]);
+                        console.log('First session user:', sessions[0].user);
+                    }
+                    
+                    displaySessionsInSidebar(sessions, status);
+                } else {
+                    console.error('Failed to fetch sessions:', data);
+                    displaySessionsInSidebar([], status);
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching sessions:', error);
+                displaySessionsInSidebar([], status);
+            });
+    }
+    
+    function displaySessionsInSidebar(sessions, filterType) {
+        console.log('displaySessionsInSidebar called with:', { sessionsCount: sessions.length, filterType });
+        
+        // Update title and count
+        const title = filterType === 'closed' ? 'Closed Chats' : 'Active Chats';
+        document.getElementById('chatListTitle').textContent = title;
+        document.getElementById('chatCount').textContent = sessions.length;
+        
+        // Get chat list container - use the ID directly
+        const chatListContainer = document.getElementById('chatListItems');
+        
+        if (!chatListContainer) {
+            console.error('Chat list container not found!');
+            return;
+        }
+        
+        console.log('Chat list container found:', chatListContainer);
+        
+        if (sessions.length === 0) {
+            chatListContainer.innerHTML = `
+                <div class="text-center py-10 text-gray-400">
+                    <i class="fas fa-inbox text-5xl mb-3 opacity-50"></i>
+                    <p class="text-lg">No ${filterType} chats</p>
+                </div>
+            `;
+            return;
+        }
+        
+        // Build sessions HTML
+        let sessionsHTML = sessions.map(session => {
+            // API returns user_name directly in session object, not nested
+            const userName = session.user_name || 'Unknown User';
+            const userAvatar = (session.user_name || 'U').charAt(0).toUpperCase();
+            const telegramId = session.user_id || '';
+            const status = session.status || 'waiting';
+            
+            // Escape for safe HTML insertion
+            const safeUserName = userName.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+            const safeTelegramId = String(telegramId);
+            
+            let statusBadge = '';
+            let statusIcon = '';
+            
+            if (status === 'closed') {
+                statusBadge = '<span class="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-600"><i class="fas fa-check-circle"></i> Closed</span>';
+                statusIcon = '✅';
+            } else if (status === 'active') {
+                statusBadge = '<span class="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800"><i class="fas fa-circle animate-pulse"></i> Active</span>';
+                statusIcon = '💬';
+            } else {
+                statusBadge = '<span class="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-800"><i class="fas fa-clock animate-pulse"></i> Waiting</span>';
+                statusIcon = '⏳';
+            }
+            
+            const lastMessage = session.last_message || 'No messages yet';
+            const safeLastMessage = lastMessage.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            const lastMessageTime = session.last_message_time ? new Date(session.last_message_time).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }) : '';
+            
+            return `
+                <div class="chat-item p-4 rounded-xl border-2 border-gray-200 hover:border-primary-400 hover:shadow-lg transition-all duration-200 cursor-pointer ${status === 'closed' ? 'opacity-70' : ''}"
+                     data-session-id="${session.id}"
+                     data-status="${status}"
+                     onclick="selectChat(${session.id}, '${safeUserName}', '${safeTelegramId}', '${userAvatar}', '${status}')">
+                    <div class="flex items-start gap-3">
+                        <div class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold shadow-md flex-shrink-0">
+                            ${userAvatar}
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center justify-between mb-1">
+                                <h5 class="font-bold text-gray-900 text-sm truncate">${statusIcon} ${userName}</h5>
+                                ${lastMessageTime ? `<span class="text-xs text-gray-500">${lastMessageTime}</span>` : ''}
+                            </div>
+                            ${statusBadge}
+                            <p class="text-xs text-gray-600 truncate mt-2">${safeLastMessage.substring(0, 50)}${safeLastMessage.length > 50 ? '...' : ''}</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+        
+        chatListContainer.innerHTML = sessionsHTML;
     }
 </script>
 {% endblock %}
