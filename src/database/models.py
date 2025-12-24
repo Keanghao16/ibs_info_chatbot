@@ -41,8 +41,9 @@ class User(Base):
             return f"{self.first_name} {self.last_name}"
         return self.first_name or self.last_name or self.username or f"User {self.telegram_id}"
 
-    sessions = relationship("ChatSession", back_populates="user")
-    messages = relationship("ChatMessage", back_populates="user")
+    # Relationships with cascade delete
+    sessions = relationship("ChatSession", back_populates="user", cascade="all, delete-orphan")
+    messages = relationship("ChatMessage", back_populates="user", cascade="all, delete-orphan")
 
 
 class Admin(Base):

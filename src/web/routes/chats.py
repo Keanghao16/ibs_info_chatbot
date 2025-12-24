@@ -12,24 +12,24 @@ chats_bp = Blueprint('chats', __name__)
 @chats_bp.route('/api/active-chats-count')
 @any_admin_required
 def get_active_chats_count():
-    """Get count of active and waiting chats for badge display"""
+    """Get count of waiting (unassigned) chats for badge display"""
     try:
         # Call API for chat statistics
         stats_response = api_client.get('/api/v1/chats/stats')
         
         if stats_response.get('success'):
             stats = stats_response.get('data', {})
-            # Count both active and waiting sessions
-            active_count = stats.get('active_sessions', 0)
+            # Only count WAITING sessions (unassigned) for the badge
             waiting_count = stats.get('waiting_sessions', 0)
-            total_active = active_count + waiting_count
+            active_count = stats.get('active_sessions', 0)
             
             return jsonify({
                 'success': True,
-                'count': total_active,
+                'count': waiting_count,  # Badge shows only waiting/unassigned
                 'details': {
                     'active': active_count,
-                    'waiting': waiting_count
+                    'waiting': waiting_count,
+                    'total': active_count + waiting_count
                 }
             })
         else:
@@ -67,18 +67,135 @@ def get_chat_session(session_id):
             'message': str(e)
         }), 500
 
+@chats_bp.route('/api/broadcast-message', methods=['POST'])
+def broadcast_message_endpoint():
+    """Endpoint for API server to trigger Socket.IO broadcast"""
+    try:
+        from ..websocket_manager import broadcast_new_message_internal
+        
+        data = request.json
+        required_fields = ['session_id', 'user_id', 'message']
+        
+        if not all(field in data for field in required_fields):
+            return jsonify({
+                'success': False,
+                'message': 'Missing required fields'
+            }), 400
+        
+        # Trigger Socket.IO broadcast
+        broadcast_new_message_internal(
+            user_id=data['user_id'],
+            message_text=data['message'],
+            admin_id=data.get('admin_id'),
+            session_id=data['session_id'],
+            user_name=data.get('user_name')
+        )
+        
+        print(f"✅ Socket.IO broadcast triggered for session {data['session_id']}")
+        
+        return jsonify({
+            'success': True,
+            'message': 'Message broadcasted successfully'
+        })
+                
+    except Exception as e:
+        print(f"❌ Error broadcasting message: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
+@chats_bp.route('/api/broadcast-new-session', methods=['POST'])
+def broadcast_new_session_endpoint():
+    """Endpoint for API server to trigger Socket.IO broadcast for new session"""
+    try:
+        from ..websocket_manager import broadcast_new_session
+        
+        data = request.json
+        required_fields = ['session_id', 'user_id']
+        
+        if not all(field in data for field in required_fields):
+            return jsonify({
+                'success': False,
+                'message': 'Missing required fields'
+            }), 400
+        
+        # Trigger Socket.IO broadcast
+        broadcast_new_session(
+            session_id=data['session_id'],
+            user_id=data['user_id'],
+            user_name=data.get('user_name')
+        )
+        
+        print(f"✅ Socket.IO new session broadcast triggered for session {data['session_id']}")
+        
+        return jsonify({
+            'success': True,
+            'message': 'New session broadcasted successfully'
+        })
+                
+    except Exception as e:
+        print(f"❌ Error broadcasting new session: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
+@chats_bp.route('/api/chats')
+@any_admin_required
+def get_filtered_chats():
+    """API endpoint to get filtered chat sessions"""
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 20, type=int)
+    status = request.args.get('status', None)  # 'waiting', 'active', 'closed', or None for all
+    
+    # Build API params
+    params = {
+        'page': page,
+        'per_page': per_page
+    }
+    
+    if status:
+        params['status'] = status
+    
+    # 🔄 Call API for filtered chat sessions
+    response = api_client.get('/api/v1/chats', params)
+    
+    if not response.get('success'):
+        if response.get('redirect_to_login'):
+            return jsonify({'success': False, 'message': 'Session expired'}), 401
+        
+        return jsonify({'success': False, 'message': response.get('message', 'Failed to fetch sessions')}), 400
+    
+    return jsonify({
+        'success': True,
+        'data': response.get('data', {}),
+        'pagination': response.get('pagination', {})
+    })
+
 @chats_bp.route('/chats')
 @any_admin_required
 def chat_management():
     """Chat management - now calls API"""
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 20, type=int)
+    status = request.args.get('status', None)  # Get status filter from query params
     
-    # 🔄 Call API for chat sessions
-    response = api_client.get('/api/v1/chats', {
+    # Build API params
+    params = {
         'page': page,
         'per_page': per_page
-    })
+    }
+    
+    if status:
+        params['status'] = status
+    
+    # 🔄 Call API for chat sessions
+    response = api_client.get('/api/v1/chats', params)
     
     # 🔄 Call API for chat statistics
     stats_response = api_client.get('/api/v1/chats/stats')
@@ -228,6 +345,26 @@ def assign_session(session_id):
         
         return jsonify({'success': False, 'message': response.get('message', 'Failed to assign session')}), 400
     
+    # Broadcast session assignment to all admins
+    try:
+        from ..websocket_manager import broadcast_session_assigned
+        session_data = response.get('data', {})
+        user_name = None
+        if session_data and 'user' in session_data:
+            user_name = session_data['user'].get('full_name')
+        
+        print(f"🔔 Broadcasting session {session_id} assignment to admin {admin_id}, user: {user_name}")
+        broadcast_session_assigned(
+            session_id=session_id,
+            admin_id=admin_id,
+            user_name=user_name
+        )
+        print(f"✅ Broadcast completed for session assignment")
+    except Exception as e:
+        print(f"⚠️ Failed to broadcast session assignment: {e}")
+        import traceback
+        traceback.print_exc()
+    
     return jsonify({'success': True, 'message': 'Session assigned successfully', 'data': response.get('data')})
 
 
@@ -243,6 +380,13 @@ def close_chat(session_id):
             'success': False,
             'message': response.get('message', 'Failed to close chat session')
         }), 400
+    
+    # Broadcast session closed to all admins
+    try:
+        from ..websocket_manager import broadcast_session_closed
+        broadcast_session_closed(session_id)
+    except Exception as e:
+        print(f"⚠️ Failed to broadcast session closed: {e}")
     
     return jsonify({
         'success': True,

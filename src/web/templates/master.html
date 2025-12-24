@@ -132,8 +132,8 @@
 </head>
 
 <body class="bg-gradient-bg min-h-screen">
-    <!-- Toast Container for Notifications -->
-    <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 9999;">
+    <!-- Toast Container for Notifications - Top right -->
+    <div id="toastContainer" class="position-fixed top-0 end-0 p-5" style="z-index: 9999; max-width: 400px;">
         <!-- Toasts will be dynamically inserted here -->
     </div>
 
@@ -394,7 +394,8 @@
         });
 
         // ===================================================================
-        // NOTIFICATION SYSTEM - Toast Alerts for New Sessions and Messages
+        // NOTIFICATION SYSTEM - Badge Updates Only (No Toast Notifications)
+        // Toast notifications are handled by Socket.IO below
         // ===================================================================
         
         let lastKnownCounts = {
@@ -404,88 +405,7 @@
             isInitialized: false
         };
 
-        // Play notification sound
-        function playNotificationSound() {
-            try {
-                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                const oscillator = audioContext.createOscillator();
-                const gainNode = audioContext.createGain();
-                
-                oscillator.connect(gainNode);
-                gainNode.connect(audioContext.destination);
-                
-                oscillator.frequency.value = 800;
-                oscillator.type = 'sine';
-                
-                gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
-                
-                oscillator.start(audioContext.currentTime);
-                oscillator.stop(audioContext.currentTime + 0.5);
-            } catch (error) {
-                console.log('Could not play sound:', error);
-            }
-        }
-
-        // Create and show Bootstrap toast
-        function showToast(title, message, type = 'info', autoHide = true) {
-            const toastContainer = document.querySelector('.toast-container');
-            if (!toastContainer) {
-                console.error('Toast container not found');
-                return;
-            }
-
-            const toastColors = {
-                'success': 'bg-success text-white',
-                'info': 'bg-info text-white',
-                'warning': 'bg-warning text-dark',
-                'danger': 'bg-danger text-white',
-                'primary': 'bg-primary text-white'
-            };
-
-            const toastIcons = {
-                'success': 'fa-check-circle',
-                'info': 'fa-info-circle',
-                'warning': 'fa-exclamation-triangle',
-                'danger': 'fa-times-circle',
-                'primary': 'fa-bell'
-            };
-
-            const toastId = 'toast-' + Date.now();
-            const colorClass = toastColors[type] || toastColors['info'];
-            const iconClass = toastIcons[type] || toastIcons['info'];
-
-            const toastHTML = `
-                <div id="${toastId}" class="toast" role="alert" aria-live="assertive" aria-atomic="true" data-bs-autohide="${autoHide}" data-bs-delay="5000">
-                    <div class="toast-header ${colorClass}">
-                        <i class="fas ${iconClass} me-2"></i>
-                        <strong class="me-auto">${title}</strong>
-                        <small class="text-white-50">just now</small>
-                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
-                    </div>
-                    <div class="toast-body">
-                        ${message}
-                    </div>
-                </div>
-            `;
-
-            toastContainer.insertAdjacentHTML('beforeend', toastHTML);
-            const toastElement = document.getElementById(toastId);
-            const toast = new bootstrap.Toast(toastElement);
-            toast.show();
-
-            // Play sound for important notifications
-            if (type === 'warning' || type === 'danger' || type === 'primary') {
-                playNotificationSound();
-            }
-
-            // Remove toast element after hidden
-            toastElement.addEventListener('hidden.bs.toast', function() {
-                toastElement.remove();
-            });
-        }
-
-        // Combined function: Update badges AND check for new activity
+        // Combined function: Update badges only (Socket.IO handles toast notifications)
         async function updateBadgesAndCheckActivity() {
             try {
                 const response = await fetch('/portal/admin/api/active-chats-count');
@@ -495,82 +415,38 @@
                     if (data.success && data.details) {
                         const currentActive = data.details.active || 0;
                         const currentWaiting = data.details.waiting || 0;
-                        const currentTotal = currentActive + currentWaiting;
+                        // Badge shows only WAITING (unassigned) sessions
+                        const badgeCount = currentWaiting;
 
-                        // Update active chats badge (Live Chat)
+                        // Update active chats badge (Live Chat) - shows WAITING only
                         const activeBadge = document.getElementById('activeChatsBadge');
                         if (activeBadge) {
-                            activeBadge.textContent = currentTotal;
-                            if (currentTotal === 0) {
+                            activeBadge.textContent = badgeCount;
+                            if (badgeCount === 0) {
                                 activeBadge.className = 'badge bg-secondary ms-2';
-                            } else if (currentTotal < 5) {
+                            } else if (badgeCount < 5) {
                                 activeBadge.className = 'badge bg-warning text-dark ms-2 pulse';
                             } else {
                                 activeBadge.className = 'badge bg-danger ms-2 pulse';
                             }
                         }
                         
-                        // Update total chats badge
+                        // Update total chats badge (Chats page) - ALSO shows WAITING only
                         const totalBadge = document.getElementById('totalChatsBadge');
                         if (totalBadge) {
-                            totalBadge.textContent = currentTotal;
+                            totalBadge.textContent = badgeCount;
                         }
 
                         // Check for notifications (skip on first load)
-                        if (!lastKnownCounts.isInitialized) {
-                            // Initialize counts on first load
-                            lastKnownCounts = {
-                                activeSessions: currentActive,
-                                waitingSessions: currentWaiting,
-                                totalSessions: currentTotal,
-                                isInitialized: true
-                            };
-                            console.log('Notification system initialized:', lastKnownCounts);
-                        } else {
-                            // Detect new waiting sessions
-                            if (currentWaiting > lastKnownCounts.waitingSessions) {
-                                const newSessions = currentWaiting - lastKnownCounts.waitingSessions;
-                                showToast(
-                                    '🆕 New Chat Session',
-                                    `${newSessions} new ${newSessions === 1 ? 'session' : 'sessions'} waiting for assignment!`,
-                                    'warning',
-                                    true
-                                );
-                                console.log(`New waiting sessions: ${newSessions}`);
-                            }
-
-                            // Detect new active sessions
-                            if (currentActive > lastKnownCounts.activeSessions) {
-                                const newActive = currentActive - lastKnownCounts.activeSessions;
-                                showToast(
-                                    '💬 New Active Chat',
-                                    `${newActive} new ${newActive === 1 ? 'chat' : 'chats'} became active!`,
-                                    'primary',
-                                    true
-                                );
-                                console.log(`New active sessions: ${newActive}`);
-                            }
-
-                            // Detect sessions being closed
-                            if (currentTotal < lastKnownCounts.totalSessions) {
-                                const closedSessions = lastKnownCounts.totalSessions - currentTotal;
-                                showToast(
-                                    '✅ Chat Closed',
-                                    `${closedSessions} ${closedSessions === 1 ? 'session' : 'sessions'} closed.`,
-                                    'success',
-                                    true
-                                );
-                                console.log(`Closed sessions: ${closedSessions}`);
-                            }
-
-                            // Update last known counts
-                            lastKnownCounts = {
-                                activeSessions: currentActive,
-                                waitingSessions: currentWaiting,
-                                totalSessions: currentTotal,
-                                isInitialized: true
-                            };
-                        }
+                        // Note: Old polling-based notification system removed
+                        // Now using Socket.IO for real-time notifications only
+                        // Just initialize counts without showing toasts
+                        lastKnownCounts = {
+                            activeSessions: currentActive,
+                            waitingSessions: currentWaiting,
+                            totalSessions: currentActive + currentWaiting,
+                            isInitialized: true
+                        };
                     }
                 }
             } catch (error) {
@@ -580,8 +456,254 @@
 
     </script>
 
-    <!-- Bootstrap JS Bundle with Popper -->
+    <!-- Bootstrap JS Bundle with Popper - MUST LOAD BEFORE Socket.IO -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Socket.IO for Real-time Notifications -->
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    <script>
+        // Toast notification system
+        let toastCounter = 0;
+
+        function showToast(title, message, type = 'info', duration = 5000) {
+            const toastId = `toast-${toastCounter++}`;
+            const toastContainer = document.getElementById('toastContainer');
+            
+            if (!toastContainer) {
+                console.error('Toast container not found!');
+                return;
+            }
+            
+            // Icon and color based on type
+            const icons = {
+                'info': { icon: 'fa-info-circle', bg: 'bg-primary', color: 'text-white' },
+                'success': { icon: 'fa-check-circle', bg: 'bg-success', color: 'text-white' },
+                'warning': { icon: 'fa-exclamation-triangle', bg: 'bg-warning', color: 'text-dark' },
+                'danger': { icon: 'fa-exclamation-circle', bg: 'bg-danger', color: 'text-white' },
+                'message': { icon: 'fa-comment', bg: 'bg-info', color: 'text-white' }
+            };
+            
+            const config = icons[type] || icons['info'];
+            
+            const toastHTML = `
+                <div id="${toastId}" class="toast align-items-center ${config.bg} ${config.color} border-0 mb-2" role="alert" aria-live="assertive" aria-atomic="true">
+                    <div class="d-flex">
+                        <div class="toast-body d-flex align-items-start gap-2">
+                            <i class="fas ${config.icon} mt-1"></i>
+                            <div class="flex-grow-1">
+                                <strong class="d-block mb-1">${title}</strong>
+                                <small>${message}</small>
+                            </div>
+                        </div>
+                        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                    </div>
+                </div>
+            `;
+            
+            toastContainer.insertAdjacentHTML('beforeend', toastHTML);
+            
+            const toastElement = document.getElementById(toastId);
+            
+            // Check if Bootstrap is loaded
+            if (typeof bootstrap === 'undefined') {
+                console.error('Bootstrap not loaded!');
+                return;
+            }
+            
+            const bsToast = new bootstrap.Toast(toastElement, {
+                autohide: duration > 0,
+                delay: duration
+            });
+            
+            bsToast.show();
+            
+            // Remove from DOM after hidden
+            toastElement.addEventListener('hidden.bs.toast', () => {
+                toastElement.remove();
+            });
+            
+            // Play notification sound
+            try {
+                const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBDGH0fPTgjMGHm7A7+OZURE');
+                audio.volume = 0.3;
+                audio.play().catch(() => {});
+            } catch (e) {}
+        }
+
+        // Initialize Socket.IO connection for real-time notifications
+        {% if session.admin %}
+        document.addEventListener('DOMContentLoaded', function() {
+            // Use current host for Socket.IO connection
+            const socketUrl = window.location.protocol + '//' + window.location.hostname + ':5000';
+            console.log('🔌 Connecting to Socket.IO:', socketUrl);
+            
+            const socket = io(socketUrl, {
+                transports: ['websocket', 'polling'],
+                reconnection: true,
+                reconnectionDelay: 1000,
+                reconnectionAttempts: 5
+            });
+
+            socket.on('connect', function() {
+                console.log('✅ Connected to notification server');
+            });
+
+            socket.on('disconnect', function() {
+                console.log('❌ Disconnected from notification server');
+            });
+
+            // Listen for new chat session events
+            socket.on('new_session', function(data) {
+                console.log('🆕 New session:', data);
+                showToast(
+                    '💬 New Chat Session',
+                    `${data.user_name || 'A user'} started a new chat session`,
+                    'info',
+                    7000
+                );
+                
+                // Immediately increase badge count
+                const activeBadge = document.getElementById('activeChatsBadge');
+                const totalBadge = document.getElementById('totalChatsBadge');
+                if (activeBadge) {
+                    let currentCount = parseInt(activeBadge.textContent) || 0;
+                    currentCount++;
+                    activeBadge.textContent = currentCount;
+                    // Update badge style based on count
+                    if (currentCount === 0) {
+                        activeBadge.className = 'badge bg-secondary ms-2';
+                    } else if (currentCount < 5) {
+                        activeBadge.className = 'badge bg-warning text-dark ms-2 pulse';
+                    } else {
+                        activeBadge.className = 'badge bg-danger ms-2 pulse';
+                    }
+                }
+                if (totalBadge) {
+                    let currentCount = parseInt(totalBadge.textContent) || 0;
+                    totalBadge.textContent = currentCount + 1;
+                }
+                
+                // Also update from server to ensure accuracy
+                updateNavigationBadges();
+            });
+
+            // Listen for new message events
+            socket.on('new_message', function(data) {
+                console.log('💬 New message:', data);
+                showToast(
+                    '📨 New Message',
+                    `${data.user_name || 'User'}: ${data.message_preview || 'Sent a message'}`,
+                    'message',
+                    6000
+                );
+                
+                // No badge change for messages in existing sessions
+                // Just refresh to ensure accuracy
+                updateNavigationBadges();
+            });
+
+            // Listen for session assigned events
+            socket.on('session_assigned', function(data) {
+                console.log('✅ Session assigned event received:', data);
+                console.log('   Session ID:', data.session_id);
+                console.log('   Admin ID:', data.admin_id);
+                
+                // Immediately decrease badge count (session no longer waiting)
+                const activeBadge = document.getElementById('activeChatsBadge');
+                const totalBadge = document.getElementById('totalChatsBadge');
+                if (activeBadge) {
+                    let currentCount = parseInt(activeBadge.textContent) || 0;
+                    if (currentCount > 0) {
+                        currentCount--;
+                        activeBadge.textContent = currentCount;
+                        // Update badge style based on count
+                        if (currentCount === 0) {
+                            activeBadge.className = 'badge bg-secondary ms-2';
+                        } else if (currentCount < 5) {
+                            activeBadge.className = 'badge bg-warning text-dark ms-2 pulse';
+                        } else {
+                            activeBadge.className = 'badge bg-danger ms-2 pulse';
+                        }
+                    }
+                }
+                if (totalBadge) {
+                    let currentCount = parseInt(totalBadge.textContent) || 0;
+                    if (currentCount > 0) {
+                        currentCount--;
+                        totalBadge.textContent = currentCount;
+                        // Update badge style based on count
+                        if (currentCount === 0) {
+                            totalBadge.className = 'badge bg-secondary ms-2';
+                        } else if (currentCount < 5) {
+                            totalBadge.className = 'badge bg-warning text-dark ms-2 pulse';
+                        } else {
+                            totalBadge.className = 'badge bg-danger ms-2 pulse';
+                        }
+                    }
+                }
+                
+                console.log('📊 Session assigned - Badge decreased, waiting for DB commit...');
+                // Wait 1000ms for database transaction to complete and replicate before syncing
+                setTimeout(() => {
+                    console.log('🔄 Syncing with server after assignment...');
+                    updateNavigationBadges();
+                }, 1000);
+            });
+
+            // Listen for session closed events
+            socket.on('session_closed', function(data) {
+                console.log('🔒 Session closed event received:', data);
+                console.log('   Session ID:', data.session_id);
+                
+                // Decrease badge if it was a waiting session
+                // Server update will give us the accurate count
+                const activeBadge = document.getElementById('activeChatsBadge');
+                const totalBadge = document.getElementById('totalChatsBadge');
+                if (activeBadge) {
+                    let currentCount = parseInt(activeBadge.textContent) || 0;
+                    if (currentCount > 0) {
+                        currentCount--;
+                        activeBadge.textContent = currentCount;
+                        // Update badge style based on count
+                        if (currentCount === 0) {
+                            activeBadge.className = 'badge bg-secondary ms-2';
+                        } else if (currentCount < 5) {
+                            activeBadge.className = 'badge bg-warning text-dark ms-2 pulse';
+                        } else {
+                            activeBadge.className = 'badge bg-danger ms-2 pulse';
+                        }
+                    }
+                }
+                if (totalBadge) {
+                    let currentCount = parseInt(totalBadge.textContent) || 0;
+                    if (currentCount > 0) {
+                        currentCount--;
+                        totalBadge.textContent = currentCount;
+                        // Update badge style based on count
+                        if (currentCount === 0) {
+                            totalBadge.className = 'badge bg-secondary ms-2';
+                        } else if (currentCount < 5) {
+                            totalBadge.className = 'badge bg-warning text-dark ms-2 pulse';
+                        } else {
+                            totalBadge.className = 'badge bg-danger ms-2 pulse';
+                        }
+                    }
+                }
+                
+                console.log('🔒 Session closed - Badge decreased, waiting for DB commit...');
+                // Wait 1000ms for database transaction to complete and replicate before syncing
+                setTimeout(() => {
+                    console.log('🔄 Syncing with server after closure...');
+                    updateNavigationBadges();
+                }, 1000);
+            });
+
+            socket.on('connect_error', function(error) {
+                console.error('❌ Connection error:', error);
+            });
+        });
+        {% endif %}
+    </script>
 </body>
 
 </html>

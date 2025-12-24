@@ -304,6 +304,7 @@ def get_chat_messages(current_user, session_id):
             'session_id': session_id,
             'user_id': msg.user_id,
             'admin_id': msg.admin_id,
+            'admin_name': msg.admin.full_name if msg.admin else None,
             'message': msg.message,
             'timestamp': msg.timestamp.isoformat() if msg.timestamp else None,
             'is_from_admin': msg.is_from_admin

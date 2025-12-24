@@ -191,6 +191,16 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             
             print(f"✅ Auto-created session #{active_session.id} for user {user.full_name}")
             
+            # 🆕 Broadcast new session to all admins
+            broadcast_session_response = bot_api_client.post('/bot/chat/broadcast-new-session', {
+                'session_id': active_session.id,
+                'user_id': str(user.id),
+                'user_name': user.full_name
+            })
+            
+            if broadcast_session_response.get('success'):
+                print(f"✅ New session broadcasted to all admins")
+            
             await update.message.reply_text(
                 "✅ Your chat session has been started!\n"
                 "An agent will be with you shortly. You can continue sending messages."

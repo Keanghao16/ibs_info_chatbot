@@ -186,3 +186,45 @@ class AdminService:
             'created_at': admin.created_at,
             'last_login': admin.last_login
         }
+    
+    @staticmethod
+    def demote_to_user(db: Session, admin_id: str):
+        """Demote an admin to a regular user"""
+        from ..database.models import User, ChatSession
+        import uuid
+        
+        # Get the admin
+        admin = db.query(Admin).filter(Admin.id == admin_id).first()
+        if not admin:
+            return None
+        
+        # Create a user record with admin's data
+        user = User(
+            id=str(uuid.uuid4()),
+            telegram_id=int(admin.telegram_id),
+            username=admin.telegram_username,
+            first_name=admin.full_name.split()[0] if admin.full_name else admin.telegram_username,
+            last_name=' '.join(admin.full_name.split()[1:]) if admin.full_name and len(admin.full_name.split()) > 1 else None,
+            photo_url=admin.telegram_photo_url,
+            registration_date=admin.created_at,
+            last_activity=admin.last_login,
+            is_bot=False,
+            is_premium=False
+        )
+        
+        # Unassign all chat sessions from this admin
+        db.query(ChatSession).filter(ChatSession.admin_id == admin_id).update(
+            {ChatSession.admin_id: None},
+            synchronize_session=False
+        )
+        
+        # Delete the admin record
+        db.delete(admin)
+        db.flush()  # Ensure admin is deleted before adding user
+        
+        # Add the new user
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+        
+        return user
