@@ -3,7 +3,7 @@ from flask import Flask, redirect, url_for, session
 from ..utils import Config
 from .websocket_manager import socketio
 from datetime import datetime
-import pytz  # ✅ Add this import
+import pytz  # Add this import
 
 ADMIN_PREFIX = '/portal/admin'
 
@@ -31,7 +31,7 @@ def create_app():
     # Add hasattr to Jinja2 globals
     app.jinja_env.globals['hasattr'] = hasattr
 
-    # ✅ UPDATED FILTER for Cambodia timezone - Database already in UTC+7
+    # UPDATED FILTER for Cambodia timezone - Database already in UTC+7
     @app.template_filter('cambodia_time')
     def cambodia_time_filter(dt):
         """Format datetime that's already in Cambodia time (UTC+7)"""

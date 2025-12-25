@@ -21,7 +21,7 @@
             </button>
             <button onclick="switchChatFilter('closed')" id="filter-closed"
                     class="flex-1 px-3 py-2 text-sm font-medium rounded-lg bg-gray-100 text-gray-600 border-2 border-gray-300 hover:bg-gray-200">
-                ✅ Closed
+                Closed
             </button>
         </div>
         
@@ -153,7 +153,7 @@
     const preselectSessionId = {% if preselect_session_id %}{{ preselect_session_id }}{% else %}null{% endif %};
     
     socket.on('connect', () => {
-        console.log('✅ Connected to WebSocket');
+        console.log('Connected to WebSocket');
         
         // Auto-select session if provided in URL
         if (preselectSessionId) {
@@ -342,7 +342,7 @@
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                console.log('✅ Session assigned successfully');
+                console.log('Session assigned successfully');
                 currentSessionStatus = 'active';
                 const statusBadge = document.querySelector('.chat-header span');
                 if (statusBadge) {
@@ -379,7 +379,7 @@
                 container.innerHTML = '';
                 
                 if (data.success && data.data && data.data.length > 0) {
-                    console.log(`✅ Loaded ${data.data.length} messages`);
+                    console.log(`Loaded ${data.data.length} messages`);
                     console.log('First message structure:', data.data[0]);
                     data.data.forEach(msg => {
                         console.log('Message admin info:', { admin_id: msg.admin_id, admin_name: msg.admin_name });
@@ -523,7 +523,7 @@
             // Click the chat item to select it
             chatItem.click();
             
-            console.log('✅ Session auto-selected:', {sessionId, userName, status});
+            console.log('Session auto-selected:', {sessionId, userName, status});
         } else {
             console.warn('⚠️ Session not found in sidebar:', sessionId);
             // Try to load the session directly via API

@@ -31,7 +31,7 @@ def create_or_get_user():
             result = user_service.get_user_or_admin_by_telegram_id(db, str(data['telegram_id']))
             
             if result and result['type'] == 'admin':
-                # ✅ Serialize the Admin object using schema
+                # Serialize the Admin object using schema
                 admin_data = admin_response_schema.dump(result['data'])
                 return success_response(
                     message='User is an admin',
@@ -149,7 +149,7 @@ def get_faq_categories():
     """Get all active FAQ categories"""
     try:
         with get_db_session() as db:
-            # ✅ Use SystemSettingService instead of FAQService
+            # Use SystemSettingService instead of FAQService
             setting_service = SystemSettingService()
             categories = setting_service.get_active_categories(db)
             
@@ -175,7 +175,7 @@ def get_category_faqs(category_id):
     """Get FAQs for a specific category"""
     try:
         with get_db_session() as db:
-            # ✅ Use SystemSettingService instead of FAQService
+            # Use SystemSettingService instead of FAQService
             setting_service = SystemSettingService()
             
             # Check if category exists
@@ -248,7 +248,7 @@ def search_faqs():
             return error_response('Search query required', 400)
         
         with get_db_session() as db:
-            # ✅ Use SystemSettingService instead of FAQService
+            # Use SystemSettingService instead of FAQService
             setting_service = SystemSettingService()
             faqs = setting_service.search_faqs(db, query, active_only=True)
             
@@ -293,7 +293,7 @@ def broadcast_message():
             )
             
             if response.status_code == 200:
-                print(f"✅ Message broadcasted successfully via web app")
+                print(f"Message broadcasted successfully via web app")
                 return success_response(message='Message broadcasted successfully')
             else:
                 print(f"⚠️ Broadcast failed: {response.status_code}")
@@ -335,7 +335,7 @@ def broadcast_new_session():
             )
             
             if response.status_code == 200:
-                print(f"✅ New session broadcasted successfully via web app")
+                print(f"New session broadcasted successfully via web app")
                 return success_response(message='New session broadcasted successfully')
             else:
                 print(f"⚠️ Broadcast failed: {response.status_code}")

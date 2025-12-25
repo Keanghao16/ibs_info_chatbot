@@ -155,14 +155,14 @@ class AdminService:
         active_admins = db.query(Admin).filter(Admin.is_active == True).count()
         available_admins = db.query(Admin).filter(Admin.is_available == True).count()
         super_admins = db.query(Admin).filter(Admin.role == AdminRole.super_admin).count()
-        regular_admins = db.query(Admin).filter(Admin.role == AdminRole.admin).count()  # ✅ Added
+        regular_admins = db.query(Admin).filter(Admin.role == AdminRole.admin).count()  # Added
         
         return {
             'total_admins': total_admins,
             'active_admins': active_admins,
             'available_admins': available_admins,
             'super_admins': super_admins,
-            'regular_admins': regular_admins,  # ✅ Added
+            'regular_admins': regular_admins,  # Added
             'online_now': 0  # TODO: Implement real-time tracking
         }
     

@@ -15,7 +15,7 @@
     <!-- Statistics Overview -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <div class="bg-white rounded-2xl shadow-lg p-6 border-l-4 border-red-500 transform hover:-translate-y-2 transition-transform duration-300">
-            <!-- ✅ UPDATED: Use stats from API instead of filtering admins -->
+            <!-- UPDATED: Use stats from API instead of filtering admins -->
             <div class="text-4xl font-bold text-red-500 mb-2">
                 {{ stats.super_admins if stats and stats.super_admins is defined else (admins|selectattr("role", "equalto", "super_admin")|list|length if admins else 0) }}
             </div>
@@ -25,7 +25,7 @@
         </div>
 
         <div class="bg-white rounded-2xl shadow-lg p-6 border-l-4 border-primary-500 transform hover:-translate-y-2 transition-transform duration-300">
-            <!-- ✅ UPDATED: Use calculated regular admins from API stats -->
+            <!-- UPDATED: Use calculated regular admins from API stats -->
             <div class="text-4xl font-bold text-primary-500 mb-2">
                 {{ stats.regular_admins if stats and stats.regular_admins is defined else (admins|selectattr("role", "equalto", "admin")|list|length if admins else 0) }}
             </div>
@@ -35,7 +35,7 @@
         </div>
 
         <div class="bg-white rounded-2xl shadow-lg p-6 border-l-4 border-green-500 transform hover:-translate-y-2 transition-transform duration-300">
-            <!-- ✅ UPDATED: Use active admins from API stats -->
+            <!-- UPDATED: Use active admins from API stats -->
             <div class="text-4xl font-bold text-green-500 mb-2">
                 {{ stats.active_admins if stats and stats.active_admins is defined else (admins|selectattr("is_active", "equalto", true)|list|length if admins else 0) }}
             </div>
@@ -45,7 +45,7 @@
         </div>
 
         <div class="bg-white rounded-2xl shadow-lg p-6 border-l-4 border-yellow-500 transform hover:-translate-y-2 transition-transform duration-300">
-            <!-- ✅ UPDATED: Use available admins from API stats -->
+            <!-- UPDATED: Use available admins from API stats -->
             <div class="text-4xl font-bold text-yellow-500 mb-2">
                 {{ stats.available_admins if stats and stats.available_admins is defined else (admins|selectattr("is_available", "equalto", true)|list|length if admins else 0) }}
             </div>
@@ -136,7 +136,7 @@
                 <i class="fas fa-user-shield"></i> Administrators List
             </h3>
             <div id="resultsCount" class="text-sm opacity-90">
-                <!-- ✅ UPDATED: Show pagination info and total -->
+                <!-- UPDATED: Show pagination info and total -->
                 Showing {{ admins|length if admins else 0 }} of {{ stats.total_admins if stats and stats.total_admins else pagination.total if pagination else 0 }} admins
             </div>
         </div>
@@ -376,7 +376,7 @@
         adminsTableBody.innerHTML = '';
         filteredRows.forEach(row => adminsTableBody.appendChild(row));
         
-        // ✅ UPDATED: Update results count to show filtered vs total
+        // UPDATED: Update results count to show filtered vs total
         const totalAdmins = {{ stats.total_admins if stats and stats.total_admins else 0 }};
         resultsCount.textContent = `Showing ${filteredRows.length} of ${totalAdmins} admins`;
     }
@@ -446,17 +446,17 @@
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                alert(' Admin demoted successfully!');
-                location.reload();
+                showToast('Admin Demoted', 'Admin has been demoted to regular user successfully!', 'success');
+                setTimeout(() => location.reload(), 1500);
             } else {
-                alert('❌ Failed to demote admin: ' + data.message);
+                showToast('❌ Demotion Failed', data.message || 'Failed to demote admin', 'danger');
                 btn.innerHTML = originalHTML;
                 btn.disabled = false;
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('❌ An error occurred while demoting the admin.');
+            showToast('❌ Error', 'An error occurred while demoting the admin. Please try again.', 'danger');
             btn.innerHTML = originalHTML;
             btn.disabled = false;
         });

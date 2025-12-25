@@ -380,17 +380,19 @@
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                alert(' User promoted successfully!');
-                window.location.href = '/portal/admin/users';
+                showToast('User Promoted', 'User has been promoted to admin successfully!', 'success');
+                setTimeout(() => {
+                    window.location.href = '/portal/admin/users';
+                }, 1500);
             } else {
-                alert('❌ Failed to promote user: ' + data.message);
+                showToast('❌ Promotion Failed', data.message || 'Failed to promote user', 'danger');
                 btn.innerHTML = originalHTML;
                 btn.disabled = false;
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('❌ Failed to promote user.');
+            showToast('❌ Error', 'Failed to promote user. Please try again.', 'danger');
             btn.innerHTML = originalHTML;
             btn.disabled = false;
         });

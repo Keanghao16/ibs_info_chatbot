@@ -32,7 +32,7 @@ def drop_chat_tables():
             connection.commit()
             print("  ✓ sessions table dropped")
             
-        print("✅ Tables dropped successfully\n")
+        print("Tables dropped successfully\n")
         return True
         
     except Exception as e:
@@ -88,7 +88,7 @@ def create_chat_tables():
             connection.commit()
             print("  ✓ chat_messages table created")
             
-        print("✅ Tables created successfully\n")
+        print("Tables created successfully\n")
         return True
         
     except Exception as e:
@@ -114,7 +114,7 @@ def verify_tables():
             for row in result:
                 print(f"   {row[0]:20} {row[1]:20} {row[2]:5} {row[3]:5}")
             
-        print("\n✅ Table verification complete")
+        print("\nTable verification complete")
         return True
         
     except Exception as e:
@@ -143,7 +143,7 @@ def main():
         print("\n⚠️  Warning: Table verification failed.")
     
     print("\n" + "="*60)
-    print("✅ MIGRATION COMPLETED SUCCESSFULLY")
+    print("MIGRATION COMPLETED SUCCESSFULLY")
     print("="*60)
     print("\n📝 Summary:")
     print("   • sessions table recreated")

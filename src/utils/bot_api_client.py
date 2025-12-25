@@ -36,7 +36,7 @@ class BotAPIClient:
             if response.status_code >= 400:
                 print(f"❌ API Error {response.status_code}: {data.get('message', 'Unknown error')}")
             else:
-                print(f"✅ API Success {response.status_code}")
+                print(f"API Success {response.status_code}")
             return data
         except Exception as e:
             print(f"❌ Failed to parse response: {str(e)}")

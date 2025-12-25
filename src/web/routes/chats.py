@@ -91,7 +91,7 @@ def broadcast_message_endpoint():
             user_name=data.get('user_name')
         )
         
-        print(f"✅ Socket.IO broadcast triggered for session {data['session_id']}")
+        print(f"Socket.IO broadcast triggered for session {data['session_id']}")
         
         return jsonify({
             'success': True,
@@ -129,7 +129,7 @@ def broadcast_new_session_endpoint():
             user_name=data.get('user_name')
         )
         
-        print(f"✅ Socket.IO new session broadcast triggered for session {data['session_id']}")
+        print(f"Socket.IO new session broadcast triggered for session {data['session_id']}")
         
         return jsonify({
             'success': True,
@@ -359,7 +359,7 @@ def assign_session(session_id):
             admin_id=admin_id,
             user_name=user_name
         )
-        print(f"✅ Broadcast completed for session assignment")
+        print(f"Broadcast completed for session assignment")
     except Exception as e:
         print(f"⚠️ Failed to broadcast session assignment: {e}")
         import traceback

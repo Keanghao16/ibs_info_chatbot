@@ -34,7 +34,7 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         result = user_service.get_user_or_admin_by_telegram_id(db, str(telegram_user.id))
         is_admin = result and result['type'] == "admin"
         
-        # ✅ Allow admins to search FAQs
+        # Allow admins to search FAQs
         if is_admin and context.user_data.get('searching_faq'):
             context.user_data['searching_faq'] = False
             
@@ -85,7 +85,7 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 )
             return
         
-        # ✅ Block admins from regular chat (but not FAQ search)
+        # Block admins from regular chat (but not FAQ search)
         if is_admin:
             await update.message.reply_text(
                 "⚠️ You're logged in as an admin.\n"
@@ -189,7 +189,7 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             db.add(active_session)
             db.flush()  # 🔧 FIX: Use flush() to get the ID without committing
             
-            print(f"✅ Auto-created session #{active_session.id} for user {user.full_name}")
+            print(f"Auto-created session #{active_session.id} for user {user.full_name}")
             
             # 🆕 Broadcast new session to all admins
             broadcast_session_response = bot_api_client.post('/bot/chat/broadcast-new-session', {
@@ -199,10 +199,10 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             })
             
             if broadcast_session_response.get('success'):
-                print(f"✅ New session broadcasted to all admins")
+                print(f"New session broadcasted to all admins")
             
             await update.message.reply_text(
-                "✅ Your chat session has been started!\n"
+                "Your chat session has been started!\n"
                 "An agent will be with you shortly. You can continue sending messages."
             )
         
@@ -229,7 +229,7 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         # 🔧 FIX: Commit everything together
         db.commit()
         
-        print(f"✅ Message saved successfully to session #{active_session.id}")
+        print(f"Message saved successfully to session #{active_session.id}")
         
         # 🆕 Notify admin via API (which will broadcast via WebSocket)
         if active_session.admin_id:
@@ -243,10 +243,10 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             })
             
             if broadcast_response.get('success'):
-                print(f"✅ Message broadcasted to admin {active_session.admin_id}")
+                print(f"Message broadcasted to admin {active_session.admin_id}")
             
             await update.message.reply_text(
-                "✅ Your message has been sent to our support agent."
+                "Your message has been sent to our support agent."
             )
         else:
             # Session is waiting - broadcast to all admins
@@ -258,7 +258,7 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             })
             
             if broadcast_response.get('success'):
-                print(f"✅ New waiting session broadcasted to all admins")
+                print(f"New waiting session broadcasted to all admins")
             
             await update.message.reply_text(
                 "📝 Message received! An agent will be with you soon."

@@ -354,15 +354,15 @@
             .then(data => {
                 if (data.success) {
                     document.querySelector(`[data-id="${faqId}"]`).remove();
-                    showNotification('✅ FAQ deleted successfully!', 'success');
+                    showToast('FAQ Deleted', 'FAQ deleted successfully!', 'success');
                     updateFAQCount();
                 } else {
-                    showNotification('❌ Failed to delete FAQ: ' + data.message, 'error');
+                    showToast('Delete Failed', data.message || 'Failed to delete FAQ', 'danger');
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                showNotification('❌ An error occurred while deleting the FAQ.', 'error');
+                showToast('Error', 'An error occurred while deleting the FAQ.', 'danger');
             });
         }
     }
@@ -408,15 +408,15 @@
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    showNotification('✅ Category deleted successfully!', 'success');
+                    showToast('Category Deleted', 'Category deleted successfully!', 'success');
                     loadCategories(); // Reload categories
                 } else {
-                    showNotification('❌ Failed to delete category: ' + data.message, 'error');
+                    showToast('Delete Failed', data.message || 'Failed to delete category', 'danger');
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                showNotification('❌ An error occurred while deleting the category.', 'error');
+                showToast('Error', 'An error occurred while deleting the category.', 'danger');
             });
         }
     }
@@ -495,7 +495,7 @@
 
     function refreshCategories() {
         loadCategories();
-        showNotification('🔄 Categories refreshed', 'info');
+        showToast('🔄 Refreshed', 'Categories refreshed successfully', 'info');
     }
 
     // Form submission handling - Updated for API
@@ -509,16 +509,16 @@
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                showNotification('✅ FAQ saved successfully!', 'success');
+                showToast('FAQ Saved', 'FAQ saved successfully!', 'success');
                 closeFAQModal();
-                location.reload();
+                setTimeout(() => location.reload(), 1500);
             } else {
-                showNotification('❌ Failed to save FAQ: ' + data.message, 'error');
+                showToast('Save Failed', data.message || 'Failed to save FAQ', 'danger');
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            showNotification('❌ An error occurred while saving the FAQ.', 'error');
+            showToast('Error', 'An error occurred while saving the FAQ.', 'danger');
         });
     });
 
@@ -537,58 +537,20 @@
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                showNotification('✅ Category saved successfully!', 'success');
+                showToast('Category Saved', 'Category saved successfully!', 'success');
                 closeCategoryModal();
                 loadCategories(); // Reload categories instead of full page reload
             } else {
-                showNotification('❌ Failed to save category: ' + data.message, 'error');
+                showToast('Save Failed', data.message || 'Failed to save category', 'danger');
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            showNotification('❌ An error occurred while saving the category.', 'error');
+            showToast('Error', 'An error occurred while saving the category.', 'danger');
         });
     });
 
-    // Notification system
-    function showNotification(message, type = 'info') {
-        // Create notification element
-        const notification = document.createElement('div');
-        notification.className = `fixed top-4 right-4 z-[9999] px-6 py-4 rounded-lg shadow-lg text-white font-semibold transform transition-all duration-300 translate-x-full`;
-        
-        // Set colors based on type
-        switch (type) {
-            case 'success':
-                notification.classList.add('bg-green-500');
-                break;
-            case 'error':
-                notification.classList.add('bg-red-500');
-                break;
-            case 'info':
-                notification.classList.add('bg-blue-500');
-                break;
-            default:
-                notification.classList.add('bg-gray-500');
-        }
-        
-        notification.textContent = message;
-        document.body.appendChild(notification);
-        
-        // Show notification
-        setTimeout(() => {
-            notification.classList.remove('translate-x-full');
-        }, 100);
-        
-        // Hide notification after 3 seconds
-        setTimeout(() => {
-            notification.classList.add('translate-x-full');
-            setTimeout(() => {
-                if (notification.parentNode) {
-                    notification.parentNode.removeChild(notification);
-                }
-            }, 300);
-        }, 3000);
-    }
+    // Note: Using global showToast() function from master.html
 
     // Helper functions
     function updateFAQCount() {
@@ -643,18 +605,18 @@
         
         // Validate question mark
         if (!question.endsWith('?')) {
-            showNotification('⚠️ Questions should end with a question mark (?)', 'warning');
+            showToast('⚠️ Validation Error', 'Questions should end with a question mark (?)', 'warning');
             return;
         }
         
         // Validate minimum lengths
         if (question.length < 5) {
-            showNotification('⚠️ Question must be at least 5 characters long', 'warning');
+            showToast('⚠️ Validation Error', 'Question must be at least 5 characters long', 'warning');
             return;
         }
         
         if (answer.length < 10) {
-            showNotification('⚠️ Answer must be at least 10 characters long', 'warning');
+            showToast('⚠️ Validation Error', 'Answer must be at least 10 characters long', 'warning');
             return;
         }
         

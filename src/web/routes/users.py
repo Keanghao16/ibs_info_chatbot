@@ -54,7 +54,7 @@ def list_users():
     
     return render_template('user/index.html', 
                          users=users,
-                         stats=stats,  # ✅ Pass stats to template
+                         stats=stats,  # Pass stats to template
                          # Individual pagination variables
                          page=pagination_data.get('page', 1),
                          per_page=pagination_data.get('per_page', 20),

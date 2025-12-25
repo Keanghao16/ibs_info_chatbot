@@ -24,7 +24,7 @@ def handle_connect():
         join_room(room)
         active_connections[admin_id] = request.sid
         emit('connected', {'message': 'Connected to chat server'})
-        print(f"✅ Admin {admin_id} connected - Socket ID: {request.sid}")
+        print(f"Admin {admin_id} connected - Socket ID: {request.sid}")
 
 @socketio.on('disconnect')
 def handle_disconnect():
@@ -94,7 +94,7 @@ def handle_send_message(data):
             'is_from_admin': True
         }, room=f"admin_{admin_id}")
         
-        print(f"✅ Message sent from admin {admin_id} to user via Telegram")
+        print(f"Message sent from admin {admin_id} to user via Telegram")
         
         db.close()
         
@@ -144,7 +144,7 @@ def broadcast_new_message_internal(user_id, message_text, admin_id=None, session
             'admin_id': admin_id  # Include admin_id for targeted notifications
         }, namespace='/')
         
-        print(f"✅ Message broadcasted to {'admin ' + str(admin_id) if admin_id else 'all admins'}")
+        print(f"Message broadcasted to {'admin ' + str(admin_id) if admin_id else 'all admins'}")
             
     except Exception as e:
         print(f"❌ Error broadcasting message: {e}")
@@ -171,7 +171,7 @@ def broadcast_new_session(session_id, user_id, user_name=None):
             'timestamp': datetime.now().isoformat()
         }, namespace='/')
         
-        print(f"✅ New session broadcasted to all admins")
+        print(f"New session broadcasted to all admins")
             
     except Exception as e:
         print(f"❌ Error broadcasting new session: {e}")
@@ -198,7 +198,7 @@ def broadcast_session_assigned(session_id, admin_id, user_name=None):
             'timestamp': datetime.now().isoformat()
         }, namespace='/')
         
-        print(f"✅ Session assignment broadcasted")
+        print(f"Session assignment broadcasted")
             
     except Exception as e:
         print(f"❌ Error broadcasting session assignment: {e}")
@@ -223,7 +223,7 @@ def broadcast_session_closed(session_id):
             'timestamp': datetime.now().isoformat()
         }, namespace='/')
         
-        print(f"✅ Session closed broadcasted")
+        print(f"Session closed broadcasted")
             
     except Exception as e:
         print(f"❌ Error broadcasting session closed: {e}")

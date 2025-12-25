@@ -23,7 +23,7 @@
     <!-- Statistics Overview -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <div class="bg-white rounded-2xl shadow-lg p-6 border-l-4 border-green-500 transform hover:-translate-y-2 transition-transform duration-300">
-            <!-- ✅ UPDATED: Use stats from API instead of filtering sessions -->
+            <!-- UPDATED: Use stats from API instead of filtering sessions -->
             <div class="text-4xl font-bold text-green-500 mb-2">
                 {{ stats.active_sessions if stats and stats.active_sessions is defined else (sessions|selectattr("status", "equalto", "active")|list|length if sessions else 0) }}
             </div>
@@ -33,7 +33,7 @@
         </div>
 
         <div class="bg-white rounded-2xl shadow-lg p-6 border-l-4 border-gray-500 transform hover:-translate-y-2 transition-transform duration-300">
-            <!-- ✅ UPDATED: Use stats from API instead of filtering sessions -->
+            <!-- UPDATED: Use stats from API instead of filtering sessions -->
             <div class="text-4xl font-bold text-gray-500 mb-2">
                 {{ stats.closed_sessions if stats and stats.closed_sessions is defined else (sessions|selectattr("status", "equalto", "closed")|list|length if sessions else 0) }}
             </div>
@@ -43,7 +43,7 @@
         </div>
 
         <div class="bg-white rounded-2xl shadow-lg p-6 border-l-4 border-primary-500 transform hover:-translate-y-2 transition-transform duration-300">
-            <!-- ✅ UPDATED: Use total sessions from API stats -->
+            <!-- UPDATED: Use total sessions from API stats -->
             <div class="text-4xl font-bold text-primary-500 mb-2">
                 {{ stats.total_sessions if stats and stats.total_sessions is defined else (sessions|length if sessions else 0) }}
             </div>
@@ -53,7 +53,7 @@
         </div>
 
         <div class="bg-white rounded-2xl shadow-lg p-6 border-l-4 border-yellow-500 transform hover:-translate-y-2 transition-transform duration-300">
-            <!-- ✅ UPDATED: Use unassigned sessions from stats or calculate from current page -->
+            <!-- UPDATED: Use unassigned sessions from stats or calculate from current page -->
             <div class="text-4xl font-bold text-yellow-500 mb-2">
                 {{ stats.unassigned_sessions if stats and stats.unassigned_sessions is defined else (sessions|selectattr("admin_id", "none")|list|length if sessions else 0) }}
             </div>
@@ -137,7 +137,7 @@
                 <i class="fas fa-list"></i> Chat Sessions
             </h3>
             <div id="resultsCount" class="text-sm opacity-90">
-                <!-- ✅ UPDATED: Show pagination info and total -->
+                <!-- UPDATED: Show pagination info and total -->
                 Showing {{ sessions|length if sessions else 0 }} of {{ stats.total_sessions if stats and stats.total_sessions else pagination.total if pagination else 0 }} sessions
             </div>
         </div>

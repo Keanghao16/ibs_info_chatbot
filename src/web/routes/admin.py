@@ -53,7 +53,7 @@ def list_admins():
     
     return render_template('admin/index.html', 
                          admins=admins,
-                         stats=stats,  # ✅ Pass stats to template
+                         stats=stats,  # Pass stats to template
                          # Individual pagination variables
                          page=pagination_data.get('page', 1),
                          per_page=pagination_data.get('per_page', 20),

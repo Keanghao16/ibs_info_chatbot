@@ -30,7 +30,7 @@ class User(Base):
     language_code = Column(String(10), nullable=True)
     is_bot = Column(Boolean, default=False)
     is_premium = Column(Boolean, default=False)
-    photo_url = Column(String(500), nullable=True)  # ✅ ADD THIS LINE
+    photo_url = Column(String(500), nullable=True)  # ADD THIS LINE
     registration_date = Column(DateTime, default=datetime.utcnow)
     last_activity = Column(DateTime, nullable=True)
     

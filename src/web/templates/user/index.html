@@ -15,7 +15,7 @@
     <!-- Statistics Overview -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <div class="bg-white rounded-2xl shadow-lg p-6 border-l-4 border-primary-500 transform hover:-translate-y-2 transition-transform duration-300">
-            <!-- ✅ UPDATED: Use stats from API instead of users array length -->
+            <!-- UPDATED: Use stats from API instead of users array length -->
             <div class="text-4xl font-bold text-primary-500 mb-2">{{ stats.total_users if stats and stats.total_users else 0 }}</div>
             <div class="text-gray-600 font-semibold uppercase text-sm tracking-wide">
                 <i class="fas fa-users"></i> Total Users
@@ -23,7 +23,7 @@
         </div>
 
         <div class="bg-white rounded-2xl shadow-lg p-6 border-l-4 border-green-500 transform hover:-translate-y-2 transition-transform duration-300">
-            <!-- ✅ UPDATED: Use calculated active users from current page + API stats fallback -->
+            <!-- UPDATED: Use calculated active users from current page + API stats fallback -->
             <div class="text-4xl font-bold text-green-500 mb-2">
                 {{ stats.active_today if stats and stats.active_today is defined else (users|selectattr("is_active", "equalto", True)|list|length if users else 0) }}
             </div>
@@ -33,7 +33,7 @@
         </div>
 
         <div class="bg-white rounded-2xl shadow-lg p-6 border-l-4 border-red-500 transform hover:-translate-y-2 transition-transform duration-300">
-            <!-- ✅ UPDATED: Calculate inactive users from total - active -->
+            <!-- UPDATED: Calculate inactive users from total - active -->
             <div class="text-4xl font-bold text-red-500 mb-2">
                 {% if stats and stats.total_users and stats.active_today is defined %}
                 {{ stats.total_users - stats.active_today }}
@@ -47,7 +47,7 @@
         </div>
 
         <div class="bg-white rounded-2xl shadow-lg p-6 border-l-4 border-yellow-500 transform hover:-translate-y-2 transition-transform duration-300">
-            <!-- ✅ UPDATED: Use premium users from API stats -->
+            <!-- UPDATED: Use premium users from API stats -->
             <div class="text-4xl font-bold text-yellow-500 mb-2">
                 {{ stats.premium_users if stats and stats.premium_users is defined else (users|selectattr("is_premium", "equalto", True)|list|length if users else 0) }}
             </div>
@@ -118,7 +118,7 @@
                 <i class="fas fa-users"></i> Users List
             </h3>
             <div id="resultsCount" class="text-sm opacity-90">
-                <!-- ✅ UPDATED: Show pagination info and total -->
+                <!-- UPDATED: Show pagination info and total -->
                 Showing {{ users|length if users else 0 }} of {{ stats.total_users if stats and stats.total_users else pagination.total if pagination else 0 }} users
             </div>
         </div>
@@ -382,7 +382,7 @@
         usersTableBody.innerHTML = '';
         filtered.forEach(row => usersTableBody.appendChild(row));
         
-        // ✅ UPDATED: Update results count to show filtered vs total
+        // UPDATED: Update results count to show filtered vs total
         const totalUsers = {{ stats.total_users if stats and stats.total_users else 0 }};
         resultsCount.textContent = `Showing ${filtered.length} of ${totalUsers} users`;
     }
@@ -474,18 +474,18 @@
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                alert(' User promoted successfully!');
+                showToast('User Promoted', 'User has been promoted to admin successfully!', 'success');
                 closePromoteModalFromTable();
-                location.reload();
+                setTimeout(() => location.reload(), 1500);
             } else {
-                alert('❌ Failed to promote user: ' + data.message);
+                showToast('❌ Promotion Failed', data.message || 'Failed to promote user', 'danger');
                 btn.innerHTML = originalHTML;
                 btn.disabled = false;
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('❌ Failed to promote user.');
+            showToast('❌ Error', 'Failed to promote user. Please try again.', 'danger');
             btn.innerHTML = originalHTML;
             btn.disabled = false;
         });

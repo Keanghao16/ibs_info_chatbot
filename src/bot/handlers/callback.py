@@ -31,7 +31,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         
         is_admin = result and result['type'] == "admin"
         
-        # ✅ REMOVED the admin restriction - admins can now use FAQ features
+        # REMOVED the admin restriction - admins can now use FAQ features
         # Only restrict chat functionality for admins
         if is_admin and query.data == "start_chat":
             await query.edit_message_text(
@@ -70,12 +70,12 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 
                 if active_session:
                     await query.edit_message_text(
-                        "✅ You already have an active chat session.\n"
+                        "You already have an active chat session.\n"
                         "Just send your message directly - no need to start again!"
                     )
                 else:
                     await query.edit_message_text(
-                        "✅ Ready to chat!\n\n"
+                        "Ready to chat!\n\n"
                         "Just type your message and send it.\n"
                         "A session will be created automatically, and an agent will assist you shortly."
                     )
@@ -83,7 +83,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 await query.edit_message_text("⚠️ Please use /start first.")
             
         elif query.data == "faq":
-            # ✅ FAQ accessible to both users and admins
+            # FAQ accessible to both users and admins
             response = bot_api_client.get('/bot/faq/categories')
             
             if not response.get('success'):
@@ -129,7 +129,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             )
 
         elif query.data.startswith("faq_cat_"):
-            # ✅ Show FAQs for selected category - accessible to both users and admins
+            # Show FAQs for selected category - accessible to both users and admins
             category_id = int(query.data.replace("faq_cat_", ""))
             
             response = bot_api_client.get(f'/bot/faq/category/{category_id}')
@@ -185,7 +185,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             )
 
         elif query.data.startswith("faq_view_"):
-            # ✅ Show specific FAQ answer - accessible to both users and admins
+            # Show specific FAQ answer - accessible to both users and admins
             faq_id = int(query.data.replace("faq_view_", ""))
             
             response = bot_api_client.get(f'/bot/faq/{faq_id}')
@@ -217,7 +217,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             )
 
         elif query.data == "faq_search":
-            # ✅ FAQ search - accessible to both users and admins
+            # FAQ search - accessible to both users and admins
             context.user_data['searching_faq'] = True
             await query.edit_message_text(
                 "🔍 **FAQ Search**\n\n"
@@ -240,7 +240,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             )
 
         elif query.data == "back_to_main":
-            # ✅ Return appropriate keyboard based on user type
+            # Return appropriate keyboard based on user type
             if is_admin:
                 from ..keyboards.inline import admin_keyboard
                 await query.edit_message_text(

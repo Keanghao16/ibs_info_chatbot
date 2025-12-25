@@ -201,7 +201,7 @@ class UserService:
             username=username,
             first_name=first_name,
             last_name=last_name,
-            photo_url=photo_url,  # ✅ ADD THIS LINE
+            photo_url=photo_url,  # ADD THIS LINE
             registration_date=datetime.now(),
             last_activity=datetime.now()
         )
@@ -232,7 +232,7 @@ class UserService:
         if existing_admin:
             raise ValueError("User is already an admin")
         
-        # ✅ FIX: Delete related records first to avoid foreign key constraint violation
+        # FIX: Delete related records first to avoid foreign key constraint violation
         # Delete chat messages associated with this user
         db.query(ChatMessage).filter(ChatMessage.user_id == user_id).delete(synchronize_session=False)
         

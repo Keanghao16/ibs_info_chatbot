@@ -121,6 +121,43 @@
             animation: pulse 2s ease-in-out infinite;
         }
         
+        /* Toast notification animations */
+        @keyframes slideInRight {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        @keyframes slideOutRight {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+        }
+        
+        @keyframes shrink {
+            from {
+                transform: scaleX(1);
+            }
+            to {
+                transform: scaleX(0);
+            }
+        }
+        
+        .toast-notification:hover {
+            transform: translateX(-4px);
+            transition: transform 0.2s ease;
+        }
+        
         /* Badge positioning fix */
         .badge {
             font-size: 0.75rem;
@@ -132,8 +169,8 @@
 </head>
 
 <body class="bg-gradient-bg min-h-screen">
-    <!-- Toast Container for Notifications - Top right -->
-    <div id="toastContainer" class="position-fixed top-0 end-0 p-5" style="z-index: 9999; max-width: 400px;">
+    <!-- Toast Container for Notifications - Top right, modern style -->
+    <div id="toastContainer" class="position-fixed top-0 end-0 p-3" style="z-index: 9999; max-width: 420px;">
         <!-- Toasts will be dynamically inserted here -->
     </div>
 
@@ -145,7 +182,7 @@
                 <!-- Brand -->
                 <a href="{{ url_for('dashboard.index') }}" class="flex items-center space-x-3 text-white hover:opacity-90 transition">
                     <i class="fab fa-telegram text-2xl"></i>
-                    <span class="text-xl font-bold">IBS Admin Panel</span>
+                    <span class="text-xl font-bold">IBS Admin Dashboard</span>
                 </a>
 
                 <!-- Desktop Navigation -->
@@ -249,7 +286,36 @@
 
     <!-- Main Content -->
     <div class="max-w-7xl mx-auto px-4 py-6 {{ 'py-0' if request.endpoint == 'auth.login' else '' }}">
-        <!-- Flash Messages -->
+        <!-- Toast Messages from Session -->
+        {% if session.get('_toast') %}
+        <script>
+            // Trigger toast from session data
+            (function() {
+                const toastData = {{ session.get('_toast') | tojson }};
+                console.log('📢 Toast data from session:', toastData);
+                
+                // Wait for DOM and showToast function to be ready
+                function triggerToast() {
+                    if (typeof showToast === 'function') {
+                        console.log('Showing toast:', toastData.title);
+                        showToast(toastData.title, toastData.message, toastData.type, toastData.duration || 5000);
+                    } else {
+                        console.log('⏳ Waiting for showToast function...');
+                        setTimeout(triggerToast, 100);
+                    }
+                }
+                
+                if (document.readyState === 'loading') {
+                    document.addEventListener('DOMContentLoaded', triggerToast);
+                } else {
+                    triggerToast();
+                }
+            })();
+        </script>
+        {% set _ = session.pop('_toast') %}
+        {% endif %}
+        
+        <!-- Flash Messages (fallback for non-toast pages) -->
         {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
         {% for category, message in messages %}
@@ -271,8 +337,7 @@
         </main>
     </div>
 
-    <!-- Footer - Hide on login page -->
-    {% if not request.endpoint or (request.endpoint != 'auth.login' and request.endpoint != 'chats.live_chat') %}
+    <!-- Footer -->
     <footer class="mt-12">
         <div class="max-w-7xl mx-auto px-4">
             <div class="flex justify-between items-center text-gray-600 text-sm py-6">
@@ -281,7 +346,6 @@
             </div>
         </div>
     </footer>
-    {% endif %}
 
     <!-- JavaScript -->
     <script>
@@ -459,10 +523,9 @@
     <!-- Bootstrap JS Bundle with Popper - MUST LOAD BEFORE Socket.IO -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     
-    <!-- Socket.IO for Real-time Notifications -->
-    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    <!-- Toast Notification System - Define FIRST -->
     <script>
-        // Toast notification system
+        // Toast notification system - Modern polished style
         let toastCounter = 0;
 
         function showToast(title, message, type = 'info', duration = 5000) {
@@ -474,53 +537,107 @@
                 return;
             }
             
-            // Icon and color based on type
-            const icons = {
-                'info': { icon: 'fa-info-circle', bg: 'bg-primary', color: 'text-white' },
-                'success': { icon: 'fa-check-circle', bg: 'bg-success', color: 'text-white' },
-                'warning': { icon: 'fa-exclamation-triangle', bg: 'bg-warning', color: 'text-dark' },
-                'danger': { icon: 'fa-exclamation-circle', bg: 'bg-danger', color: 'text-white' },
-                'message': { icon: 'fa-comment', bg: 'bg-info', color: 'text-white' }
+            // Modern toast styling with icon badges
+            const styles = {
+                'info': { 
+                    icon: 'fa-info-circle',
+                    iconBg: '#0dcaf0',
+                    bg: '#cff4fc',
+                    border: '#0dcaf0',
+                    text: '#055160'
+                },
+                'success': { 
+                    icon: 'fa-check-circle',
+                    iconBg: '#198754',
+                    bg: '#d1e7dd',
+                    border: '#198754',
+                    text: '#0f5132'
+                },
+                'warning': { 
+                    icon: 'fa-exclamation-triangle',
+                    iconBg: '#ffc107',
+                    bg: '#fff3cd',
+                    border: '#ffc107',
+                    text: '#664d03'
+                },
+                'danger': { 
+                    icon: 'fa-times-circle',
+                    iconBg: '#dc3545',
+                    bg: '#f8d7da',
+                    border: '#dc3545',
+                    text: '#842029'
+                },
+                'error': { 
+                    icon: 'fa-times-circle',
+                    iconBg: '#dc3545',
+                    bg: '#f8d7da',
+                    border: '#dc3545',
+                    text: '#842029'
+                },
+                'message': { 
+                    icon: 'fa-comment-dots',
+                    iconBg: '#667eea',
+                    bg: '#e7eaff',
+                    border: '#667eea',
+                    text: '#2e3a87'
+                }
             };
             
-            const config = icons[type] || icons['info'];
+            const style = styles[type] || styles['info'];
             
             const toastHTML = `
-                <div id="${toastId}" class="toast align-items-center ${config.bg} ${config.color} border-0 mb-2" role="alert" aria-live="assertive" aria-atomic="true">
-                    <div class="d-flex">
-                        <div class="toast-body d-flex align-items-start gap-2">
-                            <i class="fas ${config.icon} mt-1"></i>
-                            <div class="flex-grow-1">
-                                <strong class="d-block mb-1">${title}</strong>
-                                <small>${message}</small>
+                <div id="${toastId}" class="toast-notification" 
+                     style="background: white; border-left: 4px solid ${style.border}; border-radius: 12px; 
+                            box-shadow: 0 8px 24px rgba(0,0,0,0.15); margin-bottom: 12px; padding: 16px; 
+                            animation: slideInRight 0.3s ease-out; position: relative; overflow: hidden;">
+                    <!-- Colored background strip -->
+                    <div style="position: absolute; top: 0; left: 0; right: 0; height: 3px; background: ${style.border};"></div>
+                    
+                    <div style="display: flex; align-items: start; gap: 12px;">
+                        <!-- Icon Badge -->
+                        <div style="background: ${style.iconBg}; color: white; width: 40px; height: 40px; 
+                                    border-radius: 10px; display: flex; align-items: center; justify-content: center; 
+                                    flex-shrink: 0; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
+                            <i class="fas ${style.icon}" style="font-size: 18px;"></i>
+                        </div>
+                        
+                        <!-- Content -->
+                        <div style="flex: 1; min-width: 0;">
+                            <div style="font-weight: 600; font-size: 15px; color: #1a1a1a; margin-bottom: 4px;">
+                                ${title}
+                            </div>
+                            <div style="font-size: 13px; color: #666; line-height: 1.4; word-wrap: break-word;">
+                                ${message}
                             </div>
                         </div>
-                        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                        
+                        <!-- Close Button -->
+                        <button onclick="removeToast('${toastId}')" 
+                                style="background: transparent; border: none; color: #999; cursor: pointer; 
+                                       padding: 4px 8px; font-size: 18px; line-height: 1; flex-shrink: 0;
+                                       transition: color 0.2s;"
+                                onmouseover="this.style.color='#333'" 
+                                onmouseout="this.style.color='#999'">
+                            <i class="fas fa-times"></i>
+                        </button>
                     </div>
+                    
+                    <!-- Progress bar -->
+                    <div style="position: absolute; bottom: 0; left: 0; height: 3px; background: ${style.border}; 
+                                width: 100%; transform-origin: left; animation: shrink ${duration}ms linear;"></div>
                 </div>
             `;
             
             toastContainer.insertAdjacentHTML('beforeend', toastHTML);
             
-            const toastElement = document.getElementById(toastId);
+            console.log('Toast created:', toastId, type, title);
             
-            // Check if Bootstrap is loaded
-            if (typeof bootstrap === 'undefined') {
-                console.error('Bootstrap not loaded!');
-                return;
+            // Auto-hide after duration
+            if (duration > 0) {
+                setTimeout(() => {
+                    removeToast(toastId);
+                }, duration);
             }
-            
-            const bsToast = new bootstrap.Toast(toastElement, {
-                autohide: duration > 0,
-                delay: duration
-            });
-            
-            bsToast.show();
-            
-            // Remove from DOM after hidden
-            toastElement.addEventListener('hidden.bs.toast', () => {
-                toastElement.remove();
-            });
             
             // Play notification sound
             try {
@@ -529,27 +646,50 @@
                 audio.play().catch(() => {});
             } catch (e) {}
         }
-
+        
+        function removeToast(toastId) {
+            const toastElement = document.getElementById(toastId);
+            if (toastElement) {
+                toastElement.style.animation = 'slideOutRight 0.3s ease-in';
+                setTimeout(() => {
+                    toastElement.remove();
+                }, 300);
+            }
+        }
+    </script>
+    
+    <!-- Socket.IO for Real-time Notifications -->
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    <script>
         // Initialize Socket.IO connection for real-time notifications
         {% if session.admin %}
         document.addEventListener('DOMContentLoaded', function() {
-            // Use current host for Socket.IO connection
-            const socketUrl = window.location.protocol + '//' + window.location.hostname + ':5000';
+            // Use same origin for Socket.IO connection (works with ngrok)
+            const socketUrl = window.location.origin;
             console.log('🔌 Connecting to Socket.IO:', socketUrl);
             
             const socket = io(socketUrl, {
-                transports: ['websocket', 'polling'],
+                transports: ['polling', 'websocket'],  // Try polling first for better compatibility
                 reconnection: true,
                 reconnectionDelay: 1000,
-                reconnectionAttempts: 5
+                reconnectionAttempts: 10,
+                path: '/socket.io/',  // Explicit path
+                timeout: 20000
             });
 
             socket.on('connect', function() {
-                console.log('✅ Connected to notification server');
+                console.log('Connected to notification server');
+                console.log('   Socket ID:', socket.id);
+                console.log('   Transport:', socket.io.engine.transport.name);
             });
 
-            socket.on('disconnect', function() {
+            socket.on('disconnect', function(reason) {
                 console.log('❌ Disconnected from notification server');
+                console.log('   Reason:', reason);
+            });
+            
+            socket.on('connect_error', function(error) {
+                console.error('❌ Socket.IO connection error:', error);
             });
 
             // Listen for new chat session events
@@ -604,7 +744,7 @@
 
             // Listen for session assigned events
             socket.on('session_assigned', function(data) {
-                console.log('✅ Session assigned event received:', data);
+                console.log('Session assigned event received:', data);
                 console.log('   Session ID:', data.session_id);
                 console.log('   Admin ID:', data.admin_id);
                 

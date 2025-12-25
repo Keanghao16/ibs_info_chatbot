@@ -13,7 +13,7 @@ def run_migration():
                 AFTER is_premium
             """))
             conn.commit()
-            print("✅ Successfully added photo_url column to users table")
+            print("Successfully added photo_url column to users table")
         except Exception as e:
             if "Duplicate column name" in str(e):
                 print("ℹ️  Column photo_url already exists")

@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, session, jsonify
+from flask import Blueprint, render_template, request, redirect, url_for, session, jsonify
 from ...utils.apiClient import api_client
 from ...utils.config import Config
 import os
@@ -31,7 +31,8 @@ def telegram_auth():
     print(f"Request args: {dict(request.args)}")
     
     if not telegram_data.get('id'):
-        flash('Invalid authentication data received', 'error')
+        session['_toast'] = {'title': '❌ Authentication Error', 'message': 'Invalid authentication data received', 'type': 'danger'}
+        session.modified = True
         return redirect(url_for('auth.login'))
     
     # 🔄 FIXED: Call correct API endpoint
@@ -47,11 +48,29 @@ def telegram_auth():
         session['admin_id'] = data.get('admin', {}).get('id')
         session.permanent = True
         
-        flash(' Login successful!', 'success')
+        # Set toast and ensure session is saved
+        session['_toast'] = {'title': 'Login Successful', 'message': 'Welcome back! You have been logged in successfully.', 'type': 'success'}
+        session.modified = True
+        
         return redirect(url_for('dashboard.index'))
     else:
-        flash(f"❌ Authentication failed: {response.get('message', 'Unknown error')}", 'error')
+        session['_toast'] = {'title': '❌ Authentication Failed', 'message': response.get('message', 'Unknown error'), 'type': 'danger'}
+        session.modified = True
         return redirect(url_for('auth.login'))
+
+@auth_bp.route('/api/login-proxy', methods=['POST'])
+def login_proxy():
+    """Proxy login request to API (avoids CORS/mixed content issues)"""
+    data = request.get_json()
+    telegram_id = data.get('telegram_id')
+    
+    if not telegram_id:
+        return jsonify({'success': False, 'message': 'Telegram ID is required'}), 400
+    
+    # Call API login endpoint
+    response = api_client.post('/api/v1/auth/login', {'telegram_id': telegram_id})
+    
+    return jsonify(response), 200 if response.get('success') else 401
 
 @auth_bp.route('/api-login-bridge', methods=['POST'])
 def api_login_bridge():
@@ -78,6 +97,14 @@ def api_login_bridge():
         session['access_token'] = access_token
         session.permanent = True
         
+        # Set toast notification for successful login
+        session['_toast'] = {
+            'title': 'Login Successful', 
+            'message': 'Welcome back! You have been logged in successfully.', 
+            'type': 'success'
+        }
+        session.modified = True
+        
         return jsonify({
             'success': True,
             'message': 'Login successful',
@@ -99,8 +126,17 @@ def logout():
     if access_token:
         api_client.post('/api/v1/auth/logout')
     
+    # Clear session completely
     session.clear()
-    flash(' You have been logged out successfully', 'success')
+    
+    # Set toast AFTER clearing (fresh session)
+    session['_toast'] = {
+        'title': '👋 Logged Out', 
+        'message': 'You have been logged out successfully', 
+        'type': 'success'
+    }
+    session.modified = True
+    
     return redirect(url_for('auth.login'))
 
 @auth_bp.route('/profile')
@@ -129,7 +165,7 @@ def update_profile():
         
         # Validate
         if not full_name:
-            flash('❌ Full name is required', 'error')
+            session['_toast'] = {'title': '⚠️ Validation Error', 'message': 'Full name is required', 'type': 'warning'}
             return redirect(url_for('auth.profile'))
         
         # Prepare update data
@@ -151,13 +187,13 @@ def update_profile():
             if updated_admin:
                 session['admin'].update(updated_admin)
             
-            flash(' Profile updated successfully!', 'success')
+            session['_toast'] = {'title': 'Profile Updated', 'message': 'Your profile has been updated successfully!', 'type': 'success'}
         else:
             if response.get('redirect_to_login'):
-                flash('Session expired. Please login again.', 'error')
+                session['_toast'] = {'title': '⏱️ Session Expired', 'message': 'Your session has expired. Please login again.', 'type': 'warning'}
                 return redirect(url_for('auth.login'))
             
-            flash(f"❌ Error updating profile: {response.get('message', 'Unknown error')}", 'error')
+            session['_toast'] = {'title': '❌ Update Failed', 'message': response.get('message', 'Unknown error'), 'type': 'danger'}
         
         return redirect(url_for('auth.profile'))
     

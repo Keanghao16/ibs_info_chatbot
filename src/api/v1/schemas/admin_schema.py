@@ -83,5 +83,5 @@ class AdminStatsSchema(Schema):
     active_admins = fields.Integer()
     available_admins = fields.Integer()
     super_admins = fields.Integer()
-    regular_admins = fields.Integer()  # ✅ Added
+    regular_admins = fields.Integer()  # Added
     online_now = fields.Integer()
