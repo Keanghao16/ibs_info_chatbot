@@ -153,6 +153,15 @@
             }
         }
         
+        @keyframes iconPulse {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.05);
+            }
+        }
+        
         .toast-notification:hover {
             transform: translateX(-4px);
             transition: transform 0.2s ease;
@@ -537,47 +546,53 @@
                 return;
             }
             
-            // Modern toast styling with icon badges
+            // Modern toast styling with icon badges - ENHANCED with gradients and effects
             const styles = {
                 'info': { 
                     icon: 'fa-info-circle',
-                    iconBg: '#0dcaf0',
-                    bg: '#cff4fc',
+                    iconGradient: 'linear-gradient(135deg, #0dcaf0 0%, #0aa8d0 100%)',
+                    iconShadow: '0 6px 20px rgba(13, 202, 240, 0.4), 0 2px 8px rgba(13, 202, 240, 0.2)',
+                    bg: 'linear-gradient(135deg, #e8f8fd 0%, #d4f2fb 100%)',
                     border: '#0dcaf0',
                     text: '#055160'
                 },
                 'success': { 
                     icon: 'fa-check-circle',
-                    iconBg: '#198754',
-                    bg: '#d1e7dd',
+                    iconGradient: 'linear-gradient(135deg, #28a745 0%, #198754 100%)',
+                    iconShadow: '0 6px 20px rgba(25, 135, 84, 0.4), 0 2px 8px rgba(25, 135, 84, 0.2)',
+                    bg: 'linear-gradient(135deg, #e8f5e9 0%, #d4edda 100%)',
                     border: '#198754',
                     text: '#0f5132'
                 },
                 'warning': { 
                     icon: 'fa-exclamation-triangle',
-                    iconBg: '#ffc107',
-                    bg: '#fff3cd',
+                    iconGradient: 'linear-gradient(135deg, #ffc107 0%, #e0a800 100%)',
+                    iconShadow: '0 6px 20px rgba(255, 193, 7, 0.4), 0 2px 8px rgba(255, 193, 7, 0.2)',
+                    bg: 'linear-gradient(135deg, #fffbf0 0%, #fff8e1 100%)',
                     border: '#ffc107',
                     text: '#664d03'
                 },
                 'danger': { 
                     icon: 'fa-times-circle',
-                    iconBg: '#dc3545',
-                    bg: '#f8d7da',
+                    iconGradient: 'linear-gradient(135deg, #dc3545 0%, #c82333 100%)',
+                    iconShadow: '0 6px 20px rgba(220, 53, 69, 0.4), 0 2px 8px rgba(220, 53, 69, 0.2)',
+                    bg: 'linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%)',
                     border: '#dc3545',
                     text: '#842029'
                 },
                 'error': { 
                     icon: 'fa-times-circle',
-                    iconBg: '#dc3545',
-                    bg: '#f8d7da',
+                    iconGradient: 'linear-gradient(135deg, #dc3545 0%, #c82333 100%)',
+                    iconShadow: '0 6px 20px rgba(220, 53, 69, 0.4), 0 2px 8px rgba(220, 53, 69, 0.2)',
+                    bg: 'linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%)',
                     border: '#dc3545',
                     text: '#842029'
                 },
                 'message': { 
                     icon: 'fa-comment-dots',
-                    iconBg: '#667eea',
-                    bg: '#e7eaff',
+                    iconGradient: 'linear-gradient(135deg, #667eea 0%, #5568d3 100%)',
+                    iconShadow: '0 6px 20px rgba(102, 126, 234, 0.4), 0 2px 8px rgba(102, 126, 234, 0.2)',
+                    bg: 'linear-gradient(135deg, #f5f7ff 0%, #ebf0ff 100%)',
                     border: '#667eea',
                     text: '#2e3a87'
                 }
@@ -587,18 +602,35 @@
             
             const toastHTML = `
                 <div id="${toastId}" class="toast-notification" 
-                     style="background: white; border-left: 4px solid ${style.border}; border-radius: 12px; 
-                            box-shadow: 0 8px 24px rgba(0,0,0,0.15); margin-bottom: 12px; padding: 16px; 
-                            animation: slideInRight 0.3s ease-out; position: relative; overflow: hidden;">
-                    <!-- Colored background strip -->
-                    <div style="position: absolute; top: 0; left: 0; right: 0; height: 3px; background: ${style.border};"></div>
+                     style="background: linear-gradient(135deg, #ffffff 0%, #fafbfc 100%); 
+                            border-left: 4px solid ${style.border}; border-radius: 14px; 
+                            box-shadow: 0 10px 40px rgba(0,0,0,0.12), 0 4px 12px rgba(0,0,0,0.08); 
+                            margin-bottom: 14px; padding: 18px; 
+                            animation: slideInRight 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55); 
+                            position: relative; overflow: hidden; backdrop-filter: blur(10px);">
+                    <!-- Colored background strip with gradient -->
+                    <div style="position: absolute; top: 0; left: 0; right: 0; height: 3px; 
+                                background: ${style.iconGradient};"></div>
                     
-                    <div style="display: flex; align-items: start; gap: 12px;">
-                        <!-- Icon Badge -->
-                        <div style="background: ${style.iconBg}; color: white; width: 40px; height: 40px; 
-                                    border-radius: 10px; display: flex; align-items: center; justify-content: center; 
-                                    flex-shrink: 0; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
-                            <i class="fas ${style.icon}" style="font-size: 18px;"></i>
+                    <div style="display: flex; align-items: start; gap: 14px;">
+                        <!-- Icon Badge with gradient, glow, and pulse effect -->
+                        <div style="background: ${style.iconGradient}; 
+                                    color: white; 
+                                    width: 44px; 
+                                    height: 44px; 
+                                    border-radius: 12px; 
+                                    display: flex; 
+                                    align-items: center; 
+                                    justify-content: center; 
+                                    flex-shrink: 0; 
+                                    box-shadow: ${style.iconShadow};
+                                    position: relative;
+                                    animation: iconPulse 2s ease-in-out infinite;">
+                            <!-- Subtle glow overlay -->
+                            <div style="position: absolute; inset: 0; border-radius: 12px; 
+                                        background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.4) 0%, transparent 70%);"></div>
+                            <i class="fas ${style.icon}" style="font-size: 20px; position: relative; z-index: 1; 
+                                                               filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));"></i>
                         </div>
                         
                         <!-- Content -->
